@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MarketCategory, MarketStatus } from "@prisma/client";
 
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
@@ -7,11 +8,14 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export default async function CompetitionDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ category?: string; status?: string }>;
 }) {
   const { slug } = await params;
+  const { category, status } = await searchParams;
   const competition = await prisma.competition.findUnique({
     where: { slug },
     include: {
@@ -44,6 +48,16 @@ export default async function CompetitionDetailPage({
       total + market.yesSharesOutstanding + market.noSharesOutstanding,
     0
   );
+  const activeStatus = isMarketStatus(status) ? status : "ALL";
+  const activeCategory = isMarketCategory(category) ? category : "ALL";
+  const filteredMarkets = competition.markets.filter((market) => {
+    const statusMatches =
+      activeStatus === "ALL" ? true : market.status === activeStatus;
+    const categoryMatches =
+      activeCategory === "ALL" ? true : market.category === activeCategory;
+
+    return statusMatches && categoryMatches;
+  });
 
   return (
     <div className="page-stack">
@@ -86,7 +100,44 @@ export default async function CompetitionDetailPage({
       <section>
         <div className="section-heading">
           <h2>Markets</h2>
-          <span>{competition.markets.length.toLocaleString()} total</span>
+          <span>
+            {filteredMarkets.length.toLocaleString()} of{" "}
+            {competition.markets.length.toLocaleString()}
+          </span>
+        </div>
+        <div className="filter-bar">
+          <div>
+            <span>Status</span>
+            {["ALL", ...Object.values(MarketStatus)].map((option) => (
+              <Link
+                className={activeStatus === option ? "is-active" : undefined}
+                href={getCompetitionFilterHref({
+                  category: activeCategory,
+                  slug: competition.slug,
+                  status: option
+                })}
+                key={option}
+              >
+                {formatFilterLabel(option)}
+              </Link>
+            ))}
+          </div>
+          <div>
+            <span>Category</span>
+            {["ALL", ...Object.values(MarketCategory)].map((option) => (
+              <Link
+                className={activeCategory === option ? "is-active" : undefined}
+                href={getCompetitionFilterHref({
+                  category: option,
+                  slug: competition.slug,
+                  status: activeStatus
+                })}
+                key={option}
+              >
+                {formatFilterLabel(option)}
+              </Link>
+            ))}
+          </div>
         </div>
         <div className="market-board">
           <div className="market-board-header">
@@ -96,7 +147,7 @@ export default async function CompetitionDetailPage({
             <span>Volume</span>
             <span>Status</span>
           </div>
-          {competition.markets.map((market) => {
+          {filteredMarkets.map((market) => {
             const prices = getMarketPrices(market);
 
             return (
@@ -116,6 +167,11 @@ export default async function CompetitionDetailPage({
               </Link>
             );
           })}
+          {filteredMarkets.length === 0 && (
+            <div className="market-board-empty">
+              No markets match these filters.
+            </div>
+          )}
         </div>
       </section>
 
@@ -151,4 +207,44 @@ export default async function CompetitionDetailPage({
       </section>
     </div>
   );
+}
+
+function isMarketStatus(status?: string): status is MarketStatus {
+  return Object.values(MarketStatus).includes(status as MarketStatus);
+}
+
+function isMarketCategory(category?: string): category is MarketCategory {
+  return Object.values(MarketCategory).includes(category as MarketCategory);
+}
+
+function getCompetitionFilterHref({
+  category,
+  slug,
+  status
+}: {
+  category: string;
+  slug: string;
+  status: string;
+}) {
+  const params = new URLSearchParams();
+
+  if (status !== "ALL") {
+    params.set("status", status);
+  }
+
+  if (category !== "ALL") {
+    params.set("category", category);
+  }
+
+  const query = params.toString();
+
+  return query ? `/competitions/${slug}?${query}` : `/competitions/${slug}`;
+}
+
+function formatFilterLabel(value: string) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(" ");
 }

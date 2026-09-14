@@ -497,6 +497,38 @@ footer {
   overflow: hidden;
 }
 
+.filter-bar {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.filter-bar div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-bar span {
+  color: var(--muted);
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.filter-bar a {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  padding: 7px 10px;
+}
+
+.filter-bar a.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: white;
+}
+
 .market-board-header,
 .market-board-row {
   align-items: center;
@@ -530,6 +562,11 @@ footer {
 .market-board-row div span,
 .market-board-row > span {
   color: var(--muted);
+}
+
+.market-board-empty {
+  color: var(--muted);
+  padding: 18px 16px;
 }
 
 .yes-text {
