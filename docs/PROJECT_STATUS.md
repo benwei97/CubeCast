@@ -47,7 +47,7 @@ The app reads this through `DATABASE_URL` in `.env`.
 - Global styling in `src/app/globals.css`
 - TypeScript configuration
 - ESLint setup
-- Shared market pricing helper for read-only YES/NO display prices
+- Shared market pricing helper for YES/NO display and purchase prices
 
 ### Database Foundation
 
@@ -132,11 +132,14 @@ maya@cubecast.test / password123
 
 `/markets/[slug]`
 
-- Read-only market detail page
+- Market detail page
 - Shows market question, description, competition, status, category, close time, and resolution rules
 - Shows calculated YES/NO prices based on current outstanding seeded shares
-- Shows recent seeded purchase activity when available
-- Buying is not implemented yet
+- Signed-in users can buy YES or NO shares with CubeCoins
+- Purchase flow validates market status, close time, user balance, and quantity
+- Purchases update user balance, market outstanding shares, user position, recent activity, and ledger records
+- Shows the signed-in user's current position in the market
+- Shows recent purchase activity when available
 
 `/portfolio`
 
@@ -157,20 +160,17 @@ maya@cubecast.test / password123
 
 ### Market Detail Pages
 
-- Buy controls on individual market pages
-- Signed-in user position summary on market pages
-- Live refresh after purchases
+- Richer trade preview before confirm
+- Better post-purchase loading state
+- Live multi-user updates without manual refresh
 
 ### Trading / Prediction Flow
 
-- Buy YES shares
-- Buy NO shares
-- Validate balances
-- Deduct CubeCoins
-- Create purchases
-- Update positions
-- Write ledger transactions
+- More realistic automated market maker pricing
+- Explicit trade confirmation step
+- Sell/exit behavior, if included in MVP scope
 - Prevent trades after close
+- More automated tests around purchase transactions
 
 ### Portfolio
 

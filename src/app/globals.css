@@ -51,6 +51,11 @@ input {
   font: inherit;
 }
 
+label {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .site-header {
   align-items: center;
   background: var(--surface);
@@ -283,6 +288,18 @@ footer {
   gap: 10px;
 }
 
+.form-error {
+  color: var(--no);
+  font-weight: 700;
+  margin: 0;
+}
+
+.success-text {
+  color: var(--yes);
+  font-weight: 700;
+  margin: 0;
+}
+
 .competition-list {
   display: grid;
   gap: 18px;
@@ -365,6 +382,46 @@ footer {
   font-weight: 700;
 }
 
+.trade-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.trade-form {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.trade-form button {
+  width: 100%;
+}
+
+.position-row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 18px;
+}
+
+.position-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.position-row strong {
+  font-size: 24px;
+}
+
+.position-row span {
+  color: var(--muted);
+}
+
 .detail-grid {
   display: grid;
   gap: 18px;
@@ -432,6 +489,7 @@ dd {
   .market-grid,
   .market-detail-hero,
   .detail-grid,
+  .position-row,
   .market-list-row,
   .activity-row {
     grid-template-columns: 1fr;
