@@ -141,6 +141,10 @@ maya@cubecast.test / password123
 - Purchases update user balance, market outstanding shares, user position, recent activity, and ledger records
 - Shows the signed-in user's current position in the market
 - Shows recent purchase activity when available
+- Admin users can resolve a market as YES, NO, or canceled
+- Resolved markets pay 100 CubeCoins per winning share
+- Canceled markets refund original position costs
+- Resolution updates market status, positions, balances, ledger entries, portfolio, and leaderboard
 
 `/portfolio`
 
@@ -191,11 +195,9 @@ maya@cubecast.test / password123
 
 ### Market Resolution
 
-- Admin resolution flow
-- Resolve market as YES, NO, or canceled
-- Pay winning positions
-- Refund canceled markets
-- Record settlement and ledger entries
+- Dedicated admin dashboard for reviewing markets that need resolution
+- Stronger confirmation step before final resolution
+- Audit trail beyond payout/refund ledger entries
 
 ### Leaderboard
 

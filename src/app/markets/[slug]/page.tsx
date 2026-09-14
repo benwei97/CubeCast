@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
-import { buyShares } from "./actions";
+import { buyShares, resolveMarket } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,15 +14,16 @@ export default async function MarketDetailPage({
   searchParams
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ trade?: string }>;
+  searchParams: Promise<{ resolution?: string; trade?: string }>;
 }) {
   const { slug } = await params;
-  const { trade } = await searchParams;
+  const { resolution, trade } = await searchParams;
   const session = await auth();
   const market = await prisma.market.findUnique({
     where: { slug },
     include: {
       competition: true,
+      settlement: true,
       purchases: {
         orderBy: { createdAt: "desc" },
         take: 6,
@@ -53,7 +55,12 @@ export default async function MarketDetailPage({
   const prices = getMarketPrices(market);
   const userPosition = market.positions[0];
   const isOpen = market.status === "OPEN" && market.closeTime > new Date();
+  const canResolve =
+    session?.user?.role === UserRole.ADMIN &&
+    market.status !== "RESOLVED" &&
+    market.status !== "CANCELED";
   const tradeMessage = getTradeMessage(trade);
+  const resolutionMessage = getResolutionMessage(resolution);
 
   return (
     <div className="page-stack">
@@ -67,7 +74,11 @@ export default async function MarketDetailPage({
           <p>{market.description}</p>
         </div>
         <aside className="trade-panel">
-          <span>Current mock prices</span>
+          <span>Order ticket</span>
+          <div className="market-status-row">
+            <strong>{market.status}</strong>
+            {market.winningOutcome && <span>{market.winningOutcome} won</span>}
+          </div>
           <div className="price-row">
             <strong>YES {prices.yesPrice}</strong>
             <strong>NO {prices.noPrice}</strong>
@@ -126,6 +137,56 @@ export default async function MarketDetailPage({
         </aside>
       </section>
 
+      {session?.user?.role === UserRole.ADMIN && (
+        <section>
+          <div className="section-heading">
+            <h2>Admin Resolution</h2>
+          </div>
+          <article className="admin-panel">
+            <div>
+              <p className="eyebrow">Admin controls</p>
+              <h3>Resolve this market</h3>
+              <p>
+                Resolution finalizes the market, stops new purchases, updates
+                positions, and writes payout or refund ledger entries.
+              </p>
+              {resolutionMessage && (
+                <p
+                  className={
+                    resolution === "success" ? "success-text" : "form-error"
+                  }
+                >
+                  {resolutionMessage}
+                </p>
+              )}
+            </div>
+            {canResolve ? (
+              <div className="resolution-actions">
+                <form action={resolveMarket}>
+                  <input type="hidden" name="slug" value={market.slug} />
+                  <input type="hidden" name="outcome" value="YES" />
+                  <button type="submit">Resolve YES</button>
+                </form>
+                <form action={resolveMarket}>
+                  <input type="hidden" name="slug" value={market.slug} />
+                  <input type="hidden" name="outcome" value="NO" />
+                  <button type="submit">Resolve NO</button>
+                </form>
+                <form action={resolveMarket}>
+                  <input type="hidden" name="slug" value={market.slug} />
+                  <input type="hidden" name="outcome" value="CANCELED" />
+                  <button className="secondary-button" type="submit">
+                    Cancel and refund
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <p className="empty-state">This market is already final.</p>
+            )}
+          </article>
+        </section>
+      )}
+
       {session?.user && (
         <section>
           <div className="section-heading">
@@ -164,6 +225,18 @@ export default async function MarketDetailPage({
               <dt>Status</dt>
               <dd>{market.status}</dd>
             </div>
+            {market.winningOutcome && (
+              <div>
+                <dt>Winning outcome</dt>
+                <dd>{market.winningOutcome}</dd>
+              </div>
+            )}
+            {market.settlement && (
+              <div>
+                <dt>Total payout</dt>
+                <dd>{market.settlement.totalPayout.toLocaleString()}</dd>
+              </div>
+            )}
             <div>
               <dt>Category</dt>
               <dd>{market.category}</dd>
@@ -244,6 +317,23 @@ function getTradeMessage(trade?: string) {
       return "That market could not be found.";
     case "missing-user":
       return "Your user account could not be loaded.";
+    default:
+      return null;
+  }
+}
+
+function getResolutionMessage(resolution?: string) {
+  switch (resolution) {
+    case "success":
+      return "Market resolved. Positions, payouts, ledger entries, portfolio, and leaderboard have updated.";
+    case "already-final":
+      return "This market has already been resolved or canceled.";
+    case "unauthorized":
+      return "Only admins can resolve markets.";
+    case "invalid":
+      return "Choose YES, NO, or canceled.";
+    case "missing-market":
+      return "That market could not be found.";
     default:
       return null;
   }

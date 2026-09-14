@@ -43,6 +43,11 @@ button,
   font: inherit;
 }
 
+.secondary-button {
+  background: var(--surface);
+  color: var(--ink);
+}
+
 input {
   min-height: 42px;
   border: 1px solid var(--line);
@@ -414,6 +419,19 @@ footer {
   font-weight: 700;
 }
 
+.market-status-row {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.market-status-row span {
+  color: var(--muted);
+}
+
 .trade-actions {
   display: grid;
   gap: 12px;
@@ -452,6 +470,35 @@ footer {
 
 .position-row span {
   color: var(--muted);
+}
+
+.admin-panel {
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr auto;
+  padding: 20px;
+}
+
+.admin-panel h3 {
+  margin: 8px 0;
+}
+
+.admin-panel p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 680px;
+}
+
+.resolution-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .summary-grid {
@@ -598,6 +645,7 @@ dd {
   .ledger-row,
   .leaderboard-header,
   .leaderboard-row,
+  .admin-panel,
   .market-list-row,
   .activity-row {
     grid-template-columns: 1fr;
@@ -611,5 +659,9 @@ dd {
   .ledger-row div:last-child,
   .activity-row div:last-child {
     text-align: left;
+  }
+
+  .resolution-actions {
+    justify-content: flex-start;
   }
 }
