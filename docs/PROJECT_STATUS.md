@@ -1,0 +1,267 @@
+# CubeCast Project Status
+
+Last updated: 2026-09-14
+
+CubeCast is a virtual prediction market for competitive speedcubing. Users will eventually sign in, receive free CubeCoins, browse competition markets, make YES/NO predictions, hold positions, and receive virtual payouts when markets resolve.
+
+CubeCoins are virtual only. The app does not support real money, deposits, withdrawals, crypto, or cash-equivalent functionality.
+
+## Current Architecture
+
+The app currently uses:
+
+- Next.js for the web app, pages, and server-rendered data loading
+- React and TypeScript for UI code
+- PostgreSQL for persistent app data
+- Prisma for schema management, migrations, and type-safe database access
+- NextAuth/Auth.js for authentication
+
+High-level flow:
+
+```text
+Browser
+  -> Next.js app
+  -> Prisma client
+  -> PostgreSQL database
+```
+
+## Local Data Storage
+
+Local development data is stored in PostgreSQL:
+
+```text
+database: cubecast
+host: localhost
+port: 5432
+user: benwei
+```
+
+The app reads this through `DATABASE_URL` in `.env`.
+
+## Built So Far
+
+### App Foundation
+
+- Next.js app scaffold
+- Shared global layout with header, nav, account area, and footer
+- Global styling in `src/app/globals.css`
+- TypeScript configuration
+- ESLint setup
+- Shared market pricing helper for read-only YES/NO display prices
+
+### Database Foundation
+
+The Prisma schema defines the main data model:
+
+- `User`
+- `Account`
+- `Session`
+- `VerificationToken`
+- `Competition`
+- `Market`
+- `Purchase`
+- `Position`
+- `LedgerTransaction`
+- `Settlement`
+
+The initial database migration has been created and applied:
+
+```text
+prisma/migrations/20260914213004_init/migration.sql
+```
+
+### Authentication
+
+- NextAuth/Auth.js is configured
+- Prisma adapter stores auth-related data in PostgreSQL
+- Credential sign-in works for local seeded demo users
+- Google OAuth provider is wired but disabled until Google credentials are configured
+- Signed-in sessions include CubeCast user data such as username, role, and CubeCoin balance
+
+### Onboarding
+
+- First-login onboarding service exists
+- New users can receive a starting balance of 1,000 CubeCoins
+- The starting balance is recorded as a ledger transaction
+
+### Seed Data
+
+The seed script creates demo data:
+
+- one admin user
+- five sample users
+- upcoming competitions
+- open markets
+- sample purchases
+- sample positions
+- one resolved market
+- ledger transactions
+- one settlement
+
+Demo accounts use:
+
+```text
+admin@cubecast.test / password123
+maya@cubecast.test / password123
+```
+
+### Current Pages
+
+`/`
+
+- Home page
+- Shows CubeCast intro
+- Shows current balance or sign-in prompt
+- Shows featured competition
+- Shows featured open markets
+- Links featured markets to market detail pages
+- Shows leaderboard preview
+- Data is loaded from PostgreSQL through Prisma
+
+`/sign-in`
+
+- Local credential sign-in page
+- Google sign-in button appears only when Google OAuth env vars are set
+
+`/competitions`
+
+- Lists seeded competitions from PostgreSQL
+- Shows competition location, status, description, dates, and market count
+- Shows each competition's markets
+- Links each listed market to its market detail page
+
+`/markets/[slug]`
+
+- Read-only market detail page
+- Shows market question, description, competition, status, category, close time, and resolution rules
+- Shows calculated YES/NO prices based on current outstanding seeded shares
+- Shows recent seeded purchase activity when available
+- Buying is not implemented yet
+
+`/portfolio`
+
+- Placeholder page
+- User holdings and history are not built yet
+
+`/leaderboard`
+
+- Placeholder page
+- Real leaderboard logic is not built yet
+
+## Not Built Yet
+
+### Competition Browsing
+
+- Competition detail pages
+- Competition status filtering
+
+### Market Detail Pages
+
+- Buy controls on individual market pages
+- Signed-in user position summary on market pages
+- Live refresh after purchases
+
+### Trading / Prediction Flow
+
+- Buy YES shares
+- Buy NO shares
+- Validate balances
+- Deduct CubeCoins
+- Create purchases
+- Update positions
+- Write ledger transactions
+- Prevent trades after close
+
+### Portfolio
+
+- Show open positions
+- Show resolved positions
+- Show purchase history
+- Show ledger history
+- Show account value
+
+### Market Resolution
+
+- Admin resolution flow
+- Resolve market as YES, NO, or canceled
+- Pay winning positions
+- Refund canceled markets
+- Record settlement and ledger entries
+
+### Leaderboard
+
+- Rank users by balance or account value
+- Add all-time and time-based views
+- Handle resolved markets consistently
+
+### Admin Tools
+
+- Create competitions
+- Create markets
+- Edit market details
+- Close markets
+- Resolve markets
+- Review users and balances
+
+### Testing And Hardening
+
+- Automated tests for balance changes
+- Automated tests for purchases
+- Automated tests for settlement payouts
+- Better form validation
+- Better error states
+- Loading states
+- Access-control checks for admin-only actions
+
+## Useful Commands
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Apply database migrations:
+
+```bash
+npm run prisma:migrate
+```
+
+Seed demo data:
+
+```bash
+npm run prisma:seed
+```
+
+Start local dev server:
+
+```bash
+npm run dev
+```
+
+Run typecheck:
+
+```bash
+npm run typecheck
+```
+
+Run lint:
+
+```bash
+npm run lint
+```
+
+Build production app:
+
+```bash
+npm run build
+```
+
+## Progress Notes
+
+When new functionality is added, update these sections:
+
+- `Built So Far` for completed features
+- `Current Pages` for visible user-facing pages
+- `Not Built Yet` for remaining work
+- `Useful Commands` if setup or testing commands change
