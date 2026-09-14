@@ -44,6 +44,9 @@ export default async function CompetitionsPage() {
                 <p>
                   {competition.location}, {competition.country}
                 </p>
+                <Link className="text-link" href={`/competitions/${competition.slug}`}>
+                  Open competition
+                </Link>
               </div>
               <div className="stat-pill">
                 <strong>{competition.markets.length}</strong>

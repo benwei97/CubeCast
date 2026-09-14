@@ -130,6 +130,14 @@ maya@cubecast.test / password123
 - Shows competition location, status, description, dates, and market count
 - Shows each competition's markets
 - Links each listed market to its market detail page
+- Links each competition to its detail page
+
+`/competitions/[slug]`
+
+- Competition detail page
+- Shows competition description, location, dates, status, market count, open markets, final markets, and total volume
+- Shows a compact market board with YES price, NO price, volume, and status
+- Links each market row to its market detail page
 
 `/markets/[slug]`
 
@@ -172,8 +180,9 @@ maya@cubecast.test / password123
 
 ### Competition Browsing
 
-- Competition detail pages
 - Competition status filtering
+- Market status/category filters on competition detail pages
+- Richer event metadata and external WCA links
 
 ### Market Detail Pages
 

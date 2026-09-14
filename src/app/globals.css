@@ -427,6 +427,40 @@ footer {
   gap: 12px;
 }
 
+.competition-hero {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr 340px;
+}
+
+.competition-summary {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  padding: 18px;
+}
+
+.competition-summary div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.competition-summary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.competition-summary strong {
+  font-size: 24px;
+}
+
 .market-list,
 .activity-list {
   display: grid;
@@ -442,6 +476,71 @@ footer {
   gap: 12px;
   grid-template-columns: 1fr auto auto;
   padding: 14px;
+}
+
+.market-board {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.market-board-header,
+.market-board-row {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(280px, 1.5fr) 90px 90px 90px 110px;
+  padding: 14px 16px;
+}
+
+.market-board-header {
+  background: #eef2f8;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.market-board-row {
+  border-top: 1px solid var(--line);
+}
+
+.market-board-row:hover {
+  background: #f8fafc;
+}
+
+.market-board-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.market-board-row div span,
+.market-board-row > span {
+  color: var(--muted);
+}
+
+.yes-text {
+  color: var(--yes);
+}
+
+.no-text {
+  color: var(--no);
+}
+
+.compact-list {
+  display: grid;
+  gap: 10px;
+}
+
+.compact-list a {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.compact-list a:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .market-detail-hero {
@@ -729,6 +828,8 @@ dd {
   .hero,
   .market-grid,
   .market-metrics,
+  .competition-hero,
+  .competition-summary,
   .market-detail-hero,
   .detail-grid,
   .position-row,
@@ -737,6 +838,8 @@ dd {
   .ledger-row,
   .leaderboard-header,
   .leaderboard-row,
+  .market-board-header,
+  .market-board-row,
   .admin-panel,
   .market-list-row,
   .activity-row {
