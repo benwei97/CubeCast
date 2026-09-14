@@ -269,6 +269,38 @@ footer {
   padding: 12px 0;
 }
 
+.leaderboard-table {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.leaderboard-header,
+.leaderboard-row {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 80px 1.4fr repeat(4, 1fr);
+  padding: 14px 16px;
+}
+
+.leaderboard-header {
+  background: #eef2f8;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.leaderboard-row {
+  border-top: 1px solid var(--line);
+}
+
+.leaderboard-row.is-current-user {
+  background: #f2f7ff;
+}
+
 .auth-page {
   display: grid;
   min-height: 70vh;
@@ -564,6 +596,8 @@ dd {
   .summary-grid,
   .portfolio-row,
   .ledger-row,
+  .leaderboard-header,
+  .leaderboard-row,
   .market-list-row,
   .activity-row {
     grid-template-columns: 1fr;

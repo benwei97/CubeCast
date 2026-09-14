@@ -1,6 +1,11 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
+import {
+  getAccountValue,
+  getOpenPositionValue,
+  getPositionDisplayValue
+} from "@/lib/account-value";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -55,15 +60,7 @@ export default async function PortfolioPage() {
   ]);
 
   const openPositions = positions.filter((position) => position.status === "OPEN");
-  const openPositionValue = openPositions.reduce((total, position) => {
-    const prices = getMarketPrices(position.market);
-
-    return (
-      total +
-      position.yesShares * prices.yesPrice +
-      position.noShares * prices.noPrice
-    );
-  }, 0);
+  const openPositionValue = getOpenPositionValue(positions);
   const totalSpent = positions.reduce(
     (total, position) => total + position.totalYesCost + position.totalNoCost,
     0
@@ -72,7 +69,10 @@ export default async function PortfolioPage() {
     (total, position) => total + position.payout,
     0
   );
-  const accountValue = session.user.balance + openPositionValue;
+  const accountValue = getAccountValue({
+    balance: session.user.balance,
+    positions
+  });
 
   return (
     <div className="page-stack">
@@ -118,11 +118,7 @@ export default async function PortfolioPage() {
             {positions.map((position) => {
               const market = position.market;
               const prices = getMarketPrices(market);
-              const currentValue =
-                position.status === "OPEN"
-                  ? position.yesShares * prices.yesPrice +
-                    position.noShares * prices.noPrice
-                  : position.payout;
+              const currentValue = getPositionDisplayValue(position);
               const totalCost = position.totalYesCost + position.totalNoCost;
 
               return (

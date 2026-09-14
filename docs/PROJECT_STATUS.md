@@ -48,6 +48,7 @@ The app reads this through `DATABASE_URL` in `.env`.
 - TypeScript configuration
 - ESLint setup
 - Shared market pricing helper for YES/NO display and purchase prices
+- Shared account value helper for portfolio and leaderboard calculations
 
 ### Database Foundation
 
@@ -154,8 +155,11 @@ maya@cubecast.test / password123
 
 `/leaderboard`
 
-- Placeholder page
-- Real leaderboard logic is not built yet
+- Global leaderboard page
+- Ranks users by estimated account value
+- Account value equals available CubeCoins plus open position value at current mock prices
+- Shows balance, open position value, total positions, and rank
+- Highlights the signed-in user's row and summary rank
 
 ## Not Built Yet
 
@@ -195,9 +199,9 @@ maya@cubecast.test / password123
 
 ### Leaderboard
 
-- Rank users by balance or account value
 - Add all-time and time-based views
 - Handle resolved markets consistently
+- Add richer filters such as balance-only, open-value, and resolved winnings
 
 ### Admin Tools
 
