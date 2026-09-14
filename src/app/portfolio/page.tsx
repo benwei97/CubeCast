@@ -32,10 +32,22 @@ export default async function PortfolioPage() {
     );
   }
 
-  const [positions, transactions] = await Promise.all([
+  const [positions, purchases, transactions] = await Promise.all([
     prisma.position.findMany({
       where: { userId: session.user.id },
       orderBy: { updatedAt: "desc" },
+      include: {
+        market: {
+          include: {
+            competition: true
+          }
+        }
+      }
+    }),
+    prisma.purchase.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 12,
       include: {
         market: {
           include: {
@@ -175,6 +187,50 @@ export default async function PortfolioPage() {
             You do not have any positions yet. Open a market to buy YES or NO
             shares.
           </p>
+        )}
+      </section>
+
+      <section>
+        <div className="section-heading">
+          <h2>Trade History</h2>
+        </div>
+        {purchases.length > 0 ? (
+          <div className="trade-history-list">
+            <div className="trade-history-header">
+              <span>Market</span>
+              <span>Side</span>
+              <span>Contracts</span>
+              <span>Avg price</span>
+              <span>Total cost</span>
+              <span>Date</span>
+            </div>
+            {purchases.map((purchase) => (
+              <article className="trade-history-row" key={purchase.id}>
+                <div>
+                  <Link
+                    className="text-link"
+                    href={`/markets/${purchase.market.slug}`}
+                  >
+                    {purchase.market.question}
+                  </Link>
+                  <span>{purchase.market.competition.name}</span>
+                </div>
+                <strong
+                  className={
+                    purchase.outcome === "YES" ? "yes-text" : "no-text"
+                  }
+                >
+                  {purchase.outcome}
+                </strong>
+                <span>{purchase.quantity.toLocaleString()}</span>
+                <span>{purchase.averagePrice.toLocaleString()}</span>
+                <span>{purchase.totalCost.toLocaleString()}</span>
+                <span>{purchase.createdAt.toLocaleDateString()}</span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No purchases yet.</p>
         )}
       </section>
 

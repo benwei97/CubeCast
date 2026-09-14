@@ -171,6 +171,7 @@ maya@cubecast.test / password123
 - Shows total CubeCoins spent across positions
 - Shows total profit/loss across positions
 - Lists YES/NO holdings, cost, estimated value or payout, profit/loss, and market status
+- Lists recent purchase history with market, side, contracts, average price, total cost, and date
 - Lists recent ledger transactions with balance-after values
 - Signed-out users see a sign-in prompt
 
@@ -211,7 +212,6 @@ maya@cubecast.test / password123
 
 ### Portfolio
 
-- More detailed purchase history
 - Better resolved/canceled position grouping
 - Account value charts over time
 

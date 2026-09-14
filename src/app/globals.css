@@ -832,9 +832,43 @@ footer {
 }
 
 .portfolio-list,
+.trade-history-list,
 .ledger-list {
   display: grid;
   gap: 10px;
+}
+
+.trade-history-list {
+  gap: 0;
+}
+
+.trade-history-header,
+.trade-history-row {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1.5fr) 90px repeat(4, minmax(90px, 1fr));
+  padding: 14px;
+}
+
+.trade-history-header {
+  background: #eef2f8;
+  border: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.trade-history-row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 0;
+}
+
+.trade-history-row:last-child {
+  border-radius: 0 0 8px 8px;
 }
 
 .portfolio-row {
@@ -849,12 +883,14 @@ footer {
 }
 
 .portfolio-row div,
+.trade-history-row div,
 .ledger-row div {
   display: grid;
   gap: 4px;
 }
 
 .portfolio-row span,
+.trade-history-row span,
 .ledger-row span {
   color: var(--muted);
   font-size: 14px;
@@ -951,6 +987,8 @@ dd {
   .position-row,
   .summary-grid,
   .portfolio-row,
+  .trade-history-header,
+  .trade-history-row,
   .ledger-row,
   .leaderboard-header,
   .leaderboard-row,
