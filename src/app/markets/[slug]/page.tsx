@@ -5,7 +5,8 @@ import { UserRole } from "@prisma/client";
 import { auth } from "@/auth";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
-import { buyShares, resolveMarket } from "./actions";
+import { OrderTicket } from "./order-ticket";
+import { resolveMarket } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,10 @@ export default async function MarketDetailPage({
     market.status !== "CANCELED";
   const tradeMessage = getTradeMessage(trade);
   const resolutionMessage = getResolutionMessage(resolution);
+  const yesSharePercent =
+    prices.totalShares === 0
+      ? 50
+      : Math.round((market.yesSharesOutstanding / prices.totalShares) * 100);
 
   return (
     <div className="page-stack">
@@ -72,6 +77,27 @@ export default async function MarketDetailPage({
           <p className="eyebrow">{market.competition.name}</p>
           <h1>{market.question}</h1>
           <p>{market.description}</p>
+          <div className="market-metrics">
+            <div>
+              <span>Yes price</span>
+              <strong>{prices.yesPrice}</strong>
+            </div>
+            <div>
+              <span>No price</span>
+              <strong>{prices.noPrice}</strong>
+            </div>
+            <div>
+              <span>Volume</span>
+              <strong>{prices.totalShares.toLocaleString()}</strong>
+            </div>
+            <div>
+              <span>Closes</span>
+              <strong>{market.closeTime.toLocaleDateString()}</strong>
+            </div>
+          </div>
+          <div className="probability-bar" aria-label="Share split">
+            <span style={{ width: `${yesSharePercent}%` }} />
+          </div>
         </div>
         <aside className="trade-panel">
           <span>Order ticket</span>
@@ -95,36 +121,12 @@ export default async function MarketDetailPage({
                 <strong>{session.user.balance.toLocaleString()} CubeCoins</strong>
               </p>
               {isOpen ? (
-                <div className="trade-actions">
-                  <form action={buyShares} className="trade-form">
-                    <input type="hidden" name="slug" value={market.slug} />
-                    <input type="hidden" name="outcome" value="YES" />
-                    <label htmlFor="yes-quantity">YES shares</label>
-                    <input
-                      id="yes-quantity"
-                      min="1"
-                      max="100"
-                      name="quantity"
-                      type="number"
-                      defaultValue="1"
-                    />
-                    <button type="submit">Buy YES</button>
-                  </form>
-                  <form action={buyShares} className="trade-form">
-                    <input type="hidden" name="slug" value={market.slug} />
-                    <input type="hidden" name="outcome" value="NO" />
-                    <label htmlFor="no-quantity">NO shares</label>
-                    <input
-                      id="no-quantity"
-                      min="1"
-                      max="100"
-                      name="quantity"
-                      type="number"
-                      defaultValue="1"
-                    />
-                    <button type="submit">Buy NO</button>
-                  </form>
-                </div>
+                <OrderTicket
+                  balance={session.user.balance}
+                  noPrice={prices.noPrice}
+                  slug={market.slug}
+                  yesPrice={prices.yesPrice}
+                />
               ) : (
                 <p>This market is closed for purchases.</p>
               )}

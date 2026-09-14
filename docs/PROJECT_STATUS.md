@@ -136,7 +136,10 @@ maya@cubecast.test / password123
 - Market detail page
 - Shows market question, description, competition, status, category, close time, and resolution rules
 - Shows calculated YES/NO prices based on current outstanding seeded shares
+- Shows market metrics, share split, and a Kalshi-style order ticket
 - Signed-in users can buy YES or NO shares with CubeCoins
+- Order ticket previews selected outcome, quantity, average price, total cost, max payout, max profit, and remaining balance
+- Order ticket blocks unaffordable client-side submissions while server-side validation remains authoritative
 - Purchase flow validates market status, close time, user balance, and quantity
 - Purchases update user balance, market outstanding shares, user position, recent activity, and ledger records
 - Shows the signed-in user's current position in the market
@@ -174,14 +177,13 @@ maya@cubecast.test / password123
 
 ### Market Detail Pages
 
-- Richer trade preview before confirm
+- Explicit trade confirmation step
 - Better post-purchase loading state
 - Live multi-user updates without manual refresh
 
 ### Trading / Prediction Flow
 
 - More realistic automated market maker pricing
-- Explicit trade confirmation step
 - Sell/exit behavior, if included in MVP scope
 - Prevent trades after close
 - More automated tests around purchase transactions

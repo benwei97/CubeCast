@@ -43,6 +43,11 @@ button,
   font: inherit;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .secondary-button {
   background: var(--surface);
   color: var(--ink);
@@ -258,6 +263,45 @@ footer {
   color: var(--no);
 }
 
+.market-metrics {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 24px;
+}
+
+.market-metrics div {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.market-metrics span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.market-metrics strong {
+  font-size: 20px;
+}
+
+.probability-bar {
+  background: #fff0ee;
+  border-radius: 999px;
+  height: 12px;
+  margin-top: 14px;
+  overflow: hidden;
+}
+
+.probability-bar span {
+  background: var(--yes);
+  display: block;
+  height: 100%;
+}
+
 .leader-list {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -432,21 +476,68 @@ footer {
   color: var(--muted);
 }
 
-.trade-actions {
+.trade-actions,
+.order-ticket {
   display: grid;
   gap: 12px;
 }
 
-.trade-form {
+.trade-form,
+.order-ticket {
   border: 1px solid var(--line);
   border-radius: 8px;
-  display: grid;
-  gap: 10px;
   padding: 12px;
 }
 
-.trade-form button {
+.trade-form button,
+.order-ticket button {
   width: 100%;
+}
+
+.outcome-toggle {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.outcome-toggle button {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.outcome-toggle button.is-selected {
+  color: white;
+}
+
+.outcome-toggle .yes-option.is-selected {
+  background: var(--yes);
+  border-color: var(--yes);
+}
+
+.outcome-toggle .no-option.is-selected {
+  background: var(--no);
+  border-color: var(--no);
+}
+
+.order-summary {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.order-summary div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.order-summary span {
+  color: var(--muted);
+}
+
+.danger-text {
+  color: var(--no);
 }
 
 .position-row {
@@ -637,6 +728,7 @@ dd {
 
   .hero,
   .market-grid,
+  .market-metrics,
   .market-detail-hero,
   .detail-grid,
   .position-row,
