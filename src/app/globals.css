@@ -422,6 +422,77 @@ footer {
   color: var(--muted);
 }
 
+.summary-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.summary-card span,
+.summary-card small {
+  color: var(--muted);
+}
+
+.summary-card strong {
+  font-size: 30px;
+}
+
+.portfolio-list,
+.ledger-list {
+  display: grid;
+  gap: 10px;
+}
+
+.portfolio-row {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(5, minmax(90px, 1fr));
+  padding: 14px;
+}
+
+.portfolio-row div,
+.ledger-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.portfolio-row span,
+.ledger-row span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.ledger-row {
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr auto;
+  padding-bottom: 12px;
+}
+
+.ledger-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ledger-row div:last-child {
+  text-align: right;
+}
+
 .detail-grid {
   display: grid;
   gap: 18px;
@@ -490,6 +561,9 @@ dd {
   .market-detail-hero,
   .detail-grid,
   .position-row,
+  .summary-grid,
+  .portfolio-row,
+  .ledger-row,
   .market-list-row,
   .activity-row {
     grid-template-columns: 1fr;
@@ -500,6 +574,7 @@ dd {
   }
 
   .stat-pill,
+  .ledger-row div:last-child,
   .activity-row div:last-child {
     text-align: left;
   }

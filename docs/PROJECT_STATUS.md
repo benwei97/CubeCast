@@ -143,8 +143,14 @@ maya@cubecast.test / password123
 
 `/portfolio`
 
-- Placeholder page
-- User holdings and history are not built yet
+- Signed-in portfolio page
+- Shows available CubeCoin balance
+- Shows estimated open position value
+- Shows total account value
+- Shows total CubeCoins spent across positions
+- Lists YES/NO holdings, cost, estimated value or payout, and market status
+- Lists recent ledger transactions with balance-after values
+- Signed-out users see a sign-in prompt
 
 `/leaderboard`
 
@@ -174,11 +180,10 @@ maya@cubecast.test / password123
 
 ### Portfolio
 
-- Show open positions
-- Show resolved positions
-- Show purchase history
-- Show ledger history
-- Show account value
+- More detailed purchase history
+- Profit/loss display per market
+- Better resolved/canceled position grouping
+- Account value charts over time
 
 ### Market Resolution
 
