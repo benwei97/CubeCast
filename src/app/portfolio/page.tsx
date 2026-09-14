@@ -69,6 +69,12 @@ export default async function PortfolioPage() {
     (total, position) => total + position.payout,
     0
   );
+  const totalProfitLoss = positions.reduce((total, position) => {
+    const currentValue = getPositionDisplayValue(position);
+    const totalCost = position.totalYesCost + position.totalNoCost;
+
+    return total + currentValue - totalCost;
+  }, 0);
   const accountValue = getAccountValue({
     balance: session.user.balance,
     positions
@@ -102,9 +108,11 @@ export default async function PortfolioPage() {
           <small>Balance plus open value</small>
         </article>
         <article className="summary-card">
-          <span>Total spent</span>
-          <strong>{totalSpent.toLocaleString()}</strong>
-          <small>Across all positions</small>
+          <span>Total P/L</span>
+          <strong className={getProfitLossClassName(totalProfitLoss)}>
+            {formatSignedNumber(totalProfitLoss)}
+          </strong>
+          <small>Current value minus cost</small>
         </article>
       </section>
 
@@ -120,6 +128,7 @@ export default async function PortfolioPage() {
               const prices = getMarketPrices(market);
               const currentValue = getPositionDisplayValue(position);
               const totalCost = position.totalYesCost + position.totalNoCost;
+              const profitLoss = currentValue - totalCost;
 
               return (
                 <article className="portfolio-row" key={position.id}>
@@ -144,6 +153,12 @@ export default async function PortfolioPage() {
                   <div>
                     <strong>{currentValue.toLocaleString()}</strong>
                     <span>{position.status === "OPEN" ? "Value" : "Payout"}</span>
+                  </div>
+                  <div>
+                    <strong className={getProfitLossClassName(profitLoss)}>
+                      {formatSignedNumber(profitLoss)}
+                    </strong>
+                    <span>P/L</span>
                   </div>
                   <div>
                     <strong>{position.status}</strong>
@@ -182,6 +197,10 @@ export default async function PortfolioPage() {
               <div>
                 <dt>Total payouts</dt>
                 <dd>{totalPayout.toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt>Total spent</dt>
+                <dd>{totalSpent.toLocaleString()}</dd>
               </div>
             </dl>
           </article>
@@ -231,4 +250,24 @@ function formatTransactionType(type: string) {
     .split("_")
     .map((part) => part[0].toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function formatSignedNumber(value: number) {
+  if (value > 0) {
+    return `+${value.toLocaleString()}`;
+  }
+
+  return value.toLocaleString();
+}
+
+function getProfitLossClassName(value: number) {
+  if (value > 0) {
+    return "profit-text";
+  }
+
+  if (value < 0) {
+    return "loss-text";
+  }
+
+  return undefined;
 }

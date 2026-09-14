@@ -393,6 +393,14 @@ footer {
   margin: 0;
 }
 
+.profit-text {
+  color: var(--yes);
+}
+
+.loss-text {
+  color: var(--no);
+}
+
 .competition-list {
   display: grid;
   gap: 18px;
@@ -836,7 +844,7 @@ footer {
   border-radius: 8px;
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(220px, 1.5fr) repeat(5, minmax(90px, 1fr));
+  grid-template-columns: minmax(220px, 1.5fr) repeat(6, minmax(82px, 1fr));
   padding: 14px;
 }
 

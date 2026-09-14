@@ -169,7 +169,8 @@ maya@cubecast.test / password123
 - Shows estimated open position value
 - Shows total account value
 - Shows total CubeCoins spent across positions
-- Lists YES/NO holdings, cost, estimated value or payout, and market status
+- Shows total profit/loss across positions
+- Lists YES/NO holdings, cost, estimated value or payout, profit/loss, and market status
 - Lists recent ledger transactions with balance-after values
 - Signed-out users see a sign-in prompt
 
@@ -211,7 +212,6 @@ maya@cubecast.test / password123
 ### Portfolio
 
 - More detailed purchase history
-- Profit/loss display per market
 - Better resolved/canceled position grouping
 - Account value charts over time
 
