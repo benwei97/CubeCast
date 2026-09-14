@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -37,6 +38,9 @@ export default async function RootLayout({
                 {item.label}
               </Link>
             ))}
+            {session?.user?.role === UserRole.ADMIN && (
+              <Link href="/admin">Admin</Link>
+            )}
           </nav>
           <div className="account">
             {session?.user ? (

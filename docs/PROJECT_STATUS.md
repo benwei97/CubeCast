@@ -176,6 +176,15 @@ maya@cubecast.test / password123
 - Shows balance, open position value, total positions, and rank
 - Highlights the signed-in user's row and summary rank
 
+`/admin`
+
+- Admin-only operations page
+- Admin nav link appears only for admin users
+- Admin users can create competitions
+- Admin users can create open markets under existing competitions
+- Admin users can review recent markets and open each market for buying or resolution
+- Signed-out and non-admin users see a sign-in prompt
+
 ## Not Built Yet
 
 ### Competition Browsing
@@ -218,12 +227,10 @@ maya@cubecast.test / password123
 
 ### Admin Tools
 
-- Create competitions
-- Create markets
 - Edit market details
 - Close markets
-- Resolve markets
 - Review users and balances
+- Better admin validation feedback without query-string redirects
 
 ### Testing And Hardening
 
