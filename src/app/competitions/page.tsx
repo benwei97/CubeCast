@@ -1,11 +1,17 @@
 import Link from "next/link";
+import { CompetitionStatus } from "@prisma/client";
 
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function CompetitionsPage() {
+export default async function CompetitionsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const { status } = await searchParams;
   const competitions = await prisma.competition.findMany({
     orderBy: [{ startDate: "asc" }, { name: "asc" }],
     include: {
@@ -23,6 +29,10 @@ export default async function CompetitionsPage() {
       }
     }
   });
+  const activeStatus = isCompetitionStatus(status) ? status : "ALL";
+  const filteredCompetitions = competitions.filter((competition) =>
+    activeStatus === "ALL" ? true : competition.status === activeStatus
+  );
 
   return (
     <div className="page-stack">
@@ -34,8 +44,32 @@ export default async function CompetitionsPage() {
         </p>
       </section>
 
+      <section>
+        <div className="section-heading">
+          <h2>All Competitions</h2>
+          <span>
+            {filteredCompetitions.length.toLocaleString()} of{" "}
+            {competitions.length.toLocaleString()}
+          </span>
+        </div>
+        <div className="filter-bar">
+          <div>
+            <span>Status</span>
+            {["ALL", ...Object.values(CompetitionStatus)].map((option) => (
+              <Link
+                className={activeStatus === option ? "is-active" : undefined}
+                href={getCompetitionStatusHref(option)}
+                key={option}
+              >
+                {formatFilterLabel(option)}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="competition-list">
-        {competitions.map((competition) => (
+        {filteredCompetitions.map((competition) => (
           <article className="competition-card" key={competition.id}>
             <div className="competition-card-header">
               <div>
@@ -79,7 +113,30 @@ export default async function CompetitionsPage() {
             </div>
           </article>
         ))}
+        {filteredCompetitions.length === 0 && (
+          <p className="empty-state">No competitions match this filter.</p>
+        )}
       </section>
     </div>
   );
+}
+
+function isCompetitionStatus(status?: string): status is CompetitionStatus {
+  return Object.values(CompetitionStatus).includes(status as CompetitionStatus);
+}
+
+function getCompetitionStatusHref(status: string) {
+  if (status === "ALL") {
+    return "/competitions";
+  }
+
+  return `/competitions?status=${status}`;
+}
+
+function formatFilterLabel(value: string) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(" ");
 }

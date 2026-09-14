@@ -127,6 +127,7 @@ maya@cubecast.test / password123
 `/competitions`
 
 - Lists seeded competitions from PostgreSQL
+- Supports competition filtering by status
 - Shows competition location, status, description, dates, and market count
 - Shows each competition's markets
 - Links each listed market to its market detail page
@@ -191,7 +192,6 @@ maya@cubecast.test / password123
 
 ### Competition Browsing
 
-- Competition status filtering
 - Richer event metadata and external WCA links
 
 ### Market Detail Pages
