@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 import { OrderTicket } from "./order-ticket";
@@ -167,19 +168,26 @@ export default async function MarketDetailPage({
                 <form action={resolveMarket}>
                   <input type="hidden" name="slug" value={market.slug} />
                   <input type="hidden" name="outcome" value="YES" />
-                  <button type="submit">Resolve YES</button>
+                  <PendingSubmitButton pendingLabel="Resolving...">
+                    Resolve YES
+                  </PendingSubmitButton>
                 </form>
                 <form action={resolveMarket}>
                   <input type="hidden" name="slug" value={market.slug} />
                   <input type="hidden" name="outcome" value="NO" />
-                  <button type="submit">Resolve NO</button>
+                  <PendingSubmitButton pendingLabel="Resolving...">
+                    Resolve NO
+                  </PendingSubmitButton>
                 </form>
                 <form action={resolveMarket}>
                   <input type="hidden" name="slug" value={market.slug} />
                   <input type="hidden" name="outcome" value="CANCELED" />
-                  <button className="secondary-button" type="submit">
+                  <PendingSubmitButton
+                    className="secondary-button"
+                    pendingLabel="Canceling..."
+                  >
                     Cancel and refund
-                  </button>
+                  </PendingSubmitButton>
                 </form>
               </div>
             ) : (

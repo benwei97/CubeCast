@@ -49,6 +49,7 @@ The app reads this through `DATABASE_URL` in `.env`.
 - ESLint setup
 - Shared market pricing helper for YES/NO display and purchase prices
 - Shared account value helper for portfolio and leaderboard calculations
+- Shared pending submit button for server-action forms
 
 ### Database Foundation
 
@@ -151,6 +152,7 @@ maya@cubecast.test / password123
 - Order ticket previews selected outcome, quantity, average price, total cost, max payout, max profit, and remaining balance
 - Order ticket requires a review step before confirming a purchase
 - Order ticket blocks unaffordable client-side submissions while server-side validation remains authoritative
+- Order ticket shows a pending state while purchases submit
 - Purchase flow validates market status, close time, user balance, and quantity
 - Purchases update user balance, market outstanding shares, user position, recent activity, and ledger records
 - Shows the signed-in user's current position in the market
@@ -186,6 +188,7 @@ maya@cubecast.test / password123
 - Admin users can create competitions
 - Admin users can create open markets under existing competitions
 - Admin users can review recent markets and open each market for buying or resolution
+- Admin creation and resolution forms show pending states while actions submit
 - Signed-out and non-admin users see a sign-in prompt
 
 ## Not Built Yet
@@ -196,7 +199,6 @@ maya@cubecast.test / password123
 
 ### Market Detail Pages
 
-- Better post-purchase loading state
 - Live multi-user updates without manual refresh
 
 ### Trading / Prediction Flow

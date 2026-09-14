@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MarketCategory, CompetitionStatus, UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 import { createCompetition, createMarket } from "./actions";
@@ -120,7 +121,9 @@ export default async function AdminPage({
             <label htmlFor="officialUrl">Official URL</label>
             <input id="officialUrl" name="officialUrl" type="url" />
 
-            <button type="submit">Create competition</button>
+            <PendingSubmitButton pendingLabel="Creating competition...">
+              Create competition
+            </PendingSubmitButton>
           </form>
         </article>
 
@@ -200,7 +203,9 @@ export default async function AdminPage({
               type="number"
             />
 
-            <button type="submit">Create market</button>
+            <PendingSubmitButton pendingLabel="Creating market...">
+              Create market
+            </PendingSubmitButton>
           </form>
         </article>
       </section>

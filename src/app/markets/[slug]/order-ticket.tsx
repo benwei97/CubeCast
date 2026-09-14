@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { buyShares } from "./actions";
 
 type Outcome = "YES" | "NO";
@@ -124,7 +125,9 @@ export function OrderTicket({
             >
               Edit
             </button>
-            <button type="submit">Confirm buy</button>
+            <PendingSubmitButton pendingLabel="Buying...">
+              Confirm buy
+            </PendingSubmitButton>
           </div>
         </div>
       ) : (
