@@ -72,6 +72,7 @@ export default async function PortfolioPage() {
   ]);
 
   const openPositions = positions.filter((position) => position.status === "OPEN");
+  const finalPositions = positions.filter((position) => position.status !== "OPEN");
   const openPositionValue = getOpenPositionValue(positions);
   const totalSpent = positions.reduce(
     (total, position) => total + position.totalYesCost + position.totalNoCost,
@@ -130,62 +131,36 @@ export default async function PortfolioPage() {
 
       <section>
         <div className="section-heading">
-          <h2>Positions</h2>
+          <h2>Open Positions</h2>
           <Link href="/competitions">Browse markets</Link>
         </div>
-        {positions.length > 0 ? (
+        {openPositions.length > 0 ? (
           <div className="portfolio-list">
-            {positions.map((position) => {
-              const market = position.market;
-              const prices = getMarketPrices(market);
-              const currentValue = getPositionDisplayValue(position);
-              const totalCost = position.totalYesCost + position.totalNoCost;
-              const profitLoss = currentValue - totalCost;
-
-              return (
-                <article className="portfolio-row" key={position.id}>
-                  <div>
-                    <Link className="text-link" href={`/markets/${market.slug}`}>
-                      {market.question}
-                    </Link>
-                    <span>{market.competition.name}</span>
-                  </div>
-                  <div>
-                    <strong>{position.yesShares.toLocaleString()}</strong>
-                    <span>YES</span>
-                  </div>
-                  <div>
-                    <strong>{position.noShares.toLocaleString()}</strong>
-                    <span>NO</span>
-                  </div>
-                  <div>
-                    <strong>{totalCost.toLocaleString()}</strong>
-                    <span>Cost</span>
-                  </div>
-                  <div>
-                    <strong>{currentValue.toLocaleString()}</strong>
-                    <span>{position.status === "OPEN" ? "Value" : "Payout"}</span>
-                  </div>
-                  <div>
-                    <strong className={getProfitLossClassName(profitLoss)}>
-                      {formatSignedNumber(profitLoss)}
-                    </strong>
-                    <span>P/L</span>
-                  </div>
-                  <div>
-                    <strong>{position.status}</strong>
-                    <span>
-                      YES {prices.yesPrice} / NO {prices.noPrice}
-                    </span>
-                  </div>
-                </article>
-              );
-            })}
+            {openPositions.map((position) => (
+              <PositionRow key={position.id} position={position} />
+            ))}
           </div>
         ) : (
           <p className="empty-state">
-            You do not have any positions yet. Open a market to buy YES or NO
+            You do not have any open positions. Open a market to buy YES or NO
             shares.
+          </p>
+        )}
+      </section>
+
+      <section>
+        <div className="section-heading">
+          <h2>Final Positions</h2>
+        </div>
+        {finalPositions.length > 0 ? (
+          <div className="portfolio-list">
+            {finalPositions.map((position) => (
+              <PositionRow key={position.id} position={position} />
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">
+            Resolved, lost, won, and refunded positions will appear here.
           </p>
         )}
       </section>
@@ -297,6 +272,67 @@ export default async function PortfolioPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+type PortfolioPosition = Awaited<
+  ReturnType<typeof prisma.position.findMany>
+>[number] & {
+  market: {
+    competition: {
+      name: string;
+    };
+    noSharesOutstanding: number;
+    question: string;
+    slug: string;
+    yesSharesOutstanding: number;
+  };
+};
+
+function PositionRow({ position }: { position: PortfolioPosition }) {
+  const market = position.market;
+  const prices = getMarketPrices(market);
+  const currentValue = getPositionDisplayValue(position);
+  const totalCost = position.totalYesCost + position.totalNoCost;
+  const profitLoss = currentValue - totalCost;
+
+  return (
+    <article className="portfolio-row">
+      <div>
+        <Link className="text-link" href={`/markets/${market.slug}`}>
+          {market.question}
+        </Link>
+        <span>{market.competition.name}</span>
+      </div>
+      <div>
+        <strong>{position.yesShares.toLocaleString()}</strong>
+        <span>YES</span>
+      </div>
+      <div>
+        <strong>{position.noShares.toLocaleString()}</strong>
+        <span>NO</span>
+      </div>
+      <div>
+        <strong>{totalCost.toLocaleString()}</strong>
+        <span>Cost</span>
+      </div>
+      <div>
+        <strong>{currentValue.toLocaleString()}</strong>
+        <span>{position.status === "OPEN" ? "Value" : "Payout"}</span>
+      </div>
+      <div>
+        <strong className={getProfitLossClassName(profitLoss)}>
+          {formatSignedNumber(profitLoss)}
+        </strong>
+        <span>P/L</span>
+      </div>
+      <div>
+        <strong>{position.status}</strong>
+        <span>
+          YES {prices.yesPrice} / NO {prices.noPrice}
+        </span>
+      </div>
+    </article>
   );
 }
 
