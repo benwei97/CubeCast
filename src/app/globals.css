@@ -651,6 +651,36 @@ footer {
   color: var(--no);
 }
 
+.review-box {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.review-box div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.review-box span,
+.review-box p {
+  color: var(--muted);
+}
+
+.review-box p {
+  line-height: 1.45;
+  margin: 0;
+}
+
+.review-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 0.8fr 1.2fr;
+}
+
 .position-row {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -879,6 +909,7 @@ dd {
   .ledger-row,
   .leaderboard-header,
   .leaderboard-row,
+  .review-actions,
   .market-board-header,
   .market-board-row,
   .admin-panel,

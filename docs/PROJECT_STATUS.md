@@ -147,6 +147,7 @@ maya@cubecast.test / password123
 - Shows market metrics, share split, and a Kalshi-style order ticket
 - Signed-in users can buy YES or NO shares with CubeCoins
 - Order ticket previews selected outcome, quantity, average price, total cost, max payout, max profit, and remaining balance
+- Order ticket requires a review step before confirming a purchase
 - Order ticket blocks unaffordable client-side submissions while server-side validation remains authoritative
 - Purchase flow validates market status, close time, user balance, and quantity
 - Purchases update user balance, market outstanding shares, user position, recent activity, and ledger records
@@ -195,7 +196,6 @@ maya@cubecast.test / password123
 
 ### Market Detail Pages
 
-- Explicit trade confirmation step
 - Better post-purchase loading state
 - Live multi-user updates without manual refresh
 

@@ -19,12 +19,19 @@ export function OrderTicket({
 }) {
   const [outcome, setOutcome] = useState<Outcome>("YES");
   const [quantity, setQuantity] = useState(1);
+  const [isReviewing, setIsReviewing] = useState(false);
   const price = outcome === "YES" ? yesPrice : noPrice;
   const totalCost = useMemo(() => price * quantity, [price, quantity]);
   const maxPayout = quantity * 100;
   const maxProfit = maxPayout - totalCost;
   const remainingBalance = balance - totalCost;
   const canAfford = remainingBalance >= 0;
+  const isValidQuantity = quantity >= 1 && quantity <= 100;
+
+  function chooseOutcome(nextOutcome: Outcome) {
+    setOutcome(nextOutcome);
+    setIsReviewing(false);
+  }
 
   return (
     <form action={buyShares} className="order-ticket">
@@ -35,7 +42,7 @@ export function OrderTicket({
         <button
           aria-pressed={outcome === "YES"}
           className={outcome === "YES" ? "is-selected yes-option" : "yes-option"}
-          onClick={() => setOutcome("YES")}
+          onClick={() => chooseOutcome("YES")}
           type="button"
         >
           Yes {yesPrice}
@@ -43,7 +50,7 @@ export function OrderTicket({
         <button
           aria-pressed={outcome === "NO"}
           className={outcome === "NO" ? "is-selected no-option" : "no-option"}
-          onClick={() => setOutcome("NO")}
+          onClick={() => chooseOutcome("NO")}
           type="button"
         >
           No {noPrice}
@@ -59,6 +66,7 @@ export function OrderTicket({
         onChange={(event) => {
           const nextQuantity = Number(event.target.value);
           setQuantity(Number.isFinite(nextQuantity) ? nextQuantity : 1);
+          setIsReviewing(false);
         }}
         type="number"
         value={quantity}
@@ -92,9 +100,42 @@ export function OrderTicket({
       {!canAfford && (
         <p className="form-error">You do not have enough CubeCoins.</p>
       )}
-      <button disabled={!canAfford || quantity < 1 || quantity > 100} type="submit">
-        Buy {outcome}
-      </button>
+      {!isValidQuantity && (
+        <p className="form-error">Enter between 1 and 100 contracts.</p>
+      )}
+
+      {isReviewing ? (
+        <div className="review-box">
+          <div>
+            <span>Reviewing</span>
+            <strong>
+              Buy {quantity.toLocaleString()} {outcome} at {price}
+            </strong>
+          </div>
+          <p>
+            This will spend {totalCost.toLocaleString()} CubeCoins. If {outcome}{" "}
+            wins, max payout is {maxPayout.toLocaleString()} CubeCoins.
+          </p>
+          <div className="review-actions">
+            <button
+              className="secondary-button"
+              onClick={() => setIsReviewing(false)}
+              type="button"
+            >
+              Edit
+            </button>
+            <button type="submit">Confirm buy</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          disabled={!canAfford || !isValidQuantity}
+          onClick={() => setIsReviewing(true)}
+          type="button"
+        >
+          Review order
+        </button>
+      )}
     </form>
   );
 }
