@@ -181,7 +181,8 @@ maya@cubecast.test / password123
 - Global leaderboard page
 - Ranks users by estimated account value
 - Account value equals available CubeCoins plus open position value at current mock prices
-- Shows balance, open position value, total positions, and rank
+- Supports ranking by account value, balance, open value, and resolved payouts
+- Shows balance, open position value, resolved payouts, total positions, and rank
 - Highlights the signed-in user's row and summary rank
 
 `/admin`
@@ -225,7 +226,6 @@ maya@cubecast.test / password123
 
 - Add all-time and time-based views
 - Handle resolved markets consistently
-- Add richer filters such as balance-only, open-value, and resolved winnings
 
 ### Admin Tools
 

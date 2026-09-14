@@ -342,7 +342,7 @@ footer {
   align-items: center;
   display: grid;
   gap: 12px;
-  grid-template-columns: 80px 1.4fr repeat(4, 1fr);
+  grid-template-columns: 80px 1.3fr repeat(5, minmax(90px, 1fr));
   padding: 14px 16px;
 }
 
