@@ -17,12 +17,13 @@ export default async function PicksPage() {
   }
 
   const activeSlate = await prisma.contestSlate.findFirst({
-    where: { status: "OPEN" },
+    where: { status: { in: ["OPEN", "LOCKED", "SETTLING", "FINALIZED"] } },
     orderBy: { lockAt: "asc" },
     include: {
       entries: {
         where: { userId: session.user.id },
         include: {
+          leaderboardEntry: true,
           predictions: {
             include: {
               market: {
@@ -54,7 +55,14 @@ export default async function PicksPage() {
 
   const entry = activeSlate.entries[0] ?? null;
   const predictions = entry?.predictions ?? [];
-  const isLocked = new Date() >= activeSlate.lockAt;
+  const isLocked = new Date() >= activeSlate.lockAt || activeSlate.status !== "OPEN";
+  const runningScore =
+    entry?.finalScore ??
+    activeSlate.baseScore +
+      predictions.reduce(
+        (total, prediction) => total + (prediction.scoreChange ?? 0),
+        0
+      );
   const pickCounterLabel = getPickCounterLabel({
     locked: isLocked,
     pickCount: predictions.length,
@@ -75,6 +83,12 @@ export default async function PicksPage() {
           <span>{activeSlate.title}</span>
           <strong>{pickCounterLabel}</strong>
           <p>Locks {formatDateTime(activeSlate.lockAt)}</p>
+          <p>
+            Score {runningScore.toLocaleString()}
+            {entry?.leaderboardEntry
+              ? ` · Rank #${entry.leaderboardEntry.rank}`
+              : ""}
+          </p>
           <Link className="button-link secondary-button" href="/">
             Back to markets
           </Link>

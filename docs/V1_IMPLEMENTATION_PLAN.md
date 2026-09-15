@@ -162,16 +162,18 @@ Status: complete.
 
 ### Phase 4: Settlement And Leaderboard
 
-Status: next.
+Status: complete.
 
-- Add settlement actions and snapshots.
-- Implement void logic.
-- Implement H2H tie scoring.
-- Calculate entry scores.
-- Build slate leaderboard with deterministic tiebreakers.
-- Finalize contest only when all markets are resolved or void.
+- Added manual/admin-assisted settlement actions and snapshots.
+- Implemented void logic.
+- Implemented H2H exact-tie scoring.
+- Added entry score calculation from settled predictions.
+- Built slate leaderboard with deterministic tiebreakers.
+- Finalizes contest when all markets are resolved, void, or canceled.
 
 ### Phase 5: Admin Slate Tools
+
+Status: next.
 
 - Create/edit slates.
 - Attach WCA competitions to slates.

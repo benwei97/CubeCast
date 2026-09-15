@@ -13,6 +13,11 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify, withTimestampSuffix } from "@/lib/slug";
+import {
+  resolveV1Market,
+  tieV1Market,
+  voidV1Market
+} from "@/lib/v1-settlement";
 
 const createCompetitionSchema = z.object({
   name: z.string().min(3).max(120),
@@ -34,6 +39,19 @@ const createMarketSchema = z.object({
   resolutionRules: z.string().min(10).max(1200),
   resolutionSource: z.string().min(3).max(200),
   liquidityParameter: z.coerce.number().int().min(100).max(100000)
+});
+
+const settleV1MarketSchema = z.object({
+  marketId: z.string().min(1),
+  sourceNote: z.string().max(1200).optional(),
+  sourceUrl: z.string().url().optional().or(z.literal("")),
+  winningMarketOptionId: z.string().min(1)
+});
+
+const exceptionalV1SettlementSchema = z.object({
+  marketId: z.string().min(1),
+  reason: z.string().min(3).max(1200),
+  sourceUrl: z.string().url().optional().or(z.literal(""))
 });
 
 async function requireAdmin() {
@@ -135,4 +153,82 @@ export async function createMarket(formData: FormData) {
   revalidatePath("/competitions");
   revalidatePath(`/competitions/${competition.slug}`);
   redirect(`/markets/${slug}`);
+}
+
+export async function settleV1Market(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = settleV1MarketSchema.safeParse({
+    marketId: formData.get("marketId"),
+    sourceNote: formData.get("sourceNote") || undefined,
+    sourceUrl: formData.get("sourceUrl") || undefined,
+    winningMarketOptionId: formData.get("winningMarketOptionId")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Settlement=invalid");
+  }
+
+  await resolveV1Market({
+    adminUserId: admin.id,
+    marketId: parsed.data.marketId,
+    sourceNote: parsed.data.sourceNote,
+    sourceUrl: parsed.data.sourceUrl || undefined,
+    winningMarketOptionId: parsed.data.winningMarketOptionId
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Settlement=resolved");
+}
+
+export async function settleV1MarketAsTie(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = exceptionalV1SettlementSchema.safeParse({
+    marketId: formData.get("marketId"),
+    reason: formData.get("reason"),
+    sourceUrl: formData.get("sourceUrl") || undefined
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Settlement=invalid");
+  }
+
+  await tieV1Market({
+    adminUserId: admin.id,
+    marketId: parsed.data.marketId,
+    sourceNote: parsed.data.reason,
+    sourceUrl: parsed.data.sourceUrl || undefined
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Settlement=tie");
+}
+
+export async function voidV1MarketAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = exceptionalV1SettlementSchema.safeParse({
+    marketId: formData.get("marketId"),
+    reason: formData.get("reason"),
+    sourceUrl: formData.get("sourceUrl") || undefined
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Settlement=invalid");
+  }
+
+  await voidV1Market({
+    adminUserId: admin.id,
+    marketId: parsed.data.marketId,
+    reason: parsed.data.reason,
+    sourceUrl: parsed.data.sourceUrl || undefined
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Settlement=void");
+}
+
+function revalidateV1Paths() {
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/leaderboard");
+  revalidatePath("/picks");
 }

@@ -423,6 +423,13 @@ footer {
   font-weight: 800;
 }
 
+.pick-option-button em {
+  color: var(--warning);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .pick-option-button.yes-pick {
   background: #e6f6ef;
   border-color: color-mix(in srgb, var(--yes) 18%, var(--line));
@@ -902,6 +909,11 @@ footer {
   background: #f2f7ff;
 }
 
+.v1-leaderboard-header,
+.v1-leaderboard-row {
+  grid-template-columns: 80px 1.5fr repeat(4, minmax(110px, 1fr));
+}
+
 .auth-page {
   display: grid;
   min-height: 70vh;
@@ -1300,6 +1312,37 @@ footer {
   padding: 20px;
 }
 
+.v1-settlement-list {
+  display: grid;
+  gap: 12px;
+}
+
+.v1-settlement-row {
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(260px, 1fr) minmax(240px, 0.8fr) auto;
+  padding: 16px;
+}
+
+.v1-settlement-main {
+  display: grid;
+  gap: 5px;
+}
+
+.v1-settlement-main span,
+.v1-settlement-main small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.v1-settlement-main strong {
+  line-height: 1.35;
+}
+
 .admin-panel h3 {
   margin: 8px 0;
 }
@@ -1322,6 +1365,10 @@ footer {
   display: grid;
   gap: 12px;
   justify-items: end;
+}
+
+.v1-settlement-row .resolution-choice-form {
+  justify-items: stretch;
 }
 
 .checkbox-row {
@@ -1554,10 +1601,13 @@ dd {
   .ledger-row,
   .leaderboard-header,
   .leaderboard-row,
+  .v1-leaderboard-header,
+  .v1-leaderboard-row,
   .review-actions,
   .market-board-header,
   .market-board-row,
   .admin-panel,
+  .v1-settlement-row,
   .form-grid,
   .market-list-row,
   .activity-row,

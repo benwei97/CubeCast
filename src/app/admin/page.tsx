@@ -11,14 +11,24 @@ import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { formatMarketCents } from "@/lib/market-format";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
-import { createCompetition, createMarket } from "./actions";
+import {
+  createCompetition,
+  createMarket,
+  settleV1Market,
+  settleV1MarketAsTie,
+  voidV1MarketAction
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ competition?: string; market?: string }>;
+  searchParams: Promise<{
+    competition?: string;
+    market?: string;
+    v1Settlement?: string;
+  }>;
 }) {
   const session = await auth();
   const params = await searchParams;
@@ -38,7 +48,8 @@ export default async function AdminPage({
     );
   }
 
-  const [competitions, marketsNeedingResolution, markets] = await Promise.all([
+  const [competitions, marketsNeedingResolution, markets, activeSlate] =
+    await Promise.all([
     prisma.competition.findMany({
       orderBy: [{ startDate: "asc" }, { name: "asc" }],
       select: {
@@ -79,19 +90,44 @@ export default async function AdminPage({
         }
       }
     }),
-    prisma.market.findMany({
-      orderBy: [{ status: "asc" }, { closeTime: "asc" }],
-      take: 12,
-      include: {
-        competition: {
-          select: {
-            name: true,
-            slug: true
+      prisma.market.findMany({
+        orderBy: [{ status: "asc" }, { closeTime: "asc" }],
+        take: 12,
+        include: {
+          competition: {
+            select: {
+              name: true,
+              slug: true
+            }
           }
         }
-      }
-    })
-  ]);
+      }),
+      prisma.contestSlate.findFirst({
+        where: {
+          status: { in: ["OPEN", "LOCKED", "SETTLING"] }
+        },
+        orderBy: { lockAt: "asc" },
+        include: {
+          markets: {
+            where: {
+              status: { in: ["OPEN", "LOCKED", "PENDING_RESULT"] }
+            },
+            include: {
+              competition: {
+                select: { name: true }
+              },
+              options: {
+                orderBy: { displayOrder: "asc" }
+              },
+              _count: {
+                select: { predictions: true }
+              }
+            },
+            orderBy: [{ competition: { startDate: "asc" } }, { createdAt: "asc" }]
+          }
+        }
+      })
+    ]);
 
   return (
     <div className="page-stack">
@@ -99,9 +135,103 @@ export default async function AdminPage({
         <p className="eyebrow">Admin console</p>
         <h1>Market Operations</h1>
         <p>
-          Create competitions and markets for the virtual CubeCoin prediction
-          marketplace.
+          Manage V1 slate settlement while legacy market tools remain available
+          during the migration.
         </p>
+      </section>
+
+      <section>
+        <div className="section-heading">
+          <h2>V1 Settlement Queue</h2>
+          <span>
+            {activeSlate
+              ? `${activeSlate.markets.length.toLocaleString()} open markets`
+              : "No active slate"}
+          </span>
+        </div>
+        {params.v1Settlement === "invalid" && (
+          <p className="form-error">Check the V1 settlement fields.</p>
+        )}
+        {activeSlate && activeSlate.markets.length > 0 ? (
+          <div className="v1-settlement-list">
+            {activeSlate.markets.map((market) => (
+              <article className="v1-settlement-row" key={market.id}>
+                <div className="v1-settlement-main">
+                  <span>
+                    {market.competition.name} · {market.eventName ?? market.eventId}
+                  </span>
+                  <strong>{market.question}</strong>
+                  <small>
+                    {market.category} · {market._count.predictions} picks ·{" "}
+                    {market.status}
+                  </small>
+                </div>
+
+                <form action={settleV1Market} className="resolution-choice-form">
+                  <input name="marketId" type="hidden" value={market.id} />
+                  <select
+                    aria-label={`Winning outcome for ${market.question}`}
+                    name="winningMarketOptionId"
+                    required
+                  >
+                    {market.options.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label} ({option.probability}%)
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    aria-label="Source URL"
+                    name="sourceUrl"
+                    placeholder="WCA result URL"
+                    type="url"
+                  />
+                  <input
+                    aria-label="Settlement note"
+                    name="sourceNote"
+                    placeholder="Result note"
+                  />
+                  <PendingSubmitButton pendingLabel="Resolving...">
+                    Resolve
+                  </PendingSubmitButton>
+                </form>
+
+                <div className="resolution-actions">
+                  <form action={settleV1MarketAsTie}>
+                    <input name="marketId" type="hidden" value={market.id} />
+                    <input
+                      name="reason"
+                      type="hidden"
+                      value="Exact official tie."
+                    />
+                    <PendingSubmitButton
+                      className="secondary-button"
+                      pendingLabel="Settling..."
+                    >
+                      Exact tie
+                    </PendingSubmitButton>
+                  </form>
+                  <form action={voidV1MarketAction}>
+                    <input name="marketId" type="hidden" value={market.id} />
+                    <input
+                      name="reason"
+                      type="hidden"
+                      value="Competitor did not participate or market cannot be settled from official result."
+                    />
+                    <PendingSubmitButton
+                      className="secondary-button"
+                      pendingLabel="Voiding..."
+                    >
+                      Void
+                    </PendingSubmitButton>
+                  </form>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No V1 markets currently need settlement.</p>
+        )}
       </section>
 
       <section>

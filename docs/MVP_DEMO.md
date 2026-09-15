@@ -36,8 +36,12 @@ maya@cubecast.test / password123
 - Click a market outcome to open the pick review modal.
 - Sign in and add, change, or remove picks before lock.
 - Open `/picks` to review selected markets, probabilities, and score swing.
+- As admin, open `/admin` and use the V1 Settlement Queue to resolve, void, or mark an exact tie.
+- Open `/leaderboard` to see valid 10-pick entries ranked by slate score.
 
 The server enforces sign-in, slate status, lock time, market membership, option membership, and the max-10-picks rule.
+
+Settlement now stores snapshot evidence and admin audit records. The current MVP settlement path is manual/admin-assisted; direct WCA result ingestion is still planned.
 
 ## Legacy Flow Still Available Temporarily
 
@@ -62,10 +66,10 @@ The V1 demo is successful when:
 4. The UI displays `X / 10 Picks`.
 5. The user selects exactly 10 predictions before lock.
 6. The user reviews My Picks with probability and score swing.
-7. The entry locks server-side. Not implemented yet.
-8. Admin settles or voids markets with evidence snapshots. Not implemented yet.
-9. The leaderboard ranks only valid 10-pick entries. Not implemented yet.
-10. The finalized slate score starts from 1,000 and applies deterministic scoring. Not implemented yet.
+7. The entry locks server-side. Partially implemented through lock/edit enforcement; automatic lock transition is still planned.
+8. Admin settles or voids markets with evidence snapshots.
+9. The leaderboard ranks only valid 10-pick entries.
+10. The finalized slate score starts from 1,000 and applies deterministic scoring.
 
 ## Test Commands
 

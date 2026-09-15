@@ -12,7 +12,7 @@ export default async function HomePage() {
   const now = new Date();
 
   const activeSlate = await prisma.contestSlate.findFirst({
-    where: { status: "OPEN" },
+    where: { status: { in: ["OPEN", "LOCKED", "SETTLING", "FINALIZED"] } },
     orderBy: { lockAt: "asc" },
     include: {
       competitions: {
@@ -30,7 +30,7 @@ export default async function HomePage() {
         }
       },
       markets: {
-        where: { status: "OPEN" },
+        where: { status: { not: "CANCELED" } },
         include: {
           competition: true,
           options: {
@@ -61,7 +61,7 @@ export default async function HomePage() {
   const entry = activeSlate.entries[0] ?? null;
   const predictions = entry?.predictions ?? [];
   const pickCount = predictions.length;
-  const isLocked = now >= activeSlate.lockAt;
+  const isLocked = now >= activeSlate.lockAt || activeSlate.status !== "OPEN";
   const pickCounterLabel = getPickCounterLabel({
     locked: isLocked,
     pickCount,
@@ -81,7 +81,8 @@ export default async function HomePage() {
       sideKey: option.sideKey
     })),
     question: market.question,
-    slug: market.slug
+    slug: market.slug,
+    status: market.status
   }));
 
   const selectedPicks = predictions.map((prediction) => ({

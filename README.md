@@ -27,6 +27,8 @@ Phase 2 core game rules are complete: scoring, exactly-10 entry validation, lock
 
 Phase 3 player UI is complete: the home page now opens on the active V1 slate feed, displays `X / 10 Picks`, lets signed-in users select/change/remove picks through server actions, and exposes `/picks` for reviewing the current entry.
 
+Phase 4 settlement and leaderboard is complete for the manual MVP path: admins can resolve, void, or tie V1 markets, settlement snapshots and audit records are stored, valid 10-pick entries are scored from 1,000 points, and `/leaderboard` ranks slate entries.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

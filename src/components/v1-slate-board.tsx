@@ -25,6 +25,7 @@ type SlateMarket = {
   options: SlateMarketOption[];
   question: string;
   slug: string;
+  status: string;
 };
 
 type SelectedPick = {
@@ -100,6 +101,7 @@ export function V1SlateBoard({
                 const isSelected = selectedPick?.marketOptionId === option.id;
                 const isDisabled =
                   isLocked ||
+                  market.status !== "OPEN" ||
                   (!isSelected && pickCount >= pickLimit && !selectedPick);
 
                 return (
@@ -115,6 +117,7 @@ export function V1SlateBoard({
                     <span>{option.label}</span>
                     <strong>{option.probability}%</strong>
                     <small>{formatScoreSwing(option.probability)}</small>
+                    {market.status !== "OPEN" && <em>{market.status}</em>}
                   </button>
                 );
               })}

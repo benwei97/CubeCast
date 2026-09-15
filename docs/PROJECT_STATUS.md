@@ -161,17 +161,34 @@ Completed:
 
 ### Phase 4: Settlement And Leaderboard
 
+Status: complete.
+
+Completed:
+
+- Added manual/admin-assisted V1 market settlement.
+- Added immutable settlement snapshots for resolved, voided, and exact-tie outcomes.
+- Added admin audit records for settlement and void actions.
+- Added prediction result updates for correct, incorrect, void, and tie outcomes.
+- Added score calculation from each entry's 1,000-point baseline.
+- Added V1 leaderboard generation for valid 10-pick entries.
+- Added deterministic leaderboard ranks with shared-rank support.
+- Added slate finalization when every market is resolved, void, or canceled.
+- Updated player pages so settling/finalized slates remain visible and non-editable markets show their terminal state.
+- Replaced the legacy leaderboard route with the V1 slate leaderboard.
+
+### Phase 5: Admin Slate Tools
+
 Status: next.
 
 Next tasks:
 
-- Add settlement actions and immutable settlement snapshots.
-- Add void support in the player-facing result state.
-- Calculate entry scores from settled predictions.
-- Build V1 slate leaderboard from valid 10-pick entries.
-- Finalize contests only after all markets are resolved or void.
+- Create/edit slates from the admin UI.
+- Attach WCA competitions to slates from the admin UI.
+- Create/publish V1 markets and outcomes with immutable probabilities.
+- Configure diversity limits.
+- Improve settlement inspection and exception handling UI.
 
-### Phase 5+: Admin, WCA, Prize Shell
+### Phase 6+: WCA, Prize Shell, Legacy Removal
 
 Status: planned in `docs/V1_IMPLEMENTATION_PLAN.md`.
 
