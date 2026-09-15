@@ -313,6 +313,12 @@ async function main() {
       slug: "worlds-preview-slate",
       description:
         "Demo V1 slate with fixed-probability WCA prediction markets.",
+      diversityConfig: {
+        maxPerCompetition: 16,
+        maxPerCompetitor: 6,
+        maxPerEvent: 12,
+        maxPerMarketType: 8
+      },
       status: "OPEN",
       startsAt: worlds.startDate,
       endsAt: nationals.endDate,

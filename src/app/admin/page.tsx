@@ -12,10 +12,15 @@ import { formatMarketCents } from "@/lib/market-format";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 import {
+  attachCompetitionToSlate,
   createCompetition,
   createMarket,
+  createV1Slate,
+  createV1SlateMarket,
+  publishV1Market,
   settleV1Market,
   settleV1MarketAsTie,
+  updateSlateDiversityConfig,
   voidV1MarketAction
 } from "./actions";
 
@@ -27,7 +32,9 @@ export default async function AdminPage({
   searchParams: Promise<{
     competition?: string;
     market?: string;
+    v1Market?: string;
     v1Settlement?: string;
+    v1Slate?: string;
   }>;
 }) {
   const session = await auth();
@@ -48,7 +55,14 @@ export default async function AdminPage({
     );
   }
 
-  const [competitions, marketsNeedingResolution, markets, activeSlate] =
+  const [
+    competitions,
+    marketsNeedingResolution,
+    markets,
+    activeSlate,
+    manageableSlate,
+    slates
+  ] =
     await Promise.all([
     prisma.competition.findMany({
       orderBy: [{ startDate: "asc" }, { name: "asc" }],
@@ -126,8 +140,52 @@ export default async function AdminPage({
             orderBy: [{ competition: { startDate: "asc" } }, { createdAt: "asc" }]
           }
         }
+      }),
+      prisma.contestSlate.findFirst({
+        where: {
+          status: { in: ["DRAFT", "OPEN"] }
+        },
+        orderBy: [{ status: "asc" }, { lockAt: "asc" }],
+        include: {
+          competitions: {
+            include: {
+              competition: true
+            },
+            orderBy: { createdAt: "asc" }
+          },
+          markets: {
+            include: {
+              competition: {
+                select: { name: true }
+              },
+              options: {
+                orderBy: { displayOrder: "asc" }
+              }
+            },
+            orderBy: [{ status: "asc" }, { createdAt: "desc" }]
+          }
+        }
+      }),
+      prisma.contestSlate.findMany({
+        orderBy: [{ lockAt: "desc" }],
+        take: 8,
+        include: {
+          _count: {
+            select: {
+              competitions: true,
+              markets: true
+            }
+          }
+        }
       })
     ]);
+  const attachedCompetitionIds = new Set(
+    manageableSlate?.competitions.map((item) => item.competitionId) ?? []
+  );
+  const availableCompetitions = competitions.filter(
+    (competition) => !attachedCompetitionIds.has(competition.id)
+  );
+  const diversityConfig = getDiversityConfig(manageableSlate?.diversityConfig);
 
   return (
     <div className="page-stack">
@@ -139,6 +197,291 @@ export default async function AdminPage({
           during the migration.
         </p>
       </section>
+
+      <section className="admin-form-panel">
+        <div className="section-heading">
+          <h2>V1 Slate Management</h2>
+          <span>{slates.length.toLocaleString()} recent slates</span>
+        </div>
+        {params.v1Slate?.startsWith("invalid") && (
+          <p className="form-error">Check the slate management fields.</p>
+        )}
+        <div className="admin-slate-grid">
+          <form action={createV1Slate} className="admin-form">
+            <h3>Create Slate</h3>
+            <label htmlFor="v1-slate-title">Title</label>
+            <input
+              id="v1-slate-title"
+              name="title"
+              placeholder="Spring Championship Slate"
+              required
+            />
+            <label htmlFor="v1-slate-description">Description</label>
+            <textarea
+              id="v1-slate-description"
+              name="description"
+              placeholder="Curated WCA prediction markets for the featured weekend."
+              required
+            />
+            <div className="form-grid">
+              <div>
+                <label htmlFor="v1-slate-starts">Starts</label>
+                <input
+                  id="v1-slate-starts"
+                  name="startsAt"
+                  required
+                  type="datetime-local"
+                />
+              </div>
+              <div>
+                <label htmlFor="v1-slate-ends">Ends</label>
+                <input
+                  id="v1-slate-ends"
+                  name="endsAt"
+                  required
+                  type="datetime-local"
+                />
+              </div>
+            </div>
+            <label htmlFor="v1-slate-status">Status</label>
+            <select id="v1-slate-status" name="status" defaultValue="DRAFT">
+              <option value="DRAFT">DRAFT</option>
+              <option value="OPEN">OPEN</option>
+            </select>
+            <PendingSubmitButton pendingLabel="Creating slate...">
+              Create slate
+            </PendingSubmitButton>
+          </form>
+
+          <div className="admin-slate-list">
+            <h3>Recent Slates</h3>
+            {slates.map((slate) => (
+              <article key={slate.id}>
+                <div>
+                  <strong>{slate.title}</strong>
+                  <span>
+                    {slate.status} · {slate._count.competitions} competitions ·{" "}
+                    {slate._count.markets} markets
+                  </span>
+                </div>
+                <small>Locks {slate.lockAt.toLocaleString()}</small>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {manageableSlate && (
+        <section className="admin-form-panel">
+          <div className="section-heading">
+            <h2>Build {manageableSlate.title}</h2>
+            <span>
+              {manageableSlate.status} · Locks{" "}
+              {manageableSlate.lockAt.toLocaleString()}
+            </span>
+          </div>
+
+          <div className="admin-slate-grid">
+            <form action={attachCompetitionToSlate} className="admin-form">
+              <h3>Attach Competition</h3>
+              <input name="slateId" type="hidden" value={manageableSlate.id} />
+              <label htmlFor="slate-competition-id">Competition</label>
+              <select
+                id="slate-competition-id"
+                name="competitionId"
+                required
+              >
+                {availableCompetitions.map((competition) => (
+                  <option key={competition.id} value={competition.id}>
+                    {competition.name}
+                  </option>
+                ))}
+              </select>
+              <PendingSubmitButton
+                pendingLabel="Attaching..."
+                className="secondary-button"
+              >
+                Attach competition
+              </PendingSubmitButton>
+              <div className="attached-competition-list">
+                {manageableSlate.competitions.map(({ competition }) => (
+                  <span key={competition.id}>{competition.name}</span>
+                ))}
+              </div>
+            </form>
+
+            <form action={updateSlateDiversityConfig} className="admin-form">
+              <h3>Diversity Caps</h3>
+              <input name="slateId" type="hidden" value={manageableSlate.id} />
+              <div className="form-grid">
+                <div>
+                  <label htmlFor="maxPerCompetition">Per competition</label>
+                  <input
+                    id="maxPerCompetition"
+                    min="1"
+                    name="maxPerCompetition"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerCompetition}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxPerCompetitor">Per competitor</label>
+                  <input
+                    id="maxPerCompetitor"
+                    min="1"
+                    name="maxPerCompetitor"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerCompetitor}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxPerEvent">Per event</label>
+                  <input
+                    id="maxPerEvent"
+                    min="1"
+                    name="maxPerEvent"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerEvent}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxPerMarketType">Per market type</label>
+                  <input
+                    id="maxPerMarketType"
+                    min="1"
+                    name="maxPerMarketType"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerMarketType}
+                  />
+                </div>
+              </div>
+              <PendingSubmitButton
+                className="secondary-button"
+                pendingLabel="Saving caps..."
+              >
+                Save caps
+              </PendingSubmitButton>
+            </form>
+          </div>
+        </section>
+      )}
+
+      {manageableSlate && manageableSlate.competitions.length > 0 && (
+        <section className="admin-form-panel">
+          <h2>Create V1 Market</h2>
+          {params.v1Market === "invalid" && (
+            <p className="form-error">Check the V1 market fields.</p>
+          )}
+          {params.v1Market === "probability-total" && (
+            <p className="form-error">The two probabilities must total 100.</p>
+          )}
+          <form action={createV1SlateMarket} className="admin-form">
+            <input name="slateId" type="hidden" value={manageableSlate.id} />
+            <div className="form-grid">
+              <div>
+                <label htmlFor="v1-market-competition">Competition</label>
+                <select
+                  id="v1-market-competition"
+                  name="competitionId"
+                  required
+                >
+                  {manageableSlate.competitions.map(({ competition }) => (
+                    <option key={competition.id} value={competition.id}>
+                      {competition.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="v1-market-category">Market type</label>
+                <select
+                  id="v1-market-category"
+                  name="category"
+                  defaultValue="HEAD_TO_HEAD"
+                >
+                  {Object.values(MarketCategory)
+                    .filter((category) => category !== "TIME_THRESHOLD")
+                    .map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+            <label htmlFor="v1-market-question">Question</label>
+            <input
+              id="v1-market-question"
+              name="question"
+              placeholder="Who places higher in 3x3?"
+              required
+            />
+            <label htmlFor="v1-market-description">Description</label>
+            <textarea
+              id="v1-market-description"
+              name="description"
+              placeholder="Head-to-head result using official WCA placement."
+              required
+            />
+            <div className="form-grid">
+              <div>
+                <label htmlFor="v1-event-id">Event ID</label>
+                <input id="v1-event-id" name="eventId" placeholder="333" required />
+              </div>
+              <div>
+                <label htmlFor="v1-event-name">Event name</label>
+                <input
+                  id="v1-event-name"
+                  name="eventName"
+                  placeholder="3x3"
+                  required
+                />
+              </div>
+            </div>
+            <div className="outcome-admin-grid">
+              <div>
+                <h3>Option A</h3>
+                <label htmlFor="option-a-label">Label</label>
+                <input id="option-a-label" name="optionALabel" required />
+                <label htmlFor="option-a-probability">Probability</label>
+                <input
+                  id="option-a-probability"
+                  max="65"
+                  min="35"
+                  name="optionAProbability"
+                  required
+                  type="number"
+                />
+                <label htmlFor="option-a-wca">Competitor WCA ID</label>
+                <input id="option-a-wca" name="optionACompetitorWcaId" />
+              </div>
+              <div>
+                <h3>Option B</h3>
+                <label htmlFor="option-b-label">Label</label>
+                <input id="option-b-label" name="optionBLabel" required />
+                <label htmlFor="option-b-probability">Probability</label>
+                <input
+                  id="option-b-probability"
+                  max="65"
+                  min="35"
+                  name="optionBProbability"
+                  required
+                  type="number"
+                />
+                <label htmlFor="option-b-wca">Competitor WCA ID</label>
+                <input id="option-b-wca" name="optionBCompetitorWcaId" />
+              </div>
+            </div>
+            <label className="checkbox-row">
+              <input name="publishNow" type="checkbox" />
+              Publish immediately
+            </label>
+            <PendingSubmitButton pendingLabel="Creating V1 market...">
+              Create V1 market
+            </PendingSubmitButton>
+          </form>
+        </section>
+      )}
 
       <section>
         <div className="section-heading">
@@ -236,7 +579,7 @@ export default async function AdminPage({
 
       <section>
         <div className="section-heading">
-          <h2>Resolution Queue</h2>
+          <h2>Legacy Resolution Queue</h2>
           <span>
             {marketsNeedingResolution.length.toLocaleString()} needing review
           </span>
@@ -416,7 +759,7 @@ export default async function AdminPage({
 
       <section>
         <div className="section-heading">
-          <h2>Market Review</h2>
+          <h2>Legacy Market Review</h2>
           <Link href="/competitions">Open competitions</Link>
         </div>
         <div className="market-board">
@@ -453,6 +796,79 @@ export default async function AdminPage({
           })}
         </div>
       </section>
+
+      {manageableSlate && manageableSlate.markets.length > 0 && (
+        <section>
+          <div className="section-heading">
+            <h2>V1 Market Review</h2>
+            <span>{manageableSlate.markets.length.toLocaleString()} markets</span>
+          </div>
+          <div className="market-board">
+            <div className="market-board-header v1-market-review-header">
+              <span>Market</span>
+              <span>Options</span>
+              <span>Status</span>
+              <span>Action</span>
+            </div>
+            {manageableSlate.markets.map((market) => (
+              <article
+                className="market-board-row v1-market-review-row"
+                key={market.id}
+              >
+                <div>
+                  <strong>{market.question}</strong>
+                  <span>
+                    {market.competition.name} · {market.eventName ?? market.eventId}
+                  </span>
+                </div>
+                <span>
+                  {market.options
+                    .map((option) => `${option.label} ${option.probability}%`)
+                    .join(" / ")}
+                </span>
+                <span>{market.status}</span>
+                {market.status === "DRAFT" ? (
+                  <form action={publishV1Market}>
+                    <input name="marketId" type="hidden" value={market.id} />
+                    <PendingSubmitButton
+                      className="secondary-button"
+                      pendingLabel="Publishing..."
+                    >
+                      Publish
+                    </PendingSubmitButton>
+                  </form>
+                ) : (
+                  <span>Published</span>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
+}
+
+function getDiversityConfig(value: unknown) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const config = value as Record<string, unknown>;
+
+    return {
+      maxPerCompetition: getConfigNumber(config.maxPerCompetition, 16),
+      maxPerCompetitor: getConfigNumber(config.maxPerCompetitor, 6),
+      maxPerEvent: getConfigNumber(config.maxPerEvent, 12),
+      maxPerMarketType: getConfigNumber(config.maxPerMarketType, 8)
+    };
+  }
+
+  return {
+    maxPerCompetition: 16,
+    maxPerCompetitor: 6,
+    maxPerEvent: 12,
+    maxPerMarketType: 8
+  };
+}
+
+function getConfigNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }

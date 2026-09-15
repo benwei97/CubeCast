@@ -238,6 +238,7 @@ model ContestSlate {
   prizeEnabled       Boolean              @default(false)
   maxPicks           Int                  @default(10)
   baseScore          Int                  @default(1000)
+  diversityConfig    Json?
   competitions       ContestCompetition[]
   markets            Market[]
   entries            ContestEntry[]

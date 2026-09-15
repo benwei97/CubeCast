@@ -29,6 +29,8 @@ Phase 3 player UI is complete: the home page now opens on the active V1 slate fe
 
 Phase 4 settlement and leaderboard is complete for the manual MVP path: admins can resolve, void, or tie V1 markets, settlement snapshots and audit records are stored, valid 10-pick entries are scored from 1,000 points, and `/leaderboard` ranks slate entries.
 
+Phase 5 admin slate tools are complete: admins can create slates, attach competitions, configure diversity caps, create fixed-probability V1 markets, and publish draft V1 markets.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

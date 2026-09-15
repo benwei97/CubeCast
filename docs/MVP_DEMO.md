@@ -36,6 +36,7 @@ maya@cubecast.test / password123
 - Click a market outcome to open the pick review modal.
 - Sign in and add, change, or remove picks before lock.
 - Open `/picks` to review selected markets, probabilities, and score swing.
+- As admin, open `/admin` to create slates, attach competitions, configure diversity caps, and create/publish V1 markets.
 - As admin, open `/admin` and use the V1 Settlement Queue to resolve, void, or mark an exact tie.
 - Open `/leaderboard` to see valid 10-pick entries ranked by slate score.
 
@@ -57,6 +58,7 @@ The seeded V1 data includes:
 - 20 fixed-probability V1 markets
 - 40 market options
 - 4 development WCA identities
+- default diversity caps on the demo slate
 
 The V1 demo is successful when:
 

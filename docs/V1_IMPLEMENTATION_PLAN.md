@@ -173,15 +173,18 @@ Status: complete.
 
 ### Phase 5: Admin Slate Tools
 
-Status: next.
+Status: complete.
 
-- Create/edit slates.
-- Attach WCA competitions to slates.
-- Create/publish markets and outcomes with immutable probabilities.
-- Configure diversity limits.
-- Audit publish/void/settlement/finalization actions.
+- Added slate creation UI.
+- Added competition attachment UI with automatic slate window and lock recalculation.
+- Added V1 market creation with two immutable outcome probabilities.
+- Added draft/publish workflow for V1 markets.
+- Added diversity cap configuration.
+- Added audit records for slate creation, slate updates, market creation, market publishing, settlement, and voids.
 
 ### Phase 6: WCA Integration
+
+Status: next.
 
 - Add WCA OAuth provider.
 - Store WCA identity.

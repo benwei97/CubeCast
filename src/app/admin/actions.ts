@@ -2,8 +2,10 @@
 
 import {
   CompetitionStatus,
+  ContestSlateStatus,
   MarketCategory,
   MarketStatus,
+  type Prisma,
   UserRole
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -39,6 +41,50 @@ const createMarketSchema = z.object({
   resolutionRules: z.string().min(10).max(1200),
   resolutionSource: z.string().min(3).max(200),
   liquidityParameter: z.coerce.number().int().min(100).max(100000)
+});
+
+const createV1SlateSchema = z.object({
+  title: z.string().min(3).max(120),
+  description: z.string().min(10).max(1000),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date(),
+  status: z
+    .enum([ContestSlateStatus.DRAFT, ContestSlateStatus.OPEN])
+    .default(ContestSlateStatus.DRAFT)
+});
+
+const attachSlateCompetitionSchema = z.object({
+  competitionId: z.string().min(1),
+  slateId: z.string().min(1)
+});
+
+const updateDiversityConfigSchema = z.object({
+  maxPerCompetition: z.coerce.number().int().min(1).max(30),
+  maxPerCompetitor: z.coerce.number().int().min(1).max(30),
+  maxPerEvent: z.coerce.number().int().min(1).max(30),
+  maxPerMarketType: z.coerce.number().int().min(1).max(30),
+  slateId: z.string().min(1)
+});
+
+const createV1SlateMarketSchema = z.object({
+  category: z.nativeEnum(MarketCategory),
+  competitionId: z.string().min(1),
+  description: z.string().min(10).max(1000),
+  eventId: z.string().min(2).max(20),
+  eventName: z.string().min(2).max(80),
+  optionALabel: z.string().min(1).max(80),
+  optionAProbability: z.coerce.number().int().min(35).max(65),
+  optionACompetitorWcaId: z.string().max(20).optional(),
+  optionBLabel: z.string().min(1).max(80),
+  optionBProbability: z.coerce.number().int().min(35).max(65),
+  optionBCompetitorWcaId: z.string().max(20).optional(),
+  publishNow: z.string().optional(),
+  question: z.string().min(8).max(180),
+  slateId: z.string().min(1)
+});
+
+const publishV1MarketSchema = z.object({
+  marketId: z.string().min(1)
 });
 
 const settleV1MarketSchema = z.object({
@@ -155,6 +201,327 @@ export async function createMarket(formData: FormData) {
   redirect(`/markets/${slug}`);
 }
 
+export async function createV1Slate(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = createV1SlateSchema.safeParse({
+    description: formData.get("description"),
+    endsAt: formData.get("endsAt"),
+    startsAt: formData.get("startsAt"),
+    status: formData.get("status"),
+    title: formData.get("title")
+  });
+
+  if (!parsed.success || parsed.data.endsAt < parsed.data.startsAt) {
+    redirect("/admin?v1Slate=invalid");
+  }
+
+  const slug = withTimestampSuffix(slugify(parsed.data.title));
+  const lockAt = new Date(parsed.data.startsAt.getTime() - 60 * 60 * 1000);
+  const publishedAt =
+    parsed.data.status === ContestSlateStatus.OPEN ? new Date() : null;
+
+  await prisma.contestSlate.create({
+    data: {
+      description: parsed.data.description,
+      diversityConfig: getDefaultDiversityConfig(),
+      endsAt: parsed.data.endsAt,
+      lockAt,
+      publishedAt,
+      slug,
+      startsAt: parsed.data.startsAt,
+      status: parsed.data.status,
+      title: parsed.data.title,
+      adminActions: {
+        create: {
+          actionType: "SLATE_CREATE",
+          adminUserId: admin.id,
+          metadata: {
+            title: parsed.data.title
+          }
+        }
+      }
+    }
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Slate=created");
+}
+
+export async function attachCompetitionToSlate(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = attachSlateCompetitionSchema.safeParse({
+    competitionId: formData.get("competitionId"),
+    slateId: formData.get("slateId")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Slate=invalid-competition");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.contestCompetition.upsert({
+      where: {
+        slateId_competitionId: {
+          competitionId: parsed.data.competitionId,
+          slateId: parsed.data.slateId
+        }
+      },
+      create: {
+        competitionId: parsed.data.competitionId,
+        slateId: parsed.data.slateId
+      },
+      update: {}
+    });
+
+    await recomputeSlateWindow(tx, parsed.data.slateId);
+
+    await tx.adminAction.create({
+      data: {
+        actionType: "SLATE_UPDATE",
+        adminUserId: admin.id,
+        metadata: {
+          attachedCompetitionId: parsed.data.competitionId
+        },
+        slateId: parsed.data.slateId
+      }
+    });
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Slate=competition-attached");
+}
+
+export async function updateSlateDiversityConfig(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = updateDiversityConfigSchema.safeParse({
+    maxPerCompetition: formData.get("maxPerCompetition"),
+    maxPerCompetitor: formData.get("maxPerCompetitor"),
+    maxPerEvent: formData.get("maxPerEvent"),
+    maxPerMarketType: formData.get("maxPerMarketType"),
+    slateId: formData.get("slateId")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Slate=invalid-diversity");
+  }
+
+  await prisma.contestSlate.update({
+    where: { id: parsed.data.slateId },
+    data: {
+      adminActions: {
+        create: {
+          actionType: "SLATE_UPDATE",
+          adminUserId: admin.id,
+          metadata: {
+            diversityConfig: {
+              maxPerCompetition: parsed.data.maxPerCompetition,
+              maxPerCompetitor: parsed.data.maxPerCompetitor,
+              maxPerEvent: parsed.data.maxPerEvent,
+              maxPerMarketType: parsed.data.maxPerMarketType
+            }
+          }
+        }
+      },
+      diversityConfig: {
+        maxPerCompetition: parsed.data.maxPerCompetition,
+        maxPerCompetitor: parsed.data.maxPerCompetitor,
+        maxPerEvent: parsed.data.maxPerEvent,
+        maxPerMarketType: parsed.data.maxPerMarketType
+      }
+    }
+  });
+
+  revalidatePath("/admin");
+  redirect("/admin?v1Slate=diversity-updated");
+}
+
+export async function createV1SlateMarket(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = createV1SlateMarketSchema.safeParse({
+    category: formData.get("category"),
+    competitionId: formData.get("competitionId"),
+    description: formData.get("description"),
+    eventId: formData.get("eventId"),
+    eventName: formData.get("eventName"),
+    optionACompetitorWcaId: formData.get("optionACompetitorWcaId") || undefined,
+    optionALabel: formData.get("optionALabel"),
+    optionAProbability: formData.get("optionAProbability"),
+    optionBCompetitorWcaId: formData.get("optionBCompetitorWcaId") || undefined,
+    optionBLabel: formData.get("optionBLabel"),
+    optionBProbability: formData.get("optionBProbability"),
+    publishNow: formData.get("publishNow") || undefined,
+    question: formData.get("question"),
+    slateId: formData.get("slateId")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Market=invalid");
+  }
+
+  if (parsed.data.optionAProbability + parsed.data.optionBProbability !== 100) {
+    redirect("/admin?v1Market=probability-total");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const slateCompetition = await tx.contestCompetition.findUnique({
+      where: {
+        slateId_competitionId: {
+          competitionId: parsed.data.competitionId,
+          slateId: parsed.data.slateId
+        }
+      },
+      include: {
+        slate: {
+          select: {
+            lockAt: true,
+            status: true
+          }
+        }
+      }
+    });
+
+    if (!slateCompetition) {
+      throw new Error("Competition must be attached to the selected slate.");
+    }
+
+    if (
+      slateCompetition.slate.status !== ContestSlateStatus.DRAFT &&
+      slateCompetition.slate.status !== ContestSlateStatus.OPEN
+    ) {
+      throw new Error("Only draft or open slates can receive new markets.");
+    }
+
+    const publishNow = parsed.data.publishNow === "on";
+    const status = publishNow ? MarketStatus.OPEN : MarketStatus.DRAFT;
+    const slug = withTimestampSuffix(slugify(parsed.data.question));
+
+    const market = await tx.market.create({
+      data: {
+        category: parsed.data.category,
+        closeTime: slateCompetition.slate.lockAt,
+        competitionId: parsed.data.competitionId,
+        createdByUserId: admin.id,
+        description: parsed.data.description,
+        eventId: parsed.data.eventId,
+        eventName: parsed.data.eventName,
+        lockAt: slateCompetition.slate.lockAt,
+        options: {
+          create: [
+            {
+              competitorWcaId: parsed.data.optionACompetitorWcaId || null,
+              displayOrder: 0,
+              label: parsed.data.optionALabel,
+              probability: parsed.data.optionAProbability,
+              sideKey: "YES"
+            },
+            {
+              competitorWcaId: parsed.data.optionBCompetitorWcaId || null,
+              displayOrder: 1,
+              label: parsed.data.optionBLabel,
+              probability: parsed.data.optionBProbability,
+              sideKey: "NO"
+            }
+          ]
+        },
+        publishedAt: publishNow ? new Date() : null,
+        question: parsed.data.question,
+        resolutionRules:
+          "Resolves from first-published official WCA results using CubeCast V1 settlement rules.",
+        resolutionSource: "Official WCA competition results",
+        settlementRuleVersion: "v1",
+        slateId: parsed.data.slateId,
+        slug,
+        status
+      }
+    });
+
+    await tx.adminAction.createMany({
+      data: [
+        {
+          actionType: "MARKET_CREATE",
+          adminUserId: admin.id,
+          marketId: market.id,
+          metadata: {
+            published: publishNow
+          },
+          slateId: parsed.data.slateId
+        },
+        ...(publishNow
+          ? [
+              {
+                actionType: "MARKET_PUBLISH" as const,
+                adminUserId: admin.id,
+                marketId: market.id,
+                metadata: {
+                  optionAProbability: parsed.data.optionAProbability,
+                  optionBProbability: parsed.data.optionBProbability
+                },
+                slateId: parsed.data.slateId
+              }
+            ]
+          : [])
+      ]
+    });
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Market=created");
+}
+
+export async function publishV1Market(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = publishV1MarketSchema.safeParse({
+    marketId: formData.get("marketId")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Market=invalid");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const market = await tx.market.findUnique({
+      where: { id: parsed.data.marketId },
+      select: {
+        id: true,
+        options: { select: { id: true } },
+        slateId: true,
+        status: true
+      }
+    });
+
+    if (!market?.slateId || market.status !== MarketStatus.DRAFT) {
+      throw new Error("Only draft V1 markets can be published.");
+    }
+
+    if (market.options.length !== 2) {
+      throw new Error("V1 markets must have two outcomes before publishing.");
+    }
+
+    await tx.market.update({
+      where: { id: market.id },
+      data: {
+        publishedAt: new Date(),
+        status: MarketStatus.OPEN
+      }
+    });
+
+    await tx.adminAction.create({
+      data: {
+        actionType: "MARKET_PUBLISH",
+        adminUserId: admin.id,
+        marketId: market.id,
+        metadata: {
+          publishedFromDraft: true
+        },
+        slateId: market.slateId
+      }
+    });
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Market=published");
+}
+
 export async function settleV1Market(formData: FormData) {
   const admin = await requireAdmin();
   const parsed = settleV1MarketSchema.safeParse({
@@ -231,4 +598,72 @@ function revalidateV1Paths() {
   revalidatePath("/admin");
   revalidatePath("/leaderboard");
   revalidatePath("/picks");
+}
+
+async function recomputeSlateWindow(
+  tx: Prisma.TransactionClient,
+  slateId: string
+) {
+  const slateCompetitions = await tx.contestCompetition.findMany({
+    where: { slateId },
+    include: {
+      competition: {
+        select: {
+          endDate: true,
+          scheduledEndAt: true,
+          scheduledStartAt: true,
+          startDate: true
+        }
+      }
+    }
+  });
+
+  if (slateCompetitions.length === 0) {
+    return;
+  }
+
+  const startsAt = new Date(
+    Math.min(
+      ...slateCompetitions.map(({ competition }) =>
+        (competition.scheduledStartAt ?? competition.startDate).getTime()
+      )
+    )
+  );
+  const endsAt = new Date(
+    Math.max(
+      ...slateCompetitions.map(({ competition }) =>
+        (competition.scheduledEndAt ?? competition.endDate).getTime()
+      )
+    )
+  );
+  const lockAt = new Date(startsAt.getTime() - 60 * 60 * 1000);
+
+  await tx.contestSlate.update({
+    where: { id: slateId },
+    data: {
+      endsAt,
+      lockAt,
+      startsAt
+    }
+  });
+
+  await tx.market.updateMany({
+    where: {
+      slateId,
+      status: { in: [MarketStatus.DRAFT, MarketStatus.OPEN] }
+    },
+    data: {
+      closeTime: lockAt,
+      lockAt
+    }
+  });
+}
+
+function getDefaultDiversityConfig() {
+  return {
+    maxPerCompetition: 16,
+    maxPerCompetitor: 6,
+    maxPerEvent: 12,
+    maxPerMarketType: 8
+  };
 }

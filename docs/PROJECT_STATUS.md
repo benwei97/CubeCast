@@ -178,17 +178,32 @@ Completed:
 
 ### Phase 5: Admin Slate Tools
 
-Status: next.
+Status: complete.
 
-Next tasks:
+Completed:
 
 - Create/edit slates from the admin UI.
 - Attach WCA competitions to slates from the admin UI.
 - Create/publish V1 markets and outcomes with immutable probabilities.
 - Configure diversity limits.
-- Improve settlement inspection and exception handling UI.
+- Added basic V1 market review with draft publish action.
+- Added migration `20260915220059_add_slate_diversity_config`.
+- Recomputed slate start/end/lock windows when competitions are attached.
+- Kept settlement inspection and exception handling available through the V1 settlement queue.
 
-### Phase 6+: WCA, Prize Shell, Legacy Removal
+### Phase 6: WCA Integration
+
+Status: next.
+
+Next tasks:
+
+- Add WCA OAuth provider.
+- Store WCA identity from real WCA login.
+- Add WCA competition/result ingestion boundary.
+- Store first-observed official result snapshots from WCA source data.
+- Keep manual/admin-assisted settlement as the MVP fallback.
+
+### Phase 7+: Prize Shell, Legacy Removal
 
 Status: planned in `docs/V1_IMPLEMENTATION_PLAN.md`.
 

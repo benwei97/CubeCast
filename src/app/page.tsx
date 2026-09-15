@@ -30,7 +30,11 @@ export default async function HomePage() {
         }
       },
       markets: {
-        where: { status: { not: "CANCELED" } },
+        where: {
+          status: {
+            in: ["OPEN", "LOCKED", "PENDING_RESULT", "RESOLVED", "VOID"]
+          }
+        },
         include: {
           competition: true,
           options: {

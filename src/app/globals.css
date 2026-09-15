@@ -914,6 +914,11 @@ footer {
   grid-template-columns: 80px 1.5fr repeat(4, minmax(110px, 1fr));
 }
 
+.v1-market-review-header,
+.v1-market-review-row {
+  grid-template-columns: minmax(280px, 1.5fr) minmax(220px, 1fr) 110px 120px;
+}
+
 .auth-page {
   display: grid;
   min-height: 70vh;
@@ -1399,6 +1404,66 @@ footer {
   gap: 12px;
 }
 
+.admin-slate-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+}
+
+.admin-slate-list,
+.attached-competition-list,
+.outcome-admin-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-slate-list article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.admin-slate-list article div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-slate-list span,
+.admin-slate-list small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.attached-competition-list span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
+.outcome-admin-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.outcome-admin-grid > div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.outcome-admin-grid h3,
+.admin-form h3,
+.admin-slate-list h3 {
+  margin: 0;
+}
+
 .form-grid {
   display: grid;
   gap: 12px;
@@ -1603,11 +1668,15 @@ dd {
   .leaderboard-row,
   .v1-leaderboard-header,
   .v1-leaderboard-row,
+  .v1-market-review-header,
+  .v1-market-review-row,
   .review-actions,
   .market-board-header,
   .market-board-row,
   .admin-panel,
   .v1-settlement-row,
+  .admin-slate-grid,
+  .outcome-admin-grid,
   .form-grid,
   .market-list-row,
   .activity-row,
