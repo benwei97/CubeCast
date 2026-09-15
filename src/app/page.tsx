@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
+import { QuickMarketBoard } from "@/components/quick-market-board";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -27,11 +28,24 @@ export default async function HomePage() {
     })
   ]);
 
+  const quickMarkets = markets.map((market) => {
+    const prices = getMarketPrices(market);
+
+    return {
+      closeLabel: market.closeTime.toLocaleDateString(),
+      competitionName: market.competition.name,
+      noPrice: prices.noPrice,
+      question: market.question,
+      slug: market.slug,
+      totalShares: prices.totalShares,
+      yesPrice: prices.yesPrice
+    };
+  });
+
   return (
     <div className="page-stack">
       <section className="hero">
         <div>
-          <p className="eyebrow">Virtual speedcubing predictions</p>
           <h1>CubeCast</h1>
           <p>
             Browse WCA-style competition markets, spend free CubeCoins on YES or
@@ -76,42 +90,18 @@ export default async function HomePage() {
 
       <section>
         <div className="section-heading">
-          <h2>Featured markets</h2>
+          <h2>Markets</h2>
+          <Link href="/competitions">Open market catalog</Link>
         </div>
-        <div className="market-grid">
-          {markets.map((market) => (
-            <article className="market-card" key={market.id}>
-              <span>{market.competition.name}</span>
-              <h3>
-                <Link href={`/markets/${market.slug}`}>{market.question}</Link>
-              </h3>
-              <div className="price-row">
-                <strong>
-                  YES{" "}
-                  {
-                    getMarketPrices({
-                      yesSharesOutstanding: market.yesSharesOutstanding,
-                      noSharesOutstanding: market.noSharesOutstanding
-                    }).yesPrice
-                  }
-                </strong>
-                <strong>
-                  NO{" "}
-                  {
-                    getMarketPrices({
-                      yesSharesOutstanding: market.yesSharesOutstanding,
-                      noSharesOutstanding: market.noSharesOutstanding
-                    }).noPrice
-                  }
-                </strong>
-              </div>
-              <small>Closes {market.closeTime.toLocaleDateString()}</small>
-              <Link className="text-link" href={`/markets/${market.slug}`}>
-                View market
-              </Link>
-            </article>
-          ))}
-        </div>
+        {quickMarkets.length > 0 ? (
+          <QuickMarketBoard
+            balance={session?.user?.balance ?? 0}
+            isSignedIn={Boolean(session?.user)}
+            markets={quickMarkets}
+          />
+        ) : (
+          <p className="empty-state">Seed the database to view markets.</p>
+        )}
       </section>
 
       <section>

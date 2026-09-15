@@ -16,6 +16,7 @@ For environment and database notes, see [docs/DEPLOYMENT_NOTES.md](docs/DEPLOYME
 - Auth.js/NextAuth with local demo credential sign-in
 - Seed data with demo users, competitions, markets, purchases, positions, and a resolved market
 - Kalshi-inspired market browsing and order ticket
+- Home page quick-trade market board with YES/NO review modal
 - CubeCoin YES/NO purchases
 - Portfolio, trade history, ledger, and leaderboard
 - Admin competition creation, market creation, and market resolution

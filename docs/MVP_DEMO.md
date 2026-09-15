@@ -31,21 +31,22 @@ maya@cubecast.test / password123
 ## What To Test
 
 1. Sign in as `maya@cubecast.test`.
-2. Open `/competitions`.
-3. Open a market.
-4. Use the order ticket to buy YES or NO shares.
-5. Confirm that the order ticket shows cost, payout, profit, and remaining balance before submitting.
-6. After purchase, confirm that balance, position, recent activity, portfolio, and leaderboard update.
-7. Sign out and sign in as `admin@cubecast.test`.
-8. Open `/admin`.
-9. Create a competition or market if needed.
-10. Open a market detail page and resolve it as YES, NO, or canceled.
-11. Check the confirmation checkbox before resolving.
-12. Confirm that resolved markets stop accepting purchases and that portfolio, ledger, and leaderboard values update.
+2. Open `/`.
+3. Click a YES or NO price in the home page market board.
+4. Confirm that the quick-trade modal shows cost, payout, profit, and remaining balance before submitting.
+5. Submit the purchase.
+6. Open the full market detail page to review rules, position, and recent activity.
+7. Confirm that balance, position, portfolio, and leaderboard update.
+8. Sign out and sign in as `admin@cubecast.test`.
+9. Open `/admin`.
+10. Create a competition or market if needed.
+11. Open a market detail page and resolve it as YES, NO, or canceled.
+12. Check the confirmation checkbox before resolving.
+13. Confirm that resolved markets stop accepting purchases and that portfolio, ledger, and leaderboard values update.
 
 ## What You Should See
 
-- Home page with featured markets and leaderboard preview.
+- Home page with featured markets, direct YES/NO quick trading, and leaderboard preview.
 - Competition list and competition detail pages.
 - Market pages with YES/NO pricing, volume, close time, share split, order ticket, recent activity, and user position.
 - Portfolio page with balance, open position value, final positions, trade history, and ledger.

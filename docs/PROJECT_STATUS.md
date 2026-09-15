@@ -45,6 +45,8 @@ The app reads this through `DATABASE_URL` in `.env`.
 - Next.js app scaffold
 - Shared global layout with header, nav, account area, and footer
 - Global styling in `src/app/globals.css`
+- Product context in `PRODUCT.md`
+- Design system guidance in `DESIGN.md` and `.impeccable/design.json`
 - TypeScript configuration
 - ESLint setup
 - Shared market pricing helper for YES/NO display and purchase prices
@@ -116,8 +118,10 @@ maya@cubecast.test / password123
 - Shows CubeCast intro
 - Shows current balance or sign-in prompt
 - Shows featured competition
-- Shows featured open markets
-- Links featured markets to market detail pages
+- Shows a compact market board of featured open markets
+- Lets users click YES or NO prices directly from the home page
+- Opens a quick-trade modal with quantity, cost, payout, profit, and remaining balance before purchase confirmation
+- Links each featured market to its full market detail page
 - Shows leaderboard preview
 - Data is loaded from PostgreSQL through Prisma
 

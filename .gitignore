@@ -2,7 +2,11 @@ node_modules
 .next
 out
 coverage
+.agents
+.codex
+.cursor
 .env
 .env*.local
+.impeccable/config.local.json
 *.tsbuildinfo
 .DS_Store

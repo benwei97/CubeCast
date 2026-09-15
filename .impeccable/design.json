@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-14T00:00:00.000Z",
+  "title": "Design System: CubeCast",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Board Background",
+        "canonical": "#f7f8fb"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface White",
+        "canonical": "#ffffff"
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Desk Ink",
+        "canonical": "#151923"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Text",
+        "canonical": "#667085"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Rule Line",
+        "canonical": "#d9dee8"
+      },
+      "yes": {
+        "role": "secondary",
+        "displayName": "Yes Green",
+        "canonical": "#05603a"
+      },
+      "no": {
+        "role": "secondary",
+        "displayName": "No Red",
+        "canonical": "#b42318"
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Market Blue",
+        "canonical": "#2557d6"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Home and auth hero title only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Major page titles and market detail questions."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Supporting copy and readable descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadata, headers, and compact controls."
+      }
+    },
+    "shadows": [
+      {
+        "name": "modal-lift",
+        "value": "0 24px 80px rgb(21 25 35 / 28%)",
+        "purpose": "Protected-focus overlays such as quick-trade modals."
+      }
+    ],
+    "motion": [
+      {
+        "name": "hover-lift",
+        "value": "transform 120ms ease-out",
+        "purpose": "Subtle feedback for primary clickable controls."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile-stack",
+        "value": "760px"
+      }
+    ],
+    "rules": [
+      {
+        "name": "Semantic Color Rule",
+        "value": "Green and red belong to market sides and account outcomes. Do not use them as decoration."
+      },
+      {
+        "name": "Market Board First",
+        "value": "Use dense rows with direct YES/NO actions for browsing surfaces where users compare markets."
+      }
+    ]
+  }
+}
