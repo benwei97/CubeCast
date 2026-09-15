@@ -151,24 +151,18 @@ Status: complete.
 
 ### Phase 3: Player Game UI
 
+Status: complete.
+
+- Replaced trading home flow with active slate feed.
+- Added persistent `X / 10 Picks`.
+- Added market rows with fixed probability and score swing.
+- Added pick/change/remove server actions.
+- Added My Picks view.
+- Enforced sign-in, slate status, lock time, market membership, option membership, and max 10 picks server-side.
+
+### Phase 4: Settlement And Leaderboard
+
 Status: next.
-
-- Replace trading home flow with active slate feed.
-- Add persistent `X / 10 Picks`.
-- Add market cards with probability and score swing.
-- Add pick/unpick/change-side server actions.
-- Add My Picks view.
-- Enforce max 10 picks server-side.
-
-### Phase 4: Admin Slate Tools
-
-- Create/edit slates.
-- Attach WCA competitions to slates.
-- Create/publish markets and outcomes with immutable probabilities.
-- Configure diversity limits.
-- Audit publish/void/settlement/finalization actions.
-
-### Phase 5: Settlement And Leaderboard
 
 - Add settlement actions and snapshots.
 - Implement void logic.
@@ -176,6 +170,14 @@ Status: next.
 - Calculate entry scores.
 - Build slate leaderboard with deterministic tiebreakers.
 - Finalize contest only when all markets are resolved or void.
+
+### Phase 5: Admin Slate Tools
+
+- Create/edit slates.
+- Attach WCA competitions to slates.
+- Create/publish markets and outcomes with immutable probabilities.
+- Configure diversity limits.
+- Audit publish/void/settlement/finalization actions.
 
 ### Phase 6: WCA Integration
 

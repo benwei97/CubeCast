@@ -10,6 +10,7 @@
   --yes: #05603a;
   --no: #b42318;
   --accent: #2557d6;
+  --warning: #9a5b00;
 }
 
 * {
@@ -147,6 +148,57 @@ footer {
   min-height: 320px;
 }
 
+.slate-hero {
+  align-items: stretch;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.compact-slate-hero {
+  align-items: start;
+}
+
+.slate-hero-main {
+  display: grid;
+  gap: 18px;
+  min-height: 280px;
+  padding: 36px 0;
+}
+
+.slate-hero h1 {
+  font-size: clamp(42px, 7vw, 76px);
+  letter-spacing: 0;
+  line-height: 0.95;
+  margin: 0;
+  max-width: 760px;
+}
+
+.slate-hero p {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 660px;
+}
+
+.slate-meta-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.slate-meta-row span {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 12px;
+}
+
 .hero h1,
 .auth-panel h1 {
   font-size: clamp(42px, 7vw, 76px);
@@ -185,6 +237,7 @@ footer {
 }
 
 .balance-panel,
+.pick-status-panel,
 .auth-panel,
 .market-card,
 .feature-row,
@@ -200,6 +253,32 @@ footer {
   display: grid;
   gap: 16px;
   padding: 24px;
+}
+
+.pick-status-panel {
+  align-self: start;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  position: sticky;
+  top: 18px;
+}
+
+.pick-status-panel span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pick-status-panel strong {
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.pick-status-panel p {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
 }
 
 .balance-panel strong {
@@ -235,6 +314,236 @@ footer {
   display: grid;
   gap: 8px;
   text-align: right;
+}
+
+.competition-strip {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.competition-strip article {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+}
+
+.competition-strip span,
+.competition-strip small {
+  color: var(--muted);
+}
+
+.competition-strip span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.competition-strip strong {
+  font-size: 18px;
+}
+
+.slate-market-board {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.slate-market-header,
+.slate-market-row {
+  align-items: stretch;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(320px, 1fr) minmax(150px, 0.34fr) minmax(150px, 0.34fr);
+  padding: 12px 14px;
+}
+
+.slate-market-header {
+  align-items: center;
+  background: #eef2f8;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.slate-market-row {
+  border-top: 1px solid var(--line);
+}
+
+.slate-market-row:hover {
+  background: #f8fafc;
+}
+
+.slate-market-main {
+  display: grid;
+  gap: 5px;
+  padding: 4px 0;
+}
+
+.slate-market-main span,
+.slate-market-main small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.slate-market-main strong {
+  line-height: 1.35;
+}
+
+.pick-option-button {
+  align-items: start;
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+  display: grid;
+  gap: 4px;
+  justify-content: stretch;
+  min-height: 72px;
+  padding: 10px;
+  text-align: left;
+}
+
+.pick-option-button span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pick-option-button strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.pick-option-button small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pick-option-button.yes-pick {
+  background: #e6f6ef;
+  border-color: color-mix(in srgb, var(--yes) 18%, var(--line));
+}
+
+.pick-option-button.no-pick {
+  background: #fff0ee;
+  border-color: color-mix(in srgb, var(--no) 16%, var(--line));
+}
+
+.pick-option-button.yes-pick strong {
+  color: var(--yes);
+}
+
+.pick-option-button.no-pick strong {
+  color: var(--no);
+}
+
+.pick-option-button.is-selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.pick-option-button:disabled:not(.is-selected) {
+  background: #f8fafc;
+  color: var(--muted);
+}
+
+.pick-review-modal {
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: 0 24px 80px rgb(21 25 35 / 28%);
+  display: grid;
+  gap: 14px;
+  justify-self: center;
+  max-height: calc(100vh - 40px);
+  max-width: 460px;
+  overflow-y: auto;
+  padding: 20px;
+  width: min(100%, 460px);
+}
+
+.pick-review-market,
+.pick-review-side {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.pick-review-market span,
+.pick-review-side span,
+.pick-review-side small,
+.pick-review-copy {
+  color: var(--muted);
+}
+
+.pick-review-side strong {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.pick-review-copy {
+  line-height: 1.45;
+  margin: 0;
+}
+
+.my-picks-list {
+  display: grid;
+  gap: 10px;
+}
+
+.my-pick-row {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 44px minmax(0, 1fr) 120px auto;
+  padding: 14px;
+}
+
+.pick-rank {
+  align-items: center;
+  background: #eef2f8;
+  border-radius: 6px;
+  color: var(--muted);
+  display: flex;
+  font-weight: 800;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.my-pick-main,
+.my-pick-status {
+  display: grid;
+  gap: 4px;
+}
+
+.my-pick-main span,
+.my-pick-main small,
+.my-pick-status span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.my-pick-status {
+  text-align: right;
+}
+
+.pick-empty-state {
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
 }
 
 .market-grid {
@@ -1225,9 +1534,13 @@ dd {
   }
 
   .hero,
+  .slate-hero,
+  .competition-strip,
   .market-grid,
   .quick-market-header,
   .quick-market-row,
+  .slate-market-header,
+  .slate-market-row,
   .market-metrics,
   .competition-hero,
   .competition-summary,
@@ -1247,8 +1560,18 @@ dd {
   .admin-panel,
   .form-grid,
   .market-list-row,
-  .activity-row {
+  .activity-row,
+  .my-pick-row {
     grid-template-columns: 1fr;
+  }
+
+  .slate-hero-main {
+    min-height: auto;
+    padding: 12px 0 0;
+  }
+
+  .pick-status-panel {
+    position: static;
   }
 
   .competition-card-header {
@@ -1273,11 +1596,23 @@ dd {
     display: none;
   }
 
+  .slate-market-header {
+    display: none;
+  }
+
   .quick-market-row {
     padding: 14px;
   }
 
+  .slate-market-row {
+    padding: 14px;
+  }
+
   .quick-market-volume {
+    text-align: left;
+  }
+
+  .my-pick-status {
     text-align: left;
   }
 }

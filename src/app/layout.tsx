@@ -8,13 +8,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CubeCast",
-  description: "Virtual prediction markets for competitive speedcubing."
+  description: "Free WCA speedcubing prediction slates."
 };
 
 const navItems = [
   { href: "/", label: "Home" },
-  { href: "/competitions", label: "Competitions" },
-  { href: "/portfolio", label: "Portfolio" },
+  { href: "/picks", label: "My Picks" },
   { href: "/leaderboard", label: "Leaderboard" }
 ];
 
@@ -24,8 +23,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
-  const sessionBalance =
-    typeof session?.user?.balance === "number" ? session.user.balance : null;
 
   return (
     <html lang="en">
@@ -47,11 +44,7 @@ export default async function RootLayout({
           <div className="account">
             {session?.user ? (
               <>
-                <span>
-                  {sessionBalance !== null
-                    ? `${sessionBalance.toLocaleString()} CubeCoins`
-                    : "Session expired"}
-                </span>
+                <span>{session.user.name ?? "Signed in"}</span>
                 <SignOutButton />
               </>
             ) : (
@@ -62,9 +55,7 @@ export default async function RootLayout({
           </div>
         </header>
         <main>{children}</main>
-        <footer>
-          CubeCoins are virtual and have no monetary value.
-        </footer>
+        <footer>CubeCast is a free forecasting game. No deposits, stakes, or wagering.</footer>
       </body>
     </html>
   );

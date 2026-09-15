@@ -146,16 +146,32 @@ Completed:
 
 ### Phase 3: Player Game UI
 
-Status: not started.
+Status: complete.
+
+Completed:
+
+- Replaced the home page with the active V1 slate feed.
+- Added persistent `X / 10 Picks` entry status.
+- Added market rows with fixed probabilities and score swing.
+- Added quick pick review modal from the slate board.
+- Added server actions for selecting, changing, and removing picks.
+- Enforced sign-in, slate status, lock time, market membership, option membership, and max-10 picks server-side.
+- Added `/picks` as the My Picks review screen.
+- Updated app shell copy away from CubeCoin balance language.
+
+### Phase 4: Settlement And Leaderboard
+
+Status: next.
 
 Next tasks:
 
-- Replace trading home flow with slate feed.
-- Add `X / 10 Picks`.
-- Add pick/unpick/change-side actions.
-- Add My Picks view.
+- Add settlement actions and immutable settlement snapshots.
+- Add void support in the player-facing result state.
+- Calculate entry scores from settled predictions.
+- Build V1 slate leaderboard from valid 10-pick entries.
+- Finalize contests only after all markets are resolved or void.
 
-### Phase 4+: Settlement, WCA, Admin, Prize Shell
+### Phase 5+: Admin, WCA, Prize Shell
 
 Status: planned in `docs/V1_IMPLEMENTATION_PLAN.md`.
 

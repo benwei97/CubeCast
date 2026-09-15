@@ -4,9 +4,9 @@ Last updated: 2026-09-15
 
 CubeCast is mid-migration from the legacy CubeCoin trading MVP to V1, a free WCA prediction slate game.
 
-The current runnable app still demonstrates the legacy trading flow. The V1 demo flow will replace it in later phases.
+The current runnable app now opens on the V1 slate-picking flow. Legacy trading routes still exist temporarily while settlement, leaderboard, admin, and old-flow removal are completed.
 
-## Current Legacy Demo
+## Current V1 Demo
 
 ```bash
 npm install
@@ -28,28 +28,31 @@ admin@cubecast.test / password123
 maya@cubecast.test / password123
 ```
 
-## Legacy Flow Still Available
+## V1 Flow Available Now
 
-- Browse competitions and markets.
-- Click YES/NO prices.
-- Review a CubeCoin order.
-- Confirm a purchase.
-- View portfolio and leaderboard.
-- Resolve markets as admin.
+- Open the active slate on `/`.
+- Scan 20 fixed-probability markets across the seeded competitions.
+- See `X / 10 Picks` in the slate entry panel.
+- Click a market outcome to open the pick review modal.
+- Sign in and add, change, or remove picks before lock.
+- Open `/picks` to review selected markets, probabilities, and score swing.
 
-This flow is retained temporarily while the V1 schema and game rules are built.
+The server enforces sign-in, slate status, lock time, market membership, option membership, and the max-10-picks rule.
+
+## Legacy Flow Still Available Temporarily
+
+- Legacy competition, market detail, portfolio, and admin routes still exist.
+- The old CubeCoin trading flow is retained only until the V1 settlement and leaderboard flows replace it.
 
 ## V1 Demo Target
 
-Phase 1 now seeds V1 foundation data:
+The seeded V1 data includes:
 
 - 1 demo contest slate
 - 2 slate competitions
 - 20 fixed-probability V1 markets
 - 40 market options
 - 4 development WCA identities
-
-The current UI does not expose the V1 slate game yet. That arrives in later phases.
 
 The V1 demo is successful when:
 
@@ -59,10 +62,10 @@ The V1 demo is successful when:
 4. The UI displays `X / 10 Picks`.
 5. The user selects exactly 10 predictions before lock.
 6. The user reviews My Picks with probability and score swing.
-7. The entry locks server-side.
-8. Admin settles or voids markets with evidence snapshots.
-9. The leaderboard ranks only valid 10-pick entries.
-10. The finalized slate score starts from 1,000 and applies deterministic scoring.
+7. The entry locks server-side. Not implemented yet.
+8. Admin settles or voids markets with evidence snapshots. Not implemented yet.
+9. The leaderboard ranks only valid 10-pick entries. Not implemented yet.
+10. The finalized slate score starts from 1,000 and applies deterministic scoring. Not implemented yet.
 
 ## Test Commands
 

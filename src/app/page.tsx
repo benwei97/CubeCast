@@ -1,125 +1,166 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
-import { QuickMarketBoard } from "@/components/quick-market-board";
-import { getMarketPrices } from "@/lib/market-pricing";
+import { V1SlateBoard } from "@/components/v1-slate-board";
 import { prisma } from "@/lib/prisma";
+import { getPickCounterLabel } from "@/lib/v1-game";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await auth();
-  const sessionBalance =
-    typeof session?.user?.balance === "number" ? session.user.balance : null;
-  const [featuredCompetition, markets, leaders] = await Promise.all([
-    prisma.competition.findFirst({
-      where: { status: { in: ["ACTIVE", "UPCOMING"] } },
-      orderBy: { startDate: "asc" },
-      include: { _count: { select: { markets: true } } }
-    }),
-    prisma.market.findMany({
-      where: { status: "OPEN" },
-      orderBy: { closeTime: "asc" },
-      take: 4,
-      include: { competition: true }
-    }),
-    prisma.user.findMany({
-      orderBy: { balance: "desc" },
-      take: 5,
-      select: { username: true, balance: true }
-    })
-  ]);
+  const now = new Date();
 
-  const quickMarkets = markets.map((market) => {
-    const prices = getMarketPrices(market);
-
-    return {
-      closeLabel: market.closeTime.toLocaleDateString(),
-      competitionName: market.competition.name,
-      noPrice: prices.noPrice,
-      question: market.question,
-      slug: market.slug,
-      totalShares: prices.totalShares,
-      yesPrice: prices.yesPrice
-    };
+  const activeSlate = await prisma.contestSlate.findFirst({
+    where: { status: "OPEN" },
+    orderBy: { lockAt: "asc" },
+    include: {
+      competitions: {
+        include: { competition: true },
+        orderBy: { createdAt: "asc" }
+      },
+      entries: {
+        where: { userId: session?.user?.id ?? "__signed_out__" },
+        include: {
+          predictions: {
+            include: {
+              selectedMarketOption: true
+            }
+          }
+        }
+      },
+      markets: {
+        where: { status: "OPEN" },
+        include: {
+          competition: true,
+          options: {
+            orderBy: { displayOrder: "asc" }
+          }
+        },
+        orderBy: [{ competition: { startDate: "asc" } }, { createdAt: "asc" }]
+      }
+    }
   });
+
+  if (!activeSlate) {
+    return (
+      <div className="page-stack">
+        <section className="slate-hero">
+          <div>
+            <h1>CubeCast</h1>
+            <p>
+              No open slate is published yet. Seed the database or publish a V1
+              slate from admin tools to start testing picks.
+            </p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const entry = activeSlate.entries[0] ?? null;
+  const predictions = entry?.predictions ?? [];
+  const pickCount = predictions.length;
+  const isLocked = now >= activeSlate.lockAt;
+  const pickCounterLabel = getPickCounterLabel({
+    locked: isLocked,
+    pickCount,
+    requiredPicks: activeSlate.maxPicks
+  });
+
+  const markets = activeSlate.markets.map((market) => ({
+    category: market.category.replaceAll("_", " "),
+    competitionName: market.competition.name,
+    eventName: market.eventName ?? market.eventId ?? "Event",
+    id: market.id,
+    lockLabel: formatDateTime(activeSlate.lockAt),
+    options: market.options.map((option) => ({
+      id: option.id,
+      label: option.label,
+      probability: option.probability,
+      sideKey: option.sideKey
+    })),
+    question: market.question,
+    slug: market.slug
+  }));
+
+  const selectedPicks = predictions.map((prediction) => ({
+    marketId: prediction.marketId,
+    marketOptionId: prediction.selectedMarketOptionId,
+    predictionId: prediction.id
+  }));
 
   return (
     <div className="page-stack">
-      <section className="hero">
-        <div>
-          <h1>CubeCast</h1>
+      <section className="slate-hero">
+        <div className="slate-hero-main">
+          <h1>{activeSlate.title}</h1>
+          <p>{activeSlate.description}</p>
+          <div className="slate-meta-row">
+            <span>{activeSlate.markets.length} markets</span>
+            <span>{activeSlate.competitions.length} competitions</span>
+            <span>Locks {formatDateTime(activeSlate.lockAt)}</span>
+          </div>
+        </div>
+
+        <aside className="pick-status-panel">
+          <span>Slate entry</span>
+          <strong>{pickCounterLabel}</strong>
           <p>
-            Browse WCA-style competition markets, spend free CubeCoins on YES or
-            NO predictions, and climb the leaderboard after results resolve.
+            {isLocked
+              ? "The slate is locked. Picks are now read-only."
+              : "Choose exactly 10 picks before lock for an official entry."}
           </p>
-        </div>
-        <div className="balance-panel">
-          <span>Current balance</span>
-          <strong>
-            {sessionBalance !== null
-              ? `${sessionBalance.toLocaleString()} CubeCoins`
-              : "Sign in to start"}
-          </strong>
-          {sessionBalance === null && (
-            <Link className="button-link" href="/sign-in">
-              Sign in
-            </Link>
-          )}
-        </div>
+          <Link className="button-link secondary-button" href="/picks">
+            Review picks
+          </Link>
+        </aside>
       </section>
 
-      <section>
-        <div className="section-heading">
-          <h2>Featured competition</h2>
-          <Link href="/competitions">View all</Link>
-        </div>
-        {featuredCompetition ? (
-          <article className="feature-row">
-            <div>
-              <h3>{featuredCompetition.name}</h3>
-              <p>{featuredCompetition.location}</p>
-            </div>
-            <div>
-              <span>{featuredCompetition.status}</span>
-              <strong>{featuredCompetition._count.markets} markets</strong>
-            </div>
+      <section className="competition-strip" aria-label="Slate competitions">
+        {activeSlate.competitions.map(({ competition }) => (
+          <article key={competition.id}>
+            <span>{competition.location}</span>
+            <strong>{competition.name}</strong>
+            <small>
+              {formatDate(competition.startDate)} - {formatDate(competition.endDate)}
+            </small>
           </article>
-        ) : (
-          <p className="empty-state">Seed the database to view competitions.</p>
-        )}
+        ))}
       </section>
 
       <section>
         <div className="section-heading">
           <h2>Markets</h2>
-          <Link href="/competitions">Open market catalog</Link>
+          <Link href="/picks">My Picks</Link>
         </div>
-        {quickMarkets.length > 0 ? (
-          <QuickMarketBoard
-            balance={sessionBalance ?? 0}
-            isSignedIn={sessionBalance !== null}
-            markets={quickMarkets}
-          />
-        ) : (
-          <p className="empty-state">Seed the database to view markets.</p>
-        )}
-      </section>
 
-      <section>
-        <div className="section-heading">
-          <h2>Leaderboard preview</h2>
-          <Link href="/leaderboard">Open leaderboard</Link>
-        </div>
-        <ol className="leader-list">
-          {leaders.map((leader) => (
-            <li key={leader.username}>
-              <span>{leader.username}</span>
-              <strong>{leader.balance.toLocaleString()}</strong>
-            </li>
-          ))}
-        </ol>
+        <V1SlateBoard
+          isLocked={isLocked}
+          isSignedIn={Boolean(session?.user?.id)}
+          markets={markets}
+          pickCount={pickCount}
+          pickLimit={activeSlate.maxPicks}
+          selectedPicks={selectedPicks}
+          slateId={activeSlate.id}
+        />
       </section>
     </div>
   );
+}
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short"
+  }).format(date);
+}
+
+function formatDateTime(date: Date) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    month: "short"
+  }).format(date);
 }

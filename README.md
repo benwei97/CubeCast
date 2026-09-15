@@ -23,6 +23,10 @@ The existing repository still contains an older CubeCoin trading MVP. That imple
 
 Phase 1 schema foundation is complete: the database now includes V1 slate, WCA identity, market option, entry, prediction, settlement snapshot, leaderboard, admin audit, prize award, and payout shell models alongside the legacy trading tables.
 
+Phase 2 core game rules are complete: scoring, exactly-10 entry validation, lock/edit checks, settlement helper semantics, and leaderboard tiebreakers are covered by `npm run test:v1`.
+
+Phase 3 player UI is complete: the home page now opens on the active V1 slate feed, displays `X / 10 Picks`, lets signed-in users select/change/remove picks through server actions, and exposes `/picks` for reviewing the current entry.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)
