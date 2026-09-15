@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:trading": "tsx scripts/trading-smoke-test.ts",
     "test:v1": "tsx scripts/v1-game-rules-test.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",

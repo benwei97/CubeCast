@@ -204,14 +204,22 @@ Status: complete.
 
 ### Phase 7: Remove Old Trading System
 
-Status: next.
+Status: complete.
 
-- Remove CubeCoin purchase/position/ledger UI.
-- Remove old trading services and tests.
-- Drop obsolete tables once safe.
-- Update docs to remove migration warnings.
+- Removed legacy market-detail trading route and portfolio route.
+- Removed old trading services, account-value helpers, quick-trade/order-ticket components, and trading smoke test.
+- Removed legacy admin market creation/review/resolution panels.
+- Converted competition pages to V1 probability summaries.
+- Kept obsolete database tables for a later explicit cleanup migration.
 
-### Phase 8: Prize-Ready Disabled Layer
+### Phase 8: Legacy Database Cleanup
+
+Status: planned.
+
+- Remove obsolete purchase/position/ledger/balance schema after a separate migration/data-retention review.
+- Remove legacy seed data that only exists for the old trading model.
+
+### Phase 9: Prize-Ready Disabled Layer
 
 - Add prize config and payout records behind `PRIZES_ENABLED=false`.
 - Add eligibility hooks.

@@ -2,19 +2,15 @@ import Link from "next/link";
 import {
   MarketCategory,
   CompetitionStatus,
-  MarketStatus,
   UserRole
 } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
-import { formatMarketCents } from "@/lib/market-format";
-import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 import {
   attachCompetitionToSlate,
   createCompetition,
-  createMarket,
   createV1Slate,
   createV1SlateMarket,
   importWCACompetition,
@@ -60,8 +56,6 @@ export default async function AdminPage({
 
   const [
     competitions,
-    marketsNeedingResolution,
-    markets,
     activeSlate,
     manageableSlate,
     slates
@@ -79,48 +73,6 @@ export default async function AdminPage({
         wcaCompetitionId: true
       }
     }),
-    prisma.market.findMany({
-      where: {
-        OR: [
-          {
-            status: MarketStatus.CLOSED
-          },
-          {
-            status: MarketStatus.OPEN,
-            closeTime: {
-              lte: new Date()
-            }
-          }
-        ]
-      },
-      orderBy: [{ closeTime: "asc" }, { question: "asc" }],
-      include: {
-        competition: {
-          select: {
-            name: true,
-            slug: true
-          }
-        },
-        _count: {
-          select: {
-            positions: true,
-            purchases: true
-          }
-        }
-      }
-    }),
-      prisma.market.findMany({
-        orderBy: [{ status: "asc" }, { closeTime: "asc" }],
-        take: 12,
-        include: {
-          competition: {
-            select: {
-              name: true,
-              slug: true
-            }
-          }
-        }
-      }),
       prisma.contestSlate.findFirst({
         where: {
           status: { in: ["OPEN", "LOCKED", "SETTLING"] }
@@ -684,44 +636,6 @@ export default async function AdminPage({
         )}
       </section>
 
-      <section>
-        <div className="section-heading">
-          <h2>Legacy Resolution Queue</h2>
-          <span>
-            {marketsNeedingResolution.length.toLocaleString()} needing review
-          </span>
-        </div>
-        {marketsNeedingResolution.length > 0 ? (
-          <div className="market-board">
-            <div className="market-board-header">
-              <span>Market</span>
-              <span>Close</span>
-              <span>Positions</span>
-              <span>Trades</span>
-              <span>Status</span>
-            </div>
-            {marketsNeedingResolution.map((market) => (
-              <Link
-                className="market-board-row"
-                href={`/markets/${market.slug}`}
-                key={market.id}
-              >
-                <div>
-                  <strong>{market.question}</strong>
-                  <span>{market.competition.name}</span>
-                </div>
-                <span>{market.closeTime.toLocaleDateString()}</span>
-                <span>{market._count.positions.toLocaleString()}</span>
-                <span>{market._count.purchases.toLocaleString()}</span>
-                <span>{market.status}</span>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p className="empty-state">No markets currently need resolution.</p>
-        )}
-      </section>
-
       <section className="detail-grid">
         <article className="admin-form-panel">
           <h2>Create Competition</h2>
@@ -780,128 +694,6 @@ export default async function AdminPage({
             </PendingSubmitButton>
           </form>
         </article>
-
-        <article className="admin-form-panel">
-          <h2>Create Market</h2>
-          {params.market === "invalid" && (
-            <p className="form-error">Check the market fields.</p>
-          )}
-          {params.market === "missing-competition" && (
-            <p className="form-error">Choose a valid competition.</p>
-          )}
-          <form action={createMarket} className="admin-form">
-            <label htmlFor="competitionId">Competition</label>
-            <select id="competitionId" name="competitionId" required>
-              {competitions.map((competition) => (
-                <option key={competition.id} value={competition.id}>
-                  {competition.name}
-                </option>
-              ))}
-            </select>
-
-            <label htmlFor="question">Question</label>
-            <input
-              id="question"
-              name="question"
-              placeholder="Will Competitor A win 3x3?"
-              required
-            />
-
-            <label htmlFor="market-description">Description</label>
-            <textarea id="market-description" name="description" required />
-
-            <div className="form-grid">
-              <div>
-                <label htmlFor="category">Category</label>
-                <select id="category" name="category" defaultValue="WINNER">
-                  {Object.values(MarketCategory).map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="closeTime">Close time</label>
-                <input
-                  id="closeTime"
-                  name="closeTime"
-                  required
-                  type="datetime-local"
-                />
-              </div>
-            </div>
-
-            <label htmlFor="resolutionRules">Resolution rules</label>
-            <textarea
-              id="resolutionRules"
-              name="resolutionRules"
-              defaultValue="Resolves from official WCA-style final results. The market cancels if no official result is published."
-              required
-            />
-
-            <label htmlFor="resolutionSource">Resolution source</label>
-            <input
-              id="resolutionSource"
-              name="resolutionSource"
-              defaultValue="Official WCA competition results"
-              required
-            />
-
-            <label htmlFor="liquidityParameter">Liquidity parameter</label>
-            <input
-              id="liquidityParameter"
-              name="liquidityParameter"
-              defaultValue="1000"
-              min="100"
-              type="number"
-            />
-
-            <PendingSubmitButton pendingLabel="Creating market...">
-              Create market
-            </PendingSubmitButton>
-          </form>
-        </article>
-      </section>
-
-      <section>
-        <div className="section-heading">
-          <h2>Legacy Market Review</h2>
-          <Link href="/competitions">Open competitions</Link>
-        </div>
-        <div className="market-board">
-          <div className="market-board-header">
-            <span>Market</span>
-            <span>Yes</span>
-            <span>No</span>
-            <span>Volume</span>
-            <span>Status</span>
-          </div>
-          {markets.map((market) => {
-            const prices = getMarketPrices(market);
-
-            return (
-              <Link
-                className="market-board-row"
-                href={`/markets/${market.slug}`}
-                key={market.id}
-              >
-                <div>
-                  <strong>{market.question}</strong>
-                  <span>{market.competition.name}</span>
-                </div>
-                <strong className="yes-text">
-                  {formatMarketCents(prices.yesPrice)}
-                </strong>
-                <strong className="no-text">
-                  {formatMarketCents(prices.noPrice)}
-                </strong>
-                <span>{prices.totalShares.toLocaleString()}</span>
-                <span>{market.status}</span>
-              </Link>
-            );
-          })}
-        </div>
       </section>
 
       {manageableSlate && manageableSlate.markets.length > 0 && (

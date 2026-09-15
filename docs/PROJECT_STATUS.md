@@ -219,16 +219,27 @@ Completed:
 
 ### Phase 7: Remove Old Trading System
 
-Status: next.
+Status: complete.
 
-Next tasks:
+Completed:
 
-- Remove CubeCoin purchase/position/ledger UI from the player experience.
-- Remove old trading services and tests once replacement coverage exists.
-- Drop obsolete tables only after a separate migration/data-retention review.
-- Update docs to remove migration warnings.
+- Removed the legacy market-detail trading route.
+- Removed the legacy portfolio route.
+- Removed quick-trade/order-ticket components.
+- Removed old trading services and account-value helpers.
+- Removed the legacy trading smoke test and package script.
+- Removed old trading admin panels for legacy market creation, review, and resolution.
+- Converted competition pages to V1 read-only probability summaries instead of legacy price/share links.
+- Kept obsolete database tables for a separate cleanup migration/data-retention review.
 
-### Phase 8+: Prize Shell
+### Phase 8: Legacy Database Cleanup
+
+Status: planned.
+
+- Remove obsolete purchase/position/ledger/balance fields and seed data after a separate migration review.
+- Confirm no production data depends on legacy trading tables before dropping anything.
+
+### Phase 9+: Prize Shell
 
 Status: planned in `docs/V1_IMPLEMENTATION_PLAN.md`.
 
@@ -268,12 +279,6 @@ Run lint:
 
 ```bash
 npm run lint
-```
-
-Run legacy trading smoke tests:
-
-```bash
-npm run test:trading
 ```
 
 Run V1 game-rule tests:

@@ -35,6 +35,8 @@ Phase 6 WCA integration is complete: WCA OAuth can be enabled with credentials, 
 
 Phase 6.5 WCA-assisted settlement is complete: imported WCA result snapshots now appear in the admin V1 Settlement Queue, and admins can attach a selected WCA evidence row to immutable settlement snapshots when resolving markets.
 
+Phase 7 legacy trading UI removal is complete: the old market-detail trading route, portfolio route, trading services, quick-trade components, and legacy trading smoke test have been removed. Legacy database tables remain until a separate cleanup migration.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)
@@ -71,7 +73,7 @@ Current planning docs:
    npm run dev
    ```
 
-The current seed still creates legacy demo accounts while V1 migration is underway.
+The current seed still creates development demo accounts while V1 migration is underway.
 
 ## Useful Checks
 
@@ -79,8 +81,7 @@ The current seed still creates legacy demo accounts while V1 migration is underw
 npm run typecheck
 npm run lint
 npm run test:v1
-npm run test:trading
 npm run build
 ```
 
-`npm run test:v1` covers the new V1 game rules. `npm run test:trading` covers the legacy trading flow and will be removed after the old trading UI is retired.
+`npm run test:v1` covers the V1 game rules.

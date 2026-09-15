@@ -85,7 +85,6 @@ export default async function HomePage() {
       sideKey: option.sideKey
     })),
     question: market.question,
-    slug: market.slug,
     status: market.status
   }));
 

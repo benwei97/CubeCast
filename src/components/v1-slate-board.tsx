@@ -24,7 +24,6 @@ type SlateMarket = {
   lockLabel: string;
   options: SlateMarketOption[];
   question: string;
-  slug: string;
   status: string;
 };
 
@@ -87,7 +86,7 @@ export function V1SlateBoard({
 
           return (
             <article className="slate-market-row" key={market.id}>
-              <Link className="slate-market-main" href={`/markets/${market.slug}`}>
+              <div className="slate-market-main">
                 <span>
                   {market.competitionName} · {market.eventName}
                 </span>
@@ -95,7 +94,7 @@ export function V1SlateBoard({
                 <small>
                   {market.category} · Locks {market.lockLabel}
                 </small>
-              </Link>
+              </div>
 
               {market.options.map((option) => {
                 const isSelected = selectedPick?.marketOptionId === option.id;

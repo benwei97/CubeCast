@@ -57,7 +57,7 @@ export async function onboardUser(userId: string, identity?: string | null) {
         type: "STARTING_BALANCE",
         amount: STARTING_BALANCE,
         balanceAfter: existing.balance + STARTING_BALANCE,
-        description: "Starting CubeCoins balance"
+        description: "Initial account setup"
       }
     });
   });

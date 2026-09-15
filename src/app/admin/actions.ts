@@ -46,17 +46,6 @@ const refreshWCAResultsSchema = z.object({
   competitionId: z.string().min(1)
 });
 
-const createMarketSchema = z.object({
-  competitionId: z.string().min(1),
-  question: z.string().min(8).max(180),
-  description: z.string().min(10).max(1000),
-  category: z.nativeEnum(MarketCategory),
-  closeTime: z.coerce.date(),
-  resolutionRules: z.string().min(10).max(1200),
-  resolutionSource: z.string().min(3).max(200),
-  liquidityParameter: z.coerce.number().int().min(100).max(100000)
-});
-
 const createV1SlateSchema = z.object({
   title: z.string().min(3).max(120),
   description: z.string().min(10).max(1000),
@@ -269,57 +258,6 @@ export async function refreshWCACompetitionResults(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/competitions");
   redirect("/admin?wca=results-refreshed");
-}
-
-export async function createMarket(formData: FormData) {
-  const admin = await requireAdmin();
-  const parsed = createMarketSchema.safeParse({
-    competitionId: formData.get("competitionId"),
-    question: formData.get("question"),
-    description: formData.get("description"),
-    category: formData.get("category"),
-    closeTime: formData.get("closeTime"),
-    resolutionRules: formData.get("resolutionRules"),
-    resolutionSource: formData.get("resolutionSource"),
-    liquidityParameter: formData.get("liquidityParameter")
-  });
-
-  if (!parsed.success) {
-    redirect("/admin?market=invalid");
-  }
-
-  const competition = await prisma.competition.findUnique({
-    where: { id: parsed.data.competitionId },
-    select: { slug: true }
-  });
-
-  if (!competition) {
-    redirect("/admin?market=missing-competition");
-  }
-
-  const slug = withTimestampSuffix(slugify(parsed.data.question));
-
-  await prisma.market.create({
-    data: {
-      competitionId: parsed.data.competitionId,
-      createdByUserId: admin.id,
-      question: parsed.data.question,
-      slug,
-      description: parsed.data.description,
-      category: parsed.data.category,
-      resolutionRules: parsed.data.resolutionRules,
-      resolutionSource: parsed.data.resolutionSource,
-      status: MarketStatus.OPEN,
-      closeTime: parsed.data.closeTime,
-      liquidityParameter: parsed.data.liquidityParameter
-    }
-  });
-
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidatePath("/competitions");
-  revalidatePath(`/competitions/${competition.slug}`);
-  redirect(`/markets/${slug}`);
 }
 
 export async function createV1Slate(formData: FormData) {

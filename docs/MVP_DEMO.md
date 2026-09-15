@@ -2,9 +2,9 @@
 
 Last updated: 2026-09-15
 
-CubeCast is mid-migration from the legacy CubeCoin trading MVP to V1, a free WCA prediction slate game.
+CubeCast is a free WCA prediction slate game.
 
-The current runnable app now opens on the V1 slate-picking flow. Legacy trading routes still exist temporarily while settlement, leaderboard, admin, and old-flow removal are completed.
+The current runnable app opens on the V1 slate-picking flow. The old trading routes and services have been removed from the app surface.
 
 ## Current V1 Demo
 
@@ -57,11 +57,6 @@ Settlement now stores snapshot evidence and admin audit records. WCA competition
 7. Pick a winning outcome, choose an evidence row, and resolve the market.
 8. Confirm `/leaderboard` updates after valid 10-pick entries have settled predictions.
 
-## Legacy Flow Still Available Temporarily
-
-- Legacy competition, market detail, portfolio, and admin routes still exist.
-- The old CubeCoin trading flow is retained only until the V1 settlement and leaderboard flows replace it.
-
 ## V1 Demo Target
 
 The seeded V1 data includes:
@@ -92,8 +87,7 @@ The V1 demo is successful when:
 npm run typecheck
 npm run lint
 npm run test:v1
-npm run test:trading
 npm run build
 ```
 
-`npm run test:v1` covers the new V1 game rules. `npm run test:trading` is legacy and will be removed after the old trading flow is retired.
+`npm run test:v1` covers the V1 game rules.

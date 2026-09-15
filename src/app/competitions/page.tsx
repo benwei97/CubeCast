@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { CompetitionStatus } from "@prisma/client";
 
-import { formatMarketCents } from "@/lib/market-format";
-import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -20,12 +18,15 @@ export default async function CompetitionsPage({
         orderBy: { closeTime: "asc" },
         select: {
           id: true,
-          slug: true,
           question: true,
           status: true,
-          closeTime: true,
-          yesSharesOutstanding: true,
-          noSharesOutstanding: true
+          options: {
+            orderBy: { displayOrder: "asc" },
+            select: {
+              label: true,
+              probability: true
+            }
+          }
         }
       }
     }
@@ -41,7 +42,8 @@ export default async function CompetitionsPage({
         <p className="eyebrow">Competition markets</p>
         <h1>Competitions</h1>
         <p>
-          Browse seeded speedcubing competitions and open each YES/NO market.
+          Browse WCA competitions attached to CubeCast slates and review fixed
+          probability markets.
         </p>
       </section>
 
@@ -94,24 +96,17 @@ export default async function CompetitionsPage({
               <span>Ends {competition.endDate.toLocaleDateString()}</span>
             </div>
             <div className="market-list">
-              {competition.markets.map((market) => {
-                const prices = getMarketPrices(market);
-
-                return (
-                  <Link
-                    className="market-list-row"
-                    href={`/markets/${market.slug}`}
-                    key={market.id}
-                  >
-                    <span>{market.question}</span>
-                    <strong>
-                      YES {formatMarketCents(prices.yesPrice)} / NO{" "}
-                      {formatMarketCents(prices.noPrice)}
-                    </strong>
-                    <small>{market.status}</small>
-                  </Link>
-                );
-              })}
+              {competition.markets.map((market) => (
+                <div className="market-list-row" key={market.id}>
+                  <span>{market.question}</span>
+                  <strong>
+                    {market.options
+                      .map((option) => `${option.label} ${option.probability}%`)
+                      .join(" / ")}
+                  </strong>
+                  <small>{market.status}</small>
+                </div>
+              ))}
             </div>
           </article>
         ))}

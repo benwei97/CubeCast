@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MarketCategory, MarketStatus } from "@prisma/client";
 
-import { formatMarketCents } from "@/lib/market-format";
-import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +21,16 @@ export default async function CompetitionDetailPage({
       markets: {
         orderBy: [{ status: "asc" }, { closeTime: "asc" }, { question: "asc" }],
         include: {
+          options: {
+            orderBy: { displayOrder: "asc" },
+            select: {
+              label: true,
+              probability: true
+            }
+          },
           _count: {
             select: {
-              purchases: true,
-              positions: true
+              predictions: true
             }
           }
         }
@@ -44,9 +48,8 @@ export default async function CompetitionDetailPage({
   const resolvedMarkets = competition.markets.filter(
     (market) => market.status === "RESOLVED" || market.status === "CANCELED"
   );
-  const totalVolume = competition.markets.reduce(
-    (total, market) =>
-      total + market.yesSharesOutstanding + market.noSharesOutstanding,
+  const totalPicks = competition.markets.reduce(
+    (total, market) => total + market._count.predictions,
     0
   );
   const activeStatus = isMarketStatus(status) ? status : "ALL";
@@ -92,8 +95,8 @@ export default async function CompetitionDetailPage({
             <strong>{resolvedMarkets.length.toLocaleString()}</strong>
           </div>
           <div>
-            <span>Volume</span>
-            <strong>{totalVolume.toLocaleString()}</strong>
+            <span>Picks</span>
+            <strong>{totalPicks.toLocaleString()}</strong>
           </div>
         </aside>
       </section>
@@ -143,35 +146,25 @@ export default async function CompetitionDetailPage({
         <div className="market-board">
           <div className="market-board-header">
             <span>Market</span>
-            <span>Yes</span>
-            <span>No</span>
-            <span>Volume</span>
+            <span>Outcomes</span>
+            <span>Picks</span>
             <span>Status</span>
           </div>
-          {filteredMarkets.map((market) => {
-            const prices = getMarketPrices(market);
-
-            return (
-              <Link
-                className="market-board-row"
-                href={`/markets/${market.slug}`}
-                key={market.id}
-              >
-                <div>
-                  <strong>{market.question}</strong>
-                  <span>{market.category}</span>
-                </div>
-                <strong className="yes-text">
-                  {formatMarketCents(prices.yesPrice)}
-                </strong>
-                <strong className="no-text">
-                  {formatMarketCents(prices.noPrice)}
-                </strong>
-                <span>{prices.totalShares.toLocaleString()}</span>
-                <span>{market.status}</span>
-              </Link>
-            );
-          })}
+          {filteredMarkets.map((market) => (
+            <div className="market-board-row" key={market.id}>
+              <div>
+                <strong>{market.question}</strong>
+                <span>{market.category}</span>
+              </div>
+              <strong>
+                {market.options
+                  .map((option) => `${option.label} ${option.probability}%`)
+                  .join(" / ")}
+              </strong>
+              <span>{market._count.predictions.toLocaleString()}</span>
+              <span>{market.status}</span>
+            </div>
+          ))}
           {filteredMarkets.length === 0 && (
             <div className="market-board-empty">
               No markets match these filters.
@@ -186,9 +179,7 @@ export default async function CompetitionDetailPage({
           {openMarkets.length > 0 ? (
             <div className="compact-list">
               {openMarkets.slice(0, 5).map((market) => (
-                <Link href={`/markets/${market.slug}`} key={market.id}>
-                  {market.question}
-                </Link>
+                <span key={market.id}>{market.question}</span>
               ))}
             </div>
           ) : (
@@ -200,9 +191,7 @@ export default async function CompetitionDetailPage({
           {resolvedMarkets.length > 0 ? (
             <div className="compact-list">
               {resolvedMarkets.slice(0, 5).map((market) => (
-                <Link href={`/markets/${market.slug}`} key={market.id}>
-                  {market.question}
-                </Link>
+                <span key={market.id}>{market.question}</span>
               ))}
             </div>
           ) : (
