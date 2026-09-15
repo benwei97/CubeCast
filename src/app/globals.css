@@ -1329,7 +1329,7 @@ footer {
   border-radius: 8px;
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(260px, 1fr) minmax(240px, 0.8fr) auto;
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 0.9fr) minmax(240px, 0.9fr) auto;
   padding: 16px;
 }
 
@@ -1346,6 +1346,36 @@ footer {
 
 .v1-settlement-main strong {
   line-height: 1.35;
+}
+
+.wca-evidence-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.wca-evidence-panel strong {
+  font-size: 13px;
+}
+
+.wca-evidence-panel small {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.wca-evidence-list {
+  display: grid;
+  gap: 6px;
+}
+
+.wca-evidence-list span {
+  background: var(--background);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 6px 8px;
 }
 
 .admin-panel h3 {

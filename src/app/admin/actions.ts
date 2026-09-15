@@ -22,6 +22,7 @@ import {
 } from "@/lib/wca";
 import {
   resolveV1Market,
+  type SettlementSourceEvidence,
   tieV1Market,
   voidV1Market
 } from "@/lib/v1-settlement";
@@ -102,6 +103,7 @@ const publishV1MarketSchema = z.object({
 
 const settleV1MarketSchema = z.object({
   marketId: z.string().min(1),
+  sourceEvidence: z.string().max(5000).optional(),
   sourceNote: z.string().max(1200).optional(),
   sourceUrl: z.string().url().optional().or(z.literal("")),
   winningMarketOptionId: z.string().min(1)
@@ -645,6 +647,7 @@ export async function settleV1Market(formData: FormData) {
   const admin = await requireAdmin();
   const parsed = settleV1MarketSchema.safeParse({
     marketId: formData.get("marketId"),
+    sourceEvidence: formData.get("sourceEvidence") || undefined,
     sourceNote: formData.get("sourceNote") || undefined,
     sourceUrl: formData.get("sourceUrl") || undefined,
     winningMarketOptionId: formData.get("winningMarketOptionId")
@@ -657,6 +660,7 @@ export async function settleV1Market(formData: FormData) {
   await resolveV1Market({
     adminUserId: admin.id,
     marketId: parsed.data.marketId,
+    sourceEvidence: parseSettlementSourceEvidence(parsed.data.sourceEvidence),
     sourceNote: parsed.data.sourceNote,
     sourceUrl: parsed.data.sourceUrl || undefined,
     winningMarketOptionId: parsed.data.winningMarketOptionId
@@ -717,6 +721,26 @@ function revalidateV1Paths() {
   revalidatePath("/admin");
   revalidatePath("/leaderboard");
   revalidatePath("/picks");
+}
+
+function parseSettlementSourceEvidence(
+  value: string | undefined
+): SettlementSourceEvidence | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as SettlementSourceEvidence;
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return undefined;
+    }
+
+    return parsed;
+  } catch {
+    return undefined;
+  }
 }
 
 async function recomputeSlateWindow(

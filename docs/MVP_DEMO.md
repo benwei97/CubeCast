@@ -39,12 +39,23 @@ maya@cubecast.test / password123
 - Configure WCA OAuth and sign in with WCA for production-like identity.
 - As admin, open `/admin` to create slates, attach competitions, configure diversity caps, and create/publish V1 markets.
 - As admin, import a competition by WCA competition ID and refresh its result snapshot.
-- As admin, open `/admin` and use the V1 Settlement Queue to resolve, void, or mark an exact tie.
+- As admin, open `/admin` and use the V1 Settlement Queue to review imported WCA evidence, attach a result row, and resolve, void, or mark an exact tie.
 - Open `/leaderboard` to see valid 10-pick entries ranked by slate score.
 
 The server enforces sign-in, slate status, lock time, market membership, option membership, and the max-10-picks rule.
 
-Settlement now stores snapshot evidence and admin audit records. WCA competition/result data can be imported into local metadata; the current MVP settlement path remains manual/admin-assisted.
+Settlement now stores snapshot evidence and admin audit records. WCA competition/result data can be imported into local metadata and selected as evidence during admin-assisted settlement.
+
+## WCA-Assisted Settlement Check
+
+1. Sign in as an admin.
+2. Open `/admin`.
+3. Import a WCA competition ID from a WCA competition URL.
+4. Refresh that competition's result snapshot.
+5. Create or use a V1 market for the same competition/event.
+6. In the V1 Settlement Queue, confirm WCA evidence rows appear for matching event/competitor data.
+7. Pick a winning outcome, choose an evidence row, and resolve the market.
+8. Confirm `/leaderboard` updates after valid 10-pick entries have settled predictions.
 
 ## Legacy Flow Still Available Temporarily
 

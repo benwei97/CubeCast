@@ -204,6 +204,19 @@ Completed:
 - Store admin-refreshed WCA result snapshots in competition `sourceMetadata`.
 - Keep manual/admin-assisted settlement as the MVP fallback.
 
+### Phase 6.5: WCA-Assisted Settlement
+
+Status: complete.
+
+Completed:
+
+- Show imported WCA result rows inside the admin V1 Settlement Queue.
+- Match settlement evidence by market event and option competitor WCA IDs when available.
+- Let admins attach a selected WCA evidence row while resolving a market.
+- Store the selected evidence in immutable `SettlementSnapshot.snapshot`.
+- Fill structured settlement snapshot fields such as source competition, event, round, person, placement, and result value when evidence is attached.
+- Keep manual source notes and manual settlement available when imported WCA evidence is missing or incomplete.
+
 ### Phase 7: Remove Old Trading System
 
 Status: next.

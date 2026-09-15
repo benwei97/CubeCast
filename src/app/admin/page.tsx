@@ -133,7 +133,11 @@ export default async function AdminPage({
             },
             include: {
               competition: {
-                select: { name: true }
+                select: {
+                  name: true,
+                  sourceMetadata: true,
+                  wcaCompetitionId: true
+                }
               },
               options: {
                 orderBy: { displayOrder: "asc" }
@@ -571,80 +575,109 @@ export default async function AdminPage({
         )}
         {activeSlate && activeSlate.markets.length > 0 ? (
           <div className="v1-settlement-list">
-            {activeSlate.markets.map((market) => (
-              <article className="v1-settlement-row" key={market.id}>
-                <div className="v1-settlement-main">
-                  <span>
-                    {market.competition.name} · {market.eventName ?? market.eventId}
-                  </span>
-                  <strong>{market.question}</strong>
-                  <small>
-                    {market.category} · {market._count.predictions} picks ·{" "}
-                    {market.status}
-                  </small>
-                </div>
+            {activeSlate.markets.map((market) => {
+              const evidenceRows = getMarketWCAEvidenceRows(market);
 
-                <form action={settleV1Market} className="resolution-choice-form">
-                  <input name="marketId" type="hidden" value={market.id} />
-                  <select
-                    aria-label={`Winning outcome for ${market.question}`}
-                    name="winningMarketOptionId"
-                    required
-                  >
-                    {market.options.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.label} ({option.probability}%)
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    aria-label="Source URL"
-                    name="sourceUrl"
-                    placeholder="WCA result URL"
-                    type="url"
-                  />
-                  <input
-                    aria-label="Settlement note"
-                    name="sourceNote"
-                    placeholder="Result note"
-                  />
-                  <PendingSubmitButton pendingLabel="Resolving...">
-                    Resolve
-                  </PendingSubmitButton>
-                </form>
+              return (
+                <article className="v1-settlement-row" key={market.id}>
+                  <div className="v1-settlement-main">
+                    <span>
+                      {market.competition.name} ·{" "}
+                      {market.eventName ?? market.eventId}
+                    </span>
+                    <strong>{market.question}</strong>
+                    <small>
+                      {market.category} · {market._count.predictions} picks ·{" "}
+                      {market.status}
+                    </small>
+                  </div>
 
-                <div className="resolution-actions">
-                  <form action={settleV1MarketAsTie}>
+                  <div className="wca-evidence-panel">
+                    <strong>WCA evidence</strong>
+                    {evidenceRows.length > 0 ? (
+                      <div className="wca-evidence-list">
+                        {evidenceRows.slice(0, 6).map((row) => (
+                          <span key={row.id}>{row.label}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <small>
+                        No matching imported WCA result rows. Refresh this
+                        competition snapshot or settle manually.
+                      </small>
+                    )}
+                  </div>
+
+                  <form action={settleV1Market} className="resolution-choice-form">
                     <input name="marketId" type="hidden" value={market.id} />
-                    <input
-                      name="reason"
-                      type="hidden"
-                      value="Exact official tie."
-                    />
-                    <PendingSubmitButton
-                      className="secondary-button"
-                      pendingLabel="Settling..."
+                    <select
+                      aria-label={`Winning outcome for ${market.question}`}
+                      name="winningMarketOptionId"
+                      required
                     >
-                      Exact tie
+                      {market.options.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label} ({option.probability}%)
+                        </option>
+                      ))}
+                    </select>
+                    <select aria-label="WCA evidence row" name="sourceEvidence">
+                      <option value="">No evidence row</option>
+                      {evidenceRows.map((row) => (
+                        <option key={row.id} value={row.value}>
+                          {row.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      aria-label="Source URL"
+                      name="sourceUrl"
+                      placeholder="WCA result URL"
+                      type="url"
+                    />
+                    <input
+                      aria-label="Settlement note"
+                      name="sourceNote"
+                      placeholder="Result note"
+                    />
+                    <PendingSubmitButton pendingLabel="Resolving...">
+                      Resolve
                     </PendingSubmitButton>
                   </form>
-                  <form action={voidV1MarketAction}>
-                    <input name="marketId" type="hidden" value={market.id} />
-                    <input
-                      name="reason"
-                      type="hidden"
-                      value="Competitor did not participate or market cannot be settled from official result."
-                    />
-                    <PendingSubmitButton
-                      className="secondary-button"
-                      pendingLabel="Voiding..."
-                    >
-                      Void
-                    </PendingSubmitButton>
-                  </form>
-                </div>
-              </article>
-            ))}
+
+                  <div className="resolution-actions">
+                    <form action={settleV1MarketAsTie}>
+                      <input name="marketId" type="hidden" value={market.id} />
+                      <input
+                        name="reason"
+                        type="hidden"
+                        value="Exact official tie."
+                      />
+                      <PendingSubmitButton
+                        className="secondary-button"
+                        pendingLabel="Settling..."
+                      >
+                        Exact tie
+                      </PendingSubmitButton>
+                    </form>
+                    <form action={voidV1MarketAction}>
+                      <input name="marketId" type="hidden" value={market.id} />
+                      <input
+                        name="reason"
+                        type="hidden"
+                        value="Competitor did not participate or market cannot be settled from official result."
+                      />
+                      <PendingSubmitButton
+                        className="secondary-button"
+                        pendingLabel="Voiding..."
+                      >
+                        Void
+                      </PendingSubmitButton>
+                    </form>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <p className="empty-state">No V1 markets currently need settlement.</p>
@@ -947,17 +980,132 @@ function getConfigNumber(value: unknown, fallback: number) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+type WCAEvidenceMarket = {
+  eventId: string | null;
+  eventName: string | null;
+  competition: {
+    sourceMetadata: unknown;
+    wcaCompetitionId: string | null;
+  };
+  options: {
+    competitorWcaId: string | null;
+    label: string;
+  }[];
+};
+
+function getMarketWCAEvidenceRows(market: WCAEvidenceMarket) {
+  const metadata = isRecord(market.competition.sourceMetadata)
+    ? market.competition.sourceMetadata
+    : null;
+  const snapshot = Array.isArray(metadata?.resultsSnapshot)
+    ? metadata.resultsSnapshot
+    : [];
+  const competitorIds = new Set(
+    market.options
+      .map((option) => option.competitorWcaId)
+      .filter((value): value is string => Boolean(value))
+  );
+  const observedAt =
+    typeof metadata?.resultsObservedAt === "string"
+      ? metadata.resultsObservedAt
+      : null;
+  const sourceUrl =
+    typeof metadata?.resultsSourceUrl === "string"
+      ? metadata.resultsSourceUrl
+      : null;
+
+  return snapshot
+    .map((result, index) =>
+      buildWCAEvidenceRow({
+        index,
+        market,
+        observedAt,
+        result,
+        sourceUrl
+      })
+    )
+    .filter((row): row is NonNullable<typeof row> => Boolean(row))
+    .filter((row) => {
+      const eventMatches = !market.eventId || row.evidence.eventId === market.eventId;
+      const competitorMatches =
+        competitorIds.size === 0 ||
+        (row.evidence.wcaId ? competitorIds.has(row.evidence.wcaId) : false);
+
+      return eventMatches && competitorMatches;
+    })
+    .slice(0, 20);
+}
+
+function buildWCAEvidenceRow({
+  index,
+  market,
+  observedAt,
+  result,
+  sourceUrl
+}: {
+  index: number;
+  market: WCAEvidenceMarket;
+  observedAt: string | null;
+  result: unknown;
+  sourceUrl: string | null;
+}) {
+  if (!isRecord(result)) {
+    return null;
+  }
+
+  const person = isRecord(result.person) ? result.person : null;
+  const round = isRecord(result.round) ? result.round : null;
+  const eventId = getString(result.event_id);
+  const roundId = getString(result.round_type_id) ?? getString(round?.id);
+  const roundName = getString(round?.name) ?? roundId;
+  const personName = getString(person?.name) ?? getString(result.person_name);
+  const personId = getString(person?.id) ?? getString(result.person_id);
+  const wcaId = getString(person?.wca_id) ?? personId;
+  const placement = getNumber(result.pos) ?? getNumber(result.ranking);
+  const best = getNumber(result.best);
+  const average = getNumber(result.average);
+  const evidence = {
+    average,
+    best,
+    eventId,
+    eventName: market.eventName,
+    observedAt,
+    personId,
+    personName,
+    placement,
+    rawResult: result,
+    roundId,
+    roundName,
+    sourceUrl,
+    wcaCompetitionId: market.competition.wcaCompetitionId,
+    wcaId
+  };
+  const labelParts = [
+    personName ?? wcaId ?? "Unknown competitor",
+    eventId,
+    roundName,
+    placement != null ? `place ${placement}` : null,
+    average != null ? `avg ${average}` : null,
+    best != null ? `best ${best}` : null
+  ].filter(Boolean);
+
+  return {
+    evidence,
+    id: `${eventId ?? "event"}-${personId ?? index}-${roundId ?? "round"}-${index}`,
+    label: labelParts.join(" · "),
+    value: JSON.stringify(evidence)
+  };
+}
+
 function getWCAResultSummary(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (!isRecord(value)) {
     return "No result snapshot yet";
   }
 
-  const metadata = value as Record<string, unknown>;
-  const resultCount =
-    typeof metadata.resultCount === "number" ? metadata.resultCount : null;
+  const resultCount = getNumber(value.resultCount);
   const observedAt =
-    typeof metadata.resultsObservedAt === "string"
-      ? new Date(metadata.resultsObservedAt)
+    typeof value.resultsObservedAt === "string"
+      ? new Date(value.resultsObservedAt)
       : null;
 
   if (!resultCount || !observedAt || Number.isNaN(observedAt.getTime())) {
@@ -965,4 +1113,16 @@ function getWCAResultSummary(value: unknown) {
   }
 
   return `${resultCount.toLocaleString()} result rows observed ${observedAt.toLocaleString()}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getString(value: unknown) {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function getNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }

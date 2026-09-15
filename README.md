@@ -33,6 +33,8 @@ Phase 5 admin slate tools are complete: admins can create slates, attach competi
 
 Phase 6 WCA integration is complete: WCA OAuth can be enabled with credentials, WCA identities are stored on login, and admins can import WCA competitions plus refresh result snapshots.
 
+Phase 6.5 WCA-assisted settlement is complete: imported WCA result snapshots now appear in the admin V1 Settlement Queue, and admins can attach a selected WCA evidence row to immutable settlement snapshots when resolving markets.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

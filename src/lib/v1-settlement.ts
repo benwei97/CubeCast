@@ -5,6 +5,7 @@ import {
   MarketStatus,
   PredictionResultStatus,
   SettlementStatus,
+  type Prisma,
   type PrismaClient
 } from "@prisma/client";
 
@@ -23,12 +24,14 @@ type TransactionClient = Omit<
 
 export async function resolveV1Market({
   adminUserId,
+  sourceEvidence,
   marketId,
   sourceNote,
   sourceUrl,
   winningMarketOptionId
 }: {
   adminUserId: string;
+  sourceEvidence?: SettlementSourceEvidence;
   marketId: string;
   sourceNote?: string;
   sourceUrl?: string;
@@ -37,6 +40,7 @@ export async function resolveV1Market({
   return settleV1Market({
     adminUserId,
     marketId,
+    sourceEvidence,
     sourceNote,
     sourceUrl,
     winningMarketOptionId
@@ -88,6 +92,7 @@ async function settleV1Market({
   isTie = false,
   isVoid = false,
   marketId,
+  sourceEvidence,
   sourceNote,
   sourceUrl,
   winningMarketOptionId
@@ -96,6 +101,7 @@ async function settleV1Market({
   isTie?: boolean;
   isVoid?: boolean;
   marketId: string;
+  sourceEvidence?: SettlementSourceEvidence;
   sourceNote?: string;
   sourceUrl?: string;
   winningMarketOptionId?: string;
@@ -142,6 +148,8 @@ async function settleV1Market({
     const nextMarketStatus = isVoid ? MarketStatus.VOID : MarketStatus.RESOLVED;
     const settlementStatus = isVoid ? SettlementStatus.VOID : SettlementStatus.RESOLVED;
     const settledAt = new Date();
+    const observedPublicationAt =
+      getObservedPublicationAt(sourceEvidence) ?? settledAt;
 
     await tx.market.update({
       where: { id: market.id },
@@ -155,7 +163,7 @@ async function settleV1Market({
     await tx.settlementSnapshot.create({
       data: {
         marketId: market.id,
-        observedPublicationAt: settledAt,
+        observedPublicationAt,
         ruleVersion: market.settlementRuleVersion,
         settledAt,
         settledByUserId: adminUserId,
@@ -163,13 +171,18 @@ async function settleV1Market({
           marketId: market.id,
           question: market.question,
           result: isVoid ? "VOID" : isTie ? "TIE" : "RESOLVED",
+          sourceEvidence: sourceEvidence ?? null,
           sourceNote: sourceNote ?? null,
           winningMarketOptionId: winningOption?.id ?? null,
           winningMarketOptionLabel: winningOption?.label ?? null
         },
-        sourceCompetitionId: market.competitionId,
-        sourceEventId: market.eventId,
-        sourceUrl: sourceUrl || null,
+        sourceCompetitionId: sourceEvidence?.wcaCompetitionId ?? market.competitionId,
+        sourceEventId: sourceEvidence?.eventId ?? market.eventId,
+        sourcePersonId: sourceEvidence?.personId ?? null,
+        sourceRoundId: sourceEvidence?.roundId ?? null,
+        sourceUrl: sourceUrl || sourceEvidence?.sourceUrl || null,
+        placement: sourceEvidence?.placement ?? null,
+        resultValue: getSettlementResultValue(sourceEvidence),
         status: settlementStatus,
         winningMarketOptionId: winningOption?.id ?? null
       }
@@ -184,6 +197,7 @@ async function settleV1Market({
         marketId: market.id,
         metadata: {
           result: isVoid ? "VOID" : isTie ? "TIE" : "RESOLVED",
+          sourceEvidence: sourceEvidence ?? null,
           sourceNote: sourceNote ?? null,
           winningMarketOptionId: winningOption?.id ?? null
         },
@@ -215,6 +229,46 @@ async function settleV1Market({
 
     return { marketId: market.id, slateId: market.slateId };
   });
+}
+
+export type SettlementSourceEvidence = {
+  average?: number | null;
+  best?: number | null;
+  eventId?: string | null;
+  eventName?: string | null;
+  observedAt?: string | null;
+  personId?: string | null;
+  personName?: string | null;
+  placement?: number | null;
+  rawResult?: Prisma.InputJsonValue | null;
+  roundId?: string | null;
+  roundName?: string | null;
+  sourceUrl?: string | null;
+  wcaCompetitionId?: string | null;
+  wcaId?: string | null;
+};
+
+function getSettlementResultValue(sourceEvidence?: SettlementSourceEvidence) {
+  if (!sourceEvidence) {
+    return null;
+  }
+
+  const parts = [
+    sourceEvidence.average != null ? `avg ${sourceEvidence.average}` : null,
+    sourceEvidence.best != null ? `best ${sourceEvidence.best}` : null
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+function getObservedPublicationAt(sourceEvidence?: SettlementSourceEvidence) {
+  if (!sourceEvidence?.observedAt) {
+    return null;
+  }
+
+  const observedAt = new Date(sourceEvidence.observedAt);
+
+  return Number.isNaN(observedAt.getTime()) ? null : observedAt;
 }
 
 export async function refreshV1SlateScores(

@@ -192,6 +192,16 @@ Status: complete.
 - Added WCA result refresh boundary that stores observed result snapshots in competition metadata.
 - Kept manual/admin-assisted settlement available for MVP fallback.
 
+### Phase 6.5: WCA-Assisted Settlement
+
+Status: complete.
+
+- Imported WCA result snapshots are visible from the admin V1 Settlement Queue.
+- Settlement rows show relevant evidence matched by event and competitor WCA ID when available.
+- Admins can attach a selected WCA result row while resolving a market.
+- Settlement snapshots preserve the selected evidence row and structured source identifiers.
+- Manual source URL/note settlement remains available for cases where imported WCA data is incomplete.
+
 ### Phase 7: Remove Old Trading System
 
 Status: next.
