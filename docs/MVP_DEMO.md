@@ -32,7 +32,7 @@ maya@cubecast.test / password123
 
 1. Sign in as `maya@cubecast.test`.
 2. Open `/`.
-3. Click a YES or NO price in the home page market board.
+3. Click a YES or NO cents price in the home page market board.
 4. Confirm that the quick-trade modal shows cost, payout, profit, and remaining balance before submitting.
 5. Submit the purchase.
 6. Open the full market detail page to review rules, position, and recent activity.
@@ -48,7 +48,7 @@ maya@cubecast.test / password123
 
 - Home page with featured markets, direct YES/NO quick trading, and leaderboard preview.
 - Competition list and competition detail pages.
-- Market pages with YES/NO pricing, volume, close time, share split, order ticket, recent activity, and user position.
+- Market pages with YES/NO cents pricing, percentage chances, volume, close time, share split, order ticket, recent activity, and user position.
 - Portfolio page with balance, open position value, final positions, trade history, and ledger.
 - Leaderboard ranked by estimated account value.
 - Admin page for creating competitions, creating markets, and finding markets that need resolution.

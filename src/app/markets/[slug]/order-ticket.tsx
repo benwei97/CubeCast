@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { formatMarketCents } from "@/lib/market-format";
 import { buyShares } from "./actions";
 
 type Outcome = "YES" | "NO";
@@ -46,7 +47,7 @@ export function OrderTicket({
           onClick={() => chooseOutcome("YES")}
           type="button"
         >
-          Yes {yesPrice}
+          Yes {formatMarketCents(yesPrice)}
         </button>
         <button
           aria-pressed={outcome === "NO"}
@@ -54,7 +55,7 @@ export function OrderTicket({
           onClick={() => chooseOutcome("NO")}
           type="button"
         >
-          No {noPrice}
+          No {formatMarketCents(noPrice)}
         </button>
       </div>
 
@@ -76,7 +77,7 @@ export function OrderTicket({
       <div className="order-summary">
         <div>
           <span>Avg price</span>
-          <strong>{price}</strong>
+          <strong>{formatMarketCents(price)}</strong>
         </div>
         <div>
           <span>Total cost</span>
@@ -110,7 +111,8 @@ export function OrderTicket({
           <div>
             <span>Reviewing</span>
             <strong>
-              Buy {quantity.toLocaleString()} {outcome} at {price}
+              Buy {quantity.toLocaleString()} {outcome} at{" "}
+              {formatMarketCents(price)}
             </strong>
           </div>
           <p>

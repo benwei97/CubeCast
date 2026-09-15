@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { buyShares } from "@/app/markets/[slug]/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { formatMarketCents, formatMarketPercent } from "@/lib/market-format";
 
 type Outcome = "YES" | "NO";
 
@@ -57,7 +58,8 @@ export function QuickMarketBoard({
               type="button"
             >
               <span>Yes</span>
-              <strong>{market.yesPrice}</strong>
+              <strong>{formatMarketCents(market.yesPrice)}</strong>
+              <small>{formatMarketPercent(market.yesPrice)}</small>
             </button>
             <button
               className="quick-price-button no-quick-button"
@@ -65,7 +67,8 @@ export function QuickMarketBoard({
               type="button"
             >
               <span>No</span>
-              <strong>{market.noPrice}</strong>
+              <strong>{formatMarketCents(market.noPrice)}</strong>
+              <small>{formatMarketPercent(market.noPrice)}</small>
             </button>
             <span className="quick-market-volume">
               {market.totalShares.toLocaleString()}
@@ -141,11 +144,13 @@ function QuickTradeModal({
         <div className="quick-trade-side">
           <div className={market.outcome === "YES" ? "is-active" : undefined}>
             <span>Yes</span>
-            <strong>{market.yesPrice}</strong>
+            <strong>{formatMarketCents(market.yesPrice)}</strong>
+            <small>{formatMarketPercent(market.yesPrice)} chance</small>
           </div>
           <div className={market.outcome === "NO" ? "is-active" : undefined}>
             <span>No</span>
-            <strong>{market.noPrice}</strong>
+            <strong>{formatMarketCents(market.noPrice)}</strong>
+            <small>{formatMarketPercent(market.noPrice)} chance</small>
           </div>
         </div>
 
@@ -169,7 +174,7 @@ function QuickTradeModal({
             <div className="order-summary">
               <div>
                 <span>Avg price</span>
-                <strong>{price}</strong>
+                <strong>{formatMarketCents(price)}</strong>
               </div>
               <div>
                 <span>Total cost</span>
@@ -205,7 +210,8 @@ function QuickTradeModal({
                 <div>
                   <span>Review order</span>
                   <strong>
-                    Buy {quantity.toLocaleString()} {market.outcome} at {price}
+                    Buy {quantity.toLocaleString()} {market.outcome} at{" "}
+                    {formatMarketCents(price)}
                   </strong>
                 </div>
                 <p>

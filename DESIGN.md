@@ -70,7 +70,7 @@ components:
 
 CubeCast should feel like a focused prediction-market workstation for speedcubing: dense, legible, fast to scan, and restrained. The interface is not a marketing site. It is an operating surface where users compare markets, choose YES or NO, review cost and payout, and confirm a virtual trade.
 
-The visual system uses neutral surfaces, crisp borders, compact rows, and clear semantic color. Green means YES or profit. Red means NO, loss, or risk. Blue is reserved for navigation and low-frequency emphasis.
+The visual system uses neutral surfaces, crisp borders, compact rows, and clear semantic color. Green means YES or profit. Red means NO, loss, or risk. Blue is reserved for navigation and low-frequency emphasis. Contract prices display as cents, while implied likelihood displays as percentages.
 
 **Key Characteristics:**
 
@@ -154,6 +154,7 @@ Controls and surfaces use modest radii. Standard cards and rows use `8px`; contr
 - **Style:** White surface with a single outer border and row dividers.
 - **Rows:** Question and competition metadata on the left; YES, NO, volume, and status values aligned in fixed columns.
 - **Behavior:** YES/NO controls open a review flow directly when the user is browsing an actionable market.
+- **Display:** Executable YES/NO prices use cents, such as `57¢`. Probability or chance context uses percentages, such as `57% chance`.
 
 ### Cards / Containers
 
@@ -178,6 +179,7 @@ The header is a simple three-part grid: brand, centered navigation, account cont
 ### Do:
 
 - **Do** make YES and NO prices clickable wherever a user expects to trade.
+- **Do** show market prices as cents and probability context as percentages.
 - **Do** show cost, payout, profit, and remaining balance before a purchase is submitted.
 - **Do** use compact market rows for comparison-heavy surfaces.
 - **Do** keep admin actions visibly separate from user trading actions.

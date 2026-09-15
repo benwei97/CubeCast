@@ -6,6 +6,7 @@ import {
   getOpenPositionValue,
   getPositionDisplayValue
 } from "@/lib/account-value";
+import { formatMarketCents } from "@/lib/market-format";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -198,7 +199,7 @@ export default async function PortfolioPage() {
                   {purchase.outcome}
                 </strong>
                 <span>{purchase.quantity.toLocaleString()}</span>
-                <span>{purchase.averagePrice.toLocaleString()}</span>
+                <span>{formatMarketCents(purchase.averagePrice)}</span>
                 <span>{purchase.totalCost.toLocaleString()}</span>
                 <span>{purchase.createdAt.toLocaleDateString()}</span>
               </article>
@@ -329,7 +330,8 @@ function PositionRow({ position }: { position: PortfolioPosition }) {
       <div>
         <strong>{position.status}</strong>
         <span>
-          YES {prices.yesPrice} / NO {prices.noPrice}
+          YES {formatMarketCents(prices.yesPrice)} / NO{" "}
+          {formatMarketCents(prices.noPrice)}
         </span>
       </div>
     </article>

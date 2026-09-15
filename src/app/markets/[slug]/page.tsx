@@ -4,6 +4,7 @@ import { UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { formatMarketCents, formatMarketPercent } from "@/lib/market-format";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 import { OrderTicket } from "./order-ticket";
@@ -80,12 +81,12 @@ export default async function MarketDetailPage({
           <p>{market.description}</p>
           <div className="market-metrics">
             <div>
-              <span>Yes price</span>
-              <strong>{prices.yesPrice}</strong>
+              <span>Yes chance</span>
+              <strong>{formatMarketPercent(prices.yesPrice)}</strong>
             </div>
             <div>
-              <span>No price</span>
-              <strong>{prices.noPrice}</strong>
+              <span>No chance</span>
+              <strong>{formatMarketPercent(prices.noPrice)}</strong>
             </div>
             <div>
               <span>Volume</span>
@@ -107,8 +108,8 @@ export default async function MarketDetailPage({
             {market.winningOutcome && <span>{market.winningOutcome} won</span>}
           </div>
           <div className="price-row">
-            <strong>YES {prices.yesPrice}</strong>
-            <strong>NO {prices.noPrice}</strong>
+            <strong>YES {formatMarketCents(prices.yesPrice)}</strong>
+            <strong>NO {formatMarketCents(prices.noPrice)}</strong>
           </div>
           {tradeMessage && (
             <p className={trade === "success" ? "success-text" : "form-error"}>

@@ -342,6 +342,12 @@ footer {
   font-size: 18px;
 }
 
+.quick-price-button small,
+.quick-trade-side small {
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .yes-quick-button {
   background: #e6f6ef;
   color: var(--yes);
@@ -451,6 +457,10 @@ footer {
 
 .quick-trade-side strong {
   font-size: 22px;
+}
+
+.quick-trade-side small {
+  color: var(--muted);
 }
 
 .quick-trade-side div:first-child.is-active {

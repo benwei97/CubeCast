@@ -91,6 +91,10 @@
       {
         "name": "Market Board First",
         "value": "Use dense rows with direct YES/NO actions for browsing surfaces where users compare markets."
+      },
+      {
+        "name": "Cents And Percentages",
+        "value": "Executable contract prices display as cents. Probability or chance context displays as percentages."
       }
     ]
   }

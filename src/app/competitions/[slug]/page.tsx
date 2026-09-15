@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MarketCategory, MarketStatus } from "@prisma/client";
 
+import { formatMarketCents } from "@/lib/market-format";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -160,8 +161,12 @@ export default async function CompetitionDetailPage({
                   <strong>{market.question}</strong>
                   <span>{market.category}</span>
                 </div>
-                <strong className="yes-text">{prices.yesPrice}</strong>
-                <strong className="no-text">{prices.noPrice}</strong>
+                <strong className="yes-text">
+                  {formatMarketCents(prices.yesPrice)}
+                </strong>
+                <strong className="no-text">
+                  {formatMarketCents(prices.noPrice)}
+                </strong>
                 <span>{prices.totalShares.toLocaleString()}</span>
                 <span>{market.status}</span>
               </Link>

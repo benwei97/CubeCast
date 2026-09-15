@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CompetitionStatus } from "@prisma/client";
 
+import { formatMarketCents } from "@/lib/market-format";
 import { getMarketPrices } from "@/lib/market-pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -104,7 +105,8 @@ export default async function CompetitionsPage({
                   >
                     <span>{market.question}</span>
                     <strong>
-                      YES {prices.yesPrice} / NO {prices.noPrice}
+                      YES {formatMarketCents(prices.yesPrice)} / NO{" "}
+                      {formatMarketCents(prices.noPrice)}
                     </strong>
                     <small>{market.status}</small>
                   </Link>

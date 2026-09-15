@@ -42,7 +42,7 @@ Admins use the admin area and market detail pages to create competitions, create
 
 ## Brand Commitments
 
-The product name is CubeCast. The voice should be direct, practical, and trading-oriented. The interface should be Kalshi-inspired in interaction shape: dense market boards, visible bid-style YES/NO actions, compact order review, and fast movement from browsing to purchasing.
+The product name is CubeCast. The voice should be direct, practical, and trading-oriented. The interface should be Kalshi-inspired in interaction shape: dense market boards, visible bid-style YES/NO actions, cents-based order prices, percentage-based probability context, compact order review, and fast movement from browsing to purchasing.
 
 ## Evidence on Hand
 

@@ -143,7 +143,7 @@ maya@cubecast.test / password123
 
 - Competition detail page
 - Shows competition description, location, dates, status, market count, open markets, final markets, and total volume
-- Shows a compact market board with YES price, NO price, volume, and status
+- Shows a compact market board with YES/NO prices in cents, volume, and status
 - Supports market filtering by status and category
 - Links each market row to its market detail page
 
@@ -151,7 +151,7 @@ maya@cubecast.test / password123
 
 - Market detail page
 - Shows market question, description, competition, status, category, close time, and resolution rules
-- Shows calculated YES/NO prices based on current outstanding seeded shares
+- Shows calculated YES/NO prices in cents and implied chances as percentages based on current outstanding seeded shares
 - Shows market metrics, share split, and a Kalshi-style order ticket
 - Signed-in users can buy YES or NO shares with CubeCoins
 - Order ticket previews selected outcome, quantity, average price, total cost, max payout, max profit, and remaining balance
