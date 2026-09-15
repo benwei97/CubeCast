@@ -191,6 +191,7 @@ maya@cubecast.test / password123
 - Admin nav link appears only for admin users
 - Admin users can create competitions
 - Admin users can create open markets under existing competitions
+- Admin users can review a resolution queue for closed or past-close markets
 - Admin users can review recent markets and open each market for buying or resolution
 - Admin creation and resolution forms show pending states while actions submit
 - Signed-out and non-admin users see a sign-in prompt
@@ -218,7 +219,6 @@ maya@cubecast.test / password123
 
 ### Market Resolution
 
-- Dedicated admin dashboard for reviewing markets that need resolution
 - Stronger confirmation step before final resolution
 - Audit trail beyond payout/refund ledger entries
 

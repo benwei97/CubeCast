@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { MarketCategory, CompetitionStatus, UserRole } from "@prisma/client";
+import {
+  MarketCategory,
+  CompetitionStatus,
+  MarketStatus,
+  UserRole
+} from "@prisma/client";
 
 import { auth } from "@/auth";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
@@ -32,7 +37,7 @@ export default async function AdminPage({
     );
   }
 
-  const [competitions, markets] = await Promise.all([
+  const [competitions, marketsNeedingResolution, markets] = await Promise.all([
     prisma.competition.findMany({
       orderBy: [{ startDate: "asc" }, { name: "asc" }],
       select: {
@@ -41,6 +46,36 @@ export default async function AdminPage({
         slug: true,
         status: true,
         startDate: true
+      }
+    }),
+    prisma.market.findMany({
+      where: {
+        OR: [
+          {
+            status: MarketStatus.CLOSED
+          },
+          {
+            status: MarketStatus.OPEN,
+            closeTime: {
+              lte: new Date()
+            }
+          }
+        ]
+      },
+      orderBy: [{ closeTime: "asc" }, { question: "asc" }],
+      include: {
+        competition: {
+          select: {
+            name: true,
+            slug: true
+          }
+        },
+        _count: {
+          select: {
+            positions: true,
+            purchases: true
+          }
+        }
       }
     }),
     prisma.market.findMany({
@@ -66,6 +101,44 @@ export default async function AdminPage({
           Create competitions and markets for the virtual CubeCoin prediction
           marketplace.
         </p>
+      </section>
+
+      <section>
+        <div className="section-heading">
+          <h2>Resolution Queue</h2>
+          <span>
+            {marketsNeedingResolution.length.toLocaleString()} needing review
+          </span>
+        </div>
+        {marketsNeedingResolution.length > 0 ? (
+          <div className="market-board">
+            <div className="market-board-header">
+              <span>Market</span>
+              <span>Close</span>
+              <span>Positions</span>
+              <span>Trades</span>
+              <span>Status</span>
+            </div>
+            {marketsNeedingResolution.map((market) => (
+              <Link
+                className="market-board-row"
+                href={`/markets/${market.slug}`}
+                key={market.id}
+              >
+                <div>
+                  <strong>{market.question}</strong>
+                  <span>{market.competition.name}</span>
+                </div>
+                <span>{market.closeTime.toLocaleDateString()}</span>
+                <span>{market._count.positions.toLocaleString()}</span>
+                <span>{market._count.purchases.toLocaleString()}</span>
+                <span>{market.status}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No markets currently need resolution.</p>
+        )}
       </section>
 
       <section className="detail-grid">
