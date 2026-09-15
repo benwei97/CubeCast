@@ -131,13 +131,18 @@ Status: in progress.
 
 ### Phase 1: Schema Foundation
 
-- Add V1 enums and models.
-- Add feature flag documentation for `PRIZES_ENABLED=false`.
-- Keep old trading tables temporarily.
-- Generate Prisma client.
-- Add seed data for one demo slate with 20-30 markets.
+Status: complete.
+
+- Added V1 enums and models.
+- Added feature flag documentation for `PRIZES_ENABLED=false`.
+- Kept old trading tables temporarily.
+- Generated Prisma client.
+- Added seed data for one demo slate with 20 markets.
+- Applied migration `20260915000000_v1_schema_foundation`.
 
 ### Phase 2: Core Game Rules
+
+Status: next.
 
 - Implement pure scoring helpers.
 - Implement entry validation helpers.

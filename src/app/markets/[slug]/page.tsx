@@ -22,6 +22,8 @@ export default async function MarketDetailPage({
   const { slug } = await params;
   const { resolution, trade } = await searchParams;
   const session = await auth();
+  const sessionBalance =
+    typeof session?.user?.balance === "number" ? session.user.balance : null;
   const market = await prisma.market.findUnique({
     where: { slug },
     include: {
@@ -116,15 +118,15 @@ export default async function MarketDetailPage({
               {tradeMessage}
             </p>
           )}
-          {session?.user ? (
+          {session?.user?.id && sessionBalance !== null ? (
             <>
               <p>
                 Balance:{" "}
-                <strong>{session.user.balance.toLocaleString()} CubeCoins</strong>
+                <strong>{sessionBalance.toLocaleString()} CubeCoins</strong>
               </p>
               {isOpen ? (
                 <OrderTicket
-                  balance={session.user.balance}
+                  balance={sessionBalance}
                   noPrice={prices.noPrice}
                   slug={market.slug}
                   yesPrice={prices.yesPrice}

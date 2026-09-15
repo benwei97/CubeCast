@@ -14,8 +14,10 @@ export const dynamic = "force-dynamic";
 
 export default async function PortfolioPage() {
   const session = await auth();
+  const sessionBalance =
+    typeof session?.user?.balance === "number" ? session.user.balance : null;
 
-  if (!session?.user) {
+  if (!session?.user?.id || sessionBalance === null) {
     return (
       <div className="auth-page">
         <section className="auth-panel">
@@ -90,7 +92,7 @@ export default async function PortfolioPage() {
     return total + currentValue - totalCost;
   }, 0);
   const accountValue = getAccountValue({
-    balance: session.user.balance,
+    balance: sessionBalance,
     positions
   });
 
@@ -108,7 +110,7 @@ export default async function PortfolioPage() {
       <section className="summary-grid">
         <article className="summary-card">
           <span>Balance</span>
-          <strong>{session.user.balance.toLocaleString()}</strong>
+          <strong>{sessionBalance.toLocaleString()}</strong>
           <small>Available CubeCoins</small>
         </article>
         <article className="summary-card">

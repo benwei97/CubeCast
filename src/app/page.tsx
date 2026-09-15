@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await auth();
+  const sessionBalance =
+    typeof session?.user?.balance === "number" ? session.user.balance : null;
   const [featuredCompetition, markets, leaders] = await Promise.all([
     prisma.competition.findFirst({
       where: { status: { in: ["ACTIVE", "UPCOMING"] } },
@@ -55,11 +57,11 @@ export default async function HomePage() {
         <div className="balance-panel">
           <span>Current balance</span>
           <strong>
-            {session?.user
-              ? `${session.user.balance.toLocaleString()} CubeCoins`
+            {sessionBalance !== null
+              ? `${sessionBalance.toLocaleString()} CubeCoins`
               : "Sign in to start"}
           </strong>
-          {!session?.user && (
+          {sessionBalance === null && (
             <Link className="button-link" href="/sign-in">
               Sign in
             </Link>
@@ -95,8 +97,8 @@ export default async function HomePage() {
         </div>
         {quickMarkets.length > 0 ? (
           <QuickMarketBoard
-            balance={session?.user?.balance ?? 0}
-            isSignedIn={Boolean(session?.user)}
+            balance={sessionBalance ?? 0}
+            isSignedIn={sessionBalance !== null}
             markets={quickMarkets}
           />
         ) : (

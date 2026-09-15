@@ -41,6 +41,16 @@ This flow is retained temporarily while the V1 schema and game rules are built.
 
 ## V1 Demo Target
 
+Phase 1 now seeds V1 foundation data:
+
+- 1 demo contest slate
+- 2 slate competitions
+- 20 fixed-probability V1 markets
+- 40 market options
+- 4 development WCA identities
+
+The current UI does not expose the V1 slate game yet. That arrives in later phases.
+
 The V1 demo is successful when:
 
 1. A user signs in with WCA identity or a local development WCA-like account.

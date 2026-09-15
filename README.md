@@ -21,6 +21,8 @@ CubeCast V1 is not a real-money prediction market. It does not support deposits,
 
 The existing repository still contains an older CubeCoin trading MVP. That implementation is being migrated incrementally rather than rewritten from scratch.
 
+Phase 1 schema foundation is complete: the database now includes V1 slate, WCA identity, market option, entry, prediction, settlement snapshot, leaderboard, admin audit, prize award, and payout shell models alongside the legacy trading tables.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

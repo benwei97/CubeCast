@@ -113,15 +113,22 @@ Status: complete.
 
 ### Phase 1: Schema Foundation
 
-Status: not started.
+Status: complete.
 
-Next tasks:
+Completed:
 
-- Add V1 Prisma models and enums alongside legacy trading tables.
-- Add WCA identity model.
-- Add contest slate, market outcome, entry, prediction, settlement snapshot, leaderboard/audit/prize shell models.
-- Generate Prisma client.
-- Add V1 seed data.
+- Added V1 Prisma enums and models alongside legacy trading tables.
+- Added WCA identity model.
+- Added contest slate and contest competition models.
+- Added market options for immutable published probabilities.
+- Added contest entry and prediction models.
+- Added settlement snapshot model.
+- Added leaderboard cache model.
+- Added admin action audit model.
+- Added prize award and payout shell models with prize behavior still disabled.
+- Added optional WCA/slate/event/published/lock fields to existing competition and market models.
+- Generated and applied migration `20260915000000_v1_schema_foundation`.
+- Updated seed data with one demo V1 slate, two slate competitions, 20 V1 markets, 40 market options, four WCA identities, and one admin audit action.
 
 ### Phase 2: Core Game Rules
 

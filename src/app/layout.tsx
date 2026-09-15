@@ -24,6 +24,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
+  const sessionBalance =
+    typeof session?.user?.balance === "number" ? session.user.balance : null;
 
   return (
     <html lang="en">
@@ -45,7 +47,11 @@ export default async function RootLayout({
           <div className="account">
             {session?.user ? (
               <>
-                <span>{session.user.balance.toLocaleString()} CubeCoins</span>
+                <span>
+                  {sessionBalance !== null
+                    ? `${sessionBalance.toLocaleString()} CubeCoins`
+                    : "Session expired"}
+                </span>
                 <SignOutButton />
               </>
             ) : (

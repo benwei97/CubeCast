@@ -22,8 +22,11 @@ enum CompetitionStatus {
 enum MarketStatus {
   DRAFT
   OPEN
+  LOCKED
   CLOSED
+  PENDING_RESULT
   RESOLVED
+  VOID
   CANCELED
 }
 
@@ -38,7 +41,70 @@ enum MarketCategory {
   RECORD
   TIME_THRESHOLD
   HEAD_TO_HEAD
+  ADVANCEMENT
+  PLACEMENT
+  PERFORMANCE
   OTHER
+}
+
+enum ContestSlateStatus {
+  DRAFT
+  OPEN
+  LOCKED
+  SETTLING
+  FINALIZED
+  CANCELLED
+}
+
+enum ContestEntryStatus {
+  DRAFT
+  VALID
+  LOCKED
+  FINALIZED
+  INVALID
+}
+
+enum PredictionResultStatus {
+  PENDING
+  CORRECT
+  INCORRECT
+  VOID
+  TIE
+}
+
+enum SettlementStatus {
+  PENDING
+  RESOLVED
+  VOID
+}
+
+enum AdminActionType {
+  SLATE_CREATE
+  SLATE_UPDATE
+  MARKET_CREATE
+  MARKET_PUBLISH
+  MARKET_VOID
+  MARKET_SETTLE
+  CONTEST_FINALIZE
+  PRIZE_UPDATE
+}
+
+enum PrizeAwardStatus {
+  DRAFT
+  PENDING
+  HELD
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING
+  HELD
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
 }
 
 enum PositionStatus {
@@ -57,25 +123,47 @@ enum TransactionType {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  name          String?
-  email         String?       @unique
-  emailVerified DateTime?
-  image         String?
-  username      String        @unique @default(cuid())
-  usernameLower String        @unique @default(cuid())
-  role          UserRole      @default(USER)
-  balance       Int           @default(0)
-  passwordHash  String?
-  accounts      Account[]
-  sessions      Session[]
-  createdMarkets Market[]     @relation("CreatedMarkets")
-  purchases     Purchase[]
-  positions     Position[]
-  transactions  LedgerTransaction[]
-  settlements   Settlement[]  @relation("SettledBy")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                  String               @id @default(cuid())
+  name                String?
+  email               String?              @unique
+  emailVerified       DateTime?
+  image               String?
+  username            String               @unique @default(cuid())
+  usernameLower       String               @unique @default(cuid())
+  role                UserRole             @default(USER)
+  balance             Int                  @default(0)
+  passwordHash        String?
+  accounts            Account[]
+  sessions            Session[]
+  wcaIdentity         WCAIdentity?
+  createdMarkets      Market[]             @relation("CreatedMarkets")
+  purchases           Purchase[]
+  positions           Position[]
+  transactions        LedgerTransaction[]
+  settlements         Settlement[]         @relation("SettledBy")
+  contestEntries      ContestEntry[]
+  leaderboardEntries  LeaderboardEntry[]
+  adminActions        AdminAction[]
+  settlementSnapshots SettlementSnapshot[] @relation("SnapshotSettledBy")
+  prizeAwards         PrizeAward[]
+  payouts             Payout[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+}
+
+model WCAIdentity {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wcaUserId   String   @unique
+  wcaId       String?  @unique
+  name        String
+  countryIso2 String?
+  avatarUrl   String?
+  profileUrl  String?
+  rawProfile  Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Account {
@@ -115,61 +203,224 @@ model VerificationToken {
 }
 
 model Competition {
-  id          String            @id @default(cuid())
-  name        String
-  slug        String            @unique
-  description String
-  location    String
-  country     String
-  startDate   DateTime
-  endDate     DateTime
-  status      CompetitionStatus @default(UPCOMING)
-  imageUrl    String?
-  officialUrl String?
-  markets     Market[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id               String               @id @default(cuid())
+  name             String
+  slug             String               @unique
+  description      String
+  location         String
+  country          String
+  startDate        DateTime
+  endDate          DateTime
+  status           CompetitionStatus    @default(UPCOMING)
+  imageUrl         String?
+  officialUrl      String?
+  wcaCompetitionId String?              @unique
+  scheduledStartAt DateTime?
+  scheduledEndAt   DateTime?
+  sourceMetadata   Json?
+  markets          Market[]
+  contestSlates    ContestCompetition[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+model ContestSlate {
+  id                 String               @id @default(cuid())
+  title              String
+  slug               String               @unique
+  description        String
+  status             ContestSlateStatus   @default(DRAFT)
+  lockAt             DateTime
+  startsAt           DateTime
+  endsAt             DateTime
+  publishedAt        DateTime?
+  finalizedAt        DateTime?
+  prizeEnabled       Boolean              @default(false)
+  maxPicks           Int                  @default(10)
+  baseScore          Int                  @default(1000)
+  competitions       ContestCompetition[]
+  markets            Market[]
+  entries            ContestEntry[]
+  leaderboardEntries LeaderboardEntry[]
+  adminActions       AdminAction[]
+  prizeAwards        PrizeAward[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model ContestCompetition {
+  id            String       @id @default(cuid())
+  slateId       String
+  slate         ContestSlate @relation(fields: [slateId], references: [id], onDelete: Cascade)
+  competitionId String
+  competition   Competition  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+
+  @@unique([slateId, competitionId])
 }
 
 model Market {
-  id                    String          @id @default(cuid())
+  id                    String               @id @default(cuid())
   competitionId         String
-  competition           Competition     @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competition           Competition          @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  slateId               String?
+  slate                 ContestSlate?        @relation(fields: [slateId], references: [id], onDelete: SetNull)
   question              String
-  slug                  String          @unique
+  slug                  String               @unique
   description           String
   category              MarketCategory
+  eventId               String?
+  eventName             String?
   resolutionRules       String
   resolutionSource      String
-  status                MarketStatus    @default(DRAFT)
+  settlementRuleVersion String               @default("legacy")
+  status                MarketStatus         @default(DRAFT)
   closeTime             DateTime
+  lockAt                DateTime?
+  publishedAt           DateTime?
   resolvedAt            DateTime?
+  voidReason            String?
   winningOutcome        MarketOutcome?
-  yesSharesOutstanding  Int             @default(0)
-  noSharesOutstanding   Int             @default(0)
-  liquidityParameter    Int             @default(1000)
+  yesSharesOutstanding  Int                  @default(0)
+  noSharesOutstanding   Int                  @default(0)
+  liquidityParameter    Int                  @default(1000)
   createdByUserId       String
-  createdBy             User            @relation("CreatedMarkets", fields: [createdByUserId], references: [id])
+  createdBy             User                 @relation("CreatedMarkets", fields: [createdByUserId], references: [id])
   purchases             Purchase[]
   positions             Position[]
   transactions          LedgerTransaction[]
   settlement            Settlement?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  options               MarketOption[]
+  predictions           Prediction[]
+  settlementSnapshots   SettlementSnapshot[]
+  adminActions          AdminAction[]
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+}
+
+model MarketOption {
+  id                  String               @id @default(cuid())
+  marketId            String
+  market              Market               @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  sideKey             String
+  label               String
+  probability         Int
+  competitorWcaId     String?
+  displayOrder        Int                  @default(0)
+  predictions         Prediction[]
+  settlementSnapshots SettlementSnapshot[] @relation("SnapshotWinningOption")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@unique([marketId, sideKey])
+}
+
+model ContestEntry {
+  id                        String             @id @default(cuid())
+  userId                    String
+  user                      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slateId                   String
+  slate                     ContestSlate       @relation(fields: [slateId], references: [id], onDelete: Cascade)
+  status                    ContestEntryStatus @default(DRAFT)
+  baseScore                 Int                @default(1000)
+  lockedAt                  DateTime?
+  finalizedAt               DateTime?
+  finalScore                Int?
+  correctCount              Int                @default(0)
+  hardestCorrectProbability Int?
+  predictions               Prediction[]
+  leaderboardEntry          LeaderboardEntry?
+  prizeAwards               PrizeAward[]
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+
+  @@unique([userId, slateId])
+}
+
+model Prediction {
+  id                     String                 @id @default(cuid())
+  entryId                String
+  entry                  ContestEntry           @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  marketId               String
+  market                 Market                 @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  selectedMarketOptionId String
+  selectedMarketOption   MarketOption           @relation(fields: [selectedMarketOptionId], references: [id], onDelete: Restrict)
+  selectedProbability    Int
+  resultStatus           PredictionResultStatus @default(PENDING)
+  scoreChange            Int?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@unique([entryId, marketId])
+}
+
+model SettlementSnapshot {
+  id                    String           @id @default(cuid())
+  marketId              String
+  market                Market           @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  status                SettlementStatus
+  winningMarketOptionId String?
+  winningMarketOption   MarketOption?    @relation("SnapshotWinningOption", fields: [winningMarketOptionId], references: [id], onDelete: SetNull)
+  settledByUserId       String?
+  settledBy             User?            @relation("SnapshotSettledBy", fields: [settledByUserId], references: [id], onDelete: SetNull)
+  observedPublicationAt DateTime?
+  settledAt             DateTime         @default(now())
+  sourceUrl             String?
+  sourceCompetitionId   String?
+  sourceEventId         String?
+  sourceRoundId         String?
+  sourcePersonId        String?
+  resultValue           String?
+  placement             Int?
+  ruleVersion           String
+  snapshot              Json
+  createdAt             DateTime         @default(now())
+}
+
+model LeaderboardEntry {
+  id                        String       @id @default(cuid())
+  slateId                   String
+  slate                     ContestSlate @relation(fields: [slateId], references: [id], onDelete: Cascade)
+  entryId                   String       @unique
+  entry                     ContestEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId                    String
+  user                      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank                      Int
+  finalScore                Int
+  correctCount              Int
+  hardestCorrectProbability Int?
+  isSharedRank              Boolean      @default(false)
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+
+  @@unique([slateId, userId])
+}
+
+model AdminAction {
+  id          String          @id @default(cuid())
+  adminUserId String
+  adminUser   User            @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+  actionType  AdminActionType
+  slateId     String?
+  slate       ContestSlate?   @relation(fields: [slateId], references: [id], onDelete: SetNull)
+  marketId    String?
+  market      Market?         @relation(fields: [marketId], references: [id], onDelete: SetNull)
+  metadata    Json?
+  createdAt   DateTime        @default(now())
 }
 
 model Purchase {
-  id           String         @id @default(cuid())
+  id           String              @id @default(cuid())
   userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   marketId     String
-  market       Market         @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  market       Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
   outcome      MarketOutcome
   quantity     Int
   totalCost    Int
   averagePrice Int
   transactions LedgerTransaction[]
-  createdAt    DateTime       @default(now())
+  createdAt    DateTime            @default(now())
 }
 
 model Position {
@@ -214,4 +465,37 @@ model Settlement {
   settledBy       User          @relation("SettledBy", fields: [settledByUserId], references: [id])
   totalPayout     Int
   createdAt       DateTime      @default(now())
+}
+
+model PrizeAward {
+  id          String           @id @default(cuid())
+  slateId     String
+  slate       ContestSlate     @relation(fields: [slateId], references: [id], onDelete: Cascade)
+  entryId     String
+  entry       ContestEntry     @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank        Int
+  amountCents Int
+  currency    String           @default("USD")
+  status      PrizeAwardStatus @default(DRAFT)
+  payout      Payout?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Payout {
+  id           String       @id @default(cuid())
+  prizeAwardId String       @unique
+  prizeAward   PrizeAward   @relation(fields: [prizeAwardId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String?
+  providerRef  String?
+  amountCents  Int
+  currency     String       @default("USD")
+  status       PayoutStatus @default(PENDING)
+  metadata     Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
