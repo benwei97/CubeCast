@@ -4,11 +4,14 @@ Last updated: 2026-09-14
 
 CubeCast currently uses a standard Next.js, Prisma, PostgreSQL, and Auth.js setup.
 
+The product is being migrated to CubeCast V1: a free WCA speedcubing prediction slate game. Legacy CubeCoin trading behavior remains in the codebase during migration but is not the V1 target.
+
 ## Required Services
 
 - A hosted PostgreSQL database.
 - A deployment target for the Next.js app.
 - Optional Google OAuth credentials if Google sign-in should be enabled.
+- WCA OAuth credentials before official V1 gameplay can launch.
 
 ## Required Environment Variables
 
@@ -18,6 +21,9 @@ AUTH_SECRET="replace-with-a-long-random-secret"
 AUTH_URL="https://your-production-domain.example"
 AUTH_GOOGLE_ID=""
 AUTH_GOOGLE_SECRET=""
+AUTH_WCA_ID=""
+AUTH_WCA_SECRET=""
+PRIZES_ENABLED="false"
 ```
 
 `DATABASE_URL` points to the PostgreSQL database where all app data is stored:
@@ -30,6 +36,8 @@ AUTH_GOOGLE_SECRET=""
 - positions
 - ledger transactions
 - settlements
+
+During V1 migration, new slate, entry, prediction, WCA identity, settlement snapshot, and audit data will also be stored in PostgreSQL.
 
 `AUTH_SECRET` signs auth cookies and tokens. Generate a long random value for each environment.
 
@@ -58,7 +66,7 @@ Only seed production intentionally. The current seed creates demo users and demo
 
 ## Real-Money Boundary
 
-The MVP is intentionally virtual-only. It does not have:
+V1 is intentionally free-to-play. It does not have:
 
 - deposits
 - withdrawals
@@ -66,6 +74,9 @@ The MVP is intentionally virtual-only. It does not have:
 - cash balances
 - crypto balances
 - real-money settlement
+- purchasable prediction currency
+- purchased extra picks
+- user-funded prize pools
 - compliance, KYC, AML, or state-by-state permissions
 
-Future real-money support should be treated as a separate regulated product layer, not a simple switch inside the current CubeCoin flow.
+Prize functionality must remain disabled unless explicitly enabled and reviewed. Future real-money or prize-related support should be treated as a separate legal/compliance workstream, not a simple switch inside gameplay.

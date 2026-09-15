@@ -1,6 +1,6 @@
 ---
 name: CubeCast
-description: Virtual speedcubing prediction markets with a restrained trading-board interface.
+description: Free WCA speedcubing prediction slates with a compact forecasting-game interface.
 colors:
   background: "#f7f8fb"
   surface: "#ffffff"
@@ -10,6 +10,7 @@ colors:
   yes: "#05603a"
   no: "#b42318"
   accent: "#2557d6"
+  warning: "#9a5b00"
 typography:
   display:
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
@@ -66,33 +67,35 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Compact Trading Desk"**
+**Creative North Star: "The Forecasting Scoreboard"**
 
-CubeCast should feel like a focused prediction-market workstation for speedcubing: dense, legible, fast to scan, and restrained. The interface is not a marketing site. It is an operating surface where users compare markets, choose YES or NO, review cost and payout, and confirm a virtual trade.
+CubeCast should feel like a compact competitive forecasting surface for speedcubing. The interface is operational: users scan a slate, compare probabilities, understand score upside/downside, select exactly 10 picks, and track results.
 
-The visual system uses neutral surfaces, crisp borders, compact rows, and clear semantic color. Green means YES or profit. Red means NO, loss, or risk. Blue is reserved for navigation and low-frequency emphasis. Contract prices display as cents, while implied likelihood displays as percentages.
+The app should borrow interaction clarity from prediction-market products without sounding like finance or wagering. Probability is central, but the user is making picks for points, not buying contracts.
 
 **Key Characteristics:**
 
-- Dense market-board layouts over decorative card grids.
-- Clear YES/NO controls visible at browsing level.
-- Calm neutral structure with strong semantic trading colors.
-- Explicit review and confirmation before balance-changing actions.
-- Small radius, simple borders, and minimal visual ornament.
+- Dense market-board and market-card layouts for quick comparison.
+- Persistent `X / 10 Picks` state.
+- Clear selected, locked, settled, correct, incorrect, void, and tie states.
+- Probability plus point swing shown before selection.
+- Calm neutral structure with semantic green/red used for outcomes and scoring.
+- Minimal ornament; speed, clarity, and auditability matter more than decoration.
 
 ## Colors
 
-The palette is a light trading dashboard system: cool neutral pages, white surfaces, dark text, and semantic YES/NO action colors.
+The palette is a light forecasting dashboard system: cool neutral pages, white surfaces, dark text, and semantic outcome colors.
 
 ### Primary
 
-- **Desk Ink** (`#151923`): Primary text and primary button background.
-- **Market Blue** (`#2557d6`): Links, focus rings, and selective navigation emphasis.
+- **Scoreboard Ink** (`#151923`): Primary text and primary button background.
+- **WCA Blue** (`#2557d6`): Links, focus rings, selected navigation, and low-frequency emphasis.
 
 ### Secondary
 
-- **Yes Green** (`#05603a`): YES actions, positive values, winning/profit states.
-- **No Red** (`#b42318`): NO actions, errors, losses, and risk states.
+- **Yes Green** (`#05603a`): YES, correct, positive score movement.
+- **No Red** (`#b42318`): NO, incorrect, negative score movement, validation errors.
+- **Review Amber** (`#9a5b00`): lock warnings, pending settlement, incomplete entries.
 
 ### Neutral
 
@@ -103,7 +106,7 @@ The palette is a light trading dashboard system: cool neutral pages, white surfa
 
 ### Named Rules
 
-**The Semantic Color Rule.** Green and red belong to market sides and account outcomes. Do not use them as decoration.
+**The Game-State Color Rule.** Green, red, amber, and blue must map to game state or action meaning. Do not use them as decoration.
 
 ## Typography
 
@@ -115,29 +118,29 @@ The palette is a light trading dashboard system: cool neutral pages, white surfa
 
 ### Hierarchy
 
-- **Display** (800, `clamp(42px, 7vw, 76px)`, 0.95): Home and auth hero title only.
-- **Headline** (800, `clamp(34px, 5vw, 58px)`, 1): Major page titles and market detail questions.
+- **Display** (800, `clamp(42px, 7vw, 76px)`, 0.95): Home or slate hero only.
+- **Headline** (800, `clamp(34px, 5vw, 58px)`, 1): Major slate, leaderboard, and market detail headings.
 - **Title** (700-800, 20-30px): Section headings, card titles, modal headings, metric values.
 - **Body** (400, 16-18px, 1.45-1.6): Supporting copy and row content.
-- **Label** (700-800, 12-13px): Table headers, metadata labels, controls, compact captions.
+- **Label** (700-800, 12-13px): Table headers, metadata labels, pick counters, compact captions.
 
 ## Layout
 
-The app uses a centered max-width shell around `1120px` with page stacks spaced at `32px`. Trading and admin surfaces use grid rows, compact tables, and two-column desktop layouts that collapse to one column under `760px`.
+The app uses a centered max-width shell around `1120px` with page stacks spaced at `32px`. Forecasting and admin surfaces use grid rows, compact tables, and two-column desktop layouts that collapse to one column under `760px`.
 
-Market browsing should prefer rows over same-size cards when the task is comparison or trading. Cards remain appropriate for summaries, forms, portfolio panels, and isolated details.
+Slate browsing should prioritize scannable market cards or rows where probability, point swing, competition, event, and selected state are visible without drilling into detail pages.
 
 ## Elevation & Depth
 
-The system is flat by default. Depth is primarily conveyed with borders, tonal row backgrounds, and layout hierarchy. Shadows are reserved for overlays such as quick-trade modals.
+The system is flat by default. Depth is primarily conveyed with borders, tonal row backgrounds, selected states, and layout hierarchy. Shadows are reserved for overlays such as pick review modals.
 
 ### Shadow Vocabulary
 
-- **Modal Lift** (`0 24px 80px rgb(21 25 35 / 28%)`): Dialogs and protected-focus overlays.
+- **Modal Lift** (`0 24px 80px rgb(21 25 35 / 28%)`): Protected-focus overlays such as pick review or confirmation.
 
 ## Shapes
 
-Controls and surfaces use modest radii. Standard cards and rows use `8px`; controls use `6px`; modals may use `10px`; pills are reserved for filters and compact status chips. Avoid nested cards and large rounded decorative containers.
+Controls and surfaces use modest radii. Standard cards and rows use `8px`; controls use `6px`; modals may use `10px`; pills are reserved for filters, statuses, and the pick counter. Avoid nested cards and large rounded decorative containers.
 
 ## Components
 
@@ -146,47 +149,55 @@ Controls and surfaces use modest radii. Standard cards and rows use `8px`; contr
 - **Shape:** Compact rectangle with `6px` radius and at least `40px` height.
 - **Primary:** Dark ink background, white text, solid border.
 - **Secondary:** White background, dark text, ink or line border.
+- **Pick actions:** YES/NO options use semantic tinting and must show selected state.
 - **Hover / Focus:** Subtle lift on hover and visible blue focus outline.
-- **YES / NO action buttons:** Tinted semantic background at rest; full semantic color on hover when used for direct trading actions.
 
-### Market Boards
+### Pick Counter
 
-- **Style:** White surface with a single outer border and row dividers.
-- **Rows:** Question and competition metadata on the left; YES, NO, volume, and status values aligned in fixed columns.
-- **Behavior:** YES/NO controls open a review flow directly when the user is browsing an actionable market.
-- **Display:** Executable YES/NO prices use cents, such as `57¢`. Probability or chance context uses percentages, such as `57% chance`.
+- **Content:** Always show `X / 10 Picks`.
+- **Complete State:** When exactly 10 are selected, show `10 / 10 Picks - Entry Complete`.
+- **Locked State:** After lock, show read-only state and stop presenting edit affordances.
+- **Invalid State:** If fewer than 10 picks at lock, explain that the entry is not official.
 
-### Cards / Containers
+### Market Cards
 
-- **Corner Style:** `8px`.
-- **Background:** White surface.
-- **Border:** One-pixel `line` border.
-- **Shadow Strategy:** None at rest.
-- **Internal Padding:** Usually 18-24px depending on density.
+- **Required Content:** question, competition, event, outcomes, probability, point swing, lock status/time, selected state.
+- **Score Display:** Show score swing as `+40 / -60`, based on published probability.
+- **Probability Display:** Show published probabilities as percentages and keep them immutable once published.
+- **Interaction:** Selecting an outcome should add or update the user's pick immediately before lock.
 
-### Inputs / Fields
+### My Picks
 
-- **Style:** White surface, `6px` radius, `line` border, 42px minimum height.
-- **Focus:** Blue focus outline with offset.
-- **Error:** Red text with direct recovery copy.
+- **Content:** 10 selected markets, selected outcome, probability, possible score change, competition, event, and lock time.
+- **Before Lock:** Users can remove or change picks.
+- **After Lock:** Read-only results view with correct/incorrect/void/tie, points earned/lost, running score, and rank.
 
-### Navigation
+### Leaderboard
 
-The header is a simple three-part grid: brand, centered navigation, account controls. It stays utilitarian and visible across the app.
+- **Ranking:** Final score, correct predictions, hardest correct prediction, then shared rank.
+- **Eligibility:** Only valid 10-pick locked entries appear on the official leaderboard.
+- **States:** Make finalized, settling, and not-yet-official states explicit.
+
+### Admin
+
+- **Style:** Dense operation panels and tables.
+- **Critical Actions:** Publishing, voiding, settlement, and finalization require confirmation and audit logs.
+- **Evidence:** Settlement inspection should foreground WCA source details and immutable snapshots.
 
 ## Do's and Don'ts
 
 ### Do:
 
-- **Do** make YES and NO prices clickable wherever a user expects to trade.
-- **Do** show market prices as cents and probability context as percentages.
-- **Do** show cost, payout, profit, and remaining balance before a purchase is submitted.
-- **Do** use compact market rows for comparison-heavy surfaces.
-- **Do** keep admin actions visibly separate from user trading actions.
+- **Do** keep `X / 10 Picks` visible on player-facing slate surfaces.
+- **Do** show probability and score swing before a user picks.
+- **Do** distinguish incomplete, complete, locked, settled, void, and finalized states.
+- **Do** use official WCA result language for settlement and evidence.
+- **Do** keep admin scoring/settlement actions auditable.
 
 ### Don't:
 
-- **Don't** introduce real-money language into the CubeCoin MVP.
-- **Don't** use green or red for non-market decoration.
-- **Don't** add large marketing hero sections to operational app surfaces.
-- **Don't** hide the full market detail page; users still need rules, activity, and admin resolution context.
+- **Don't** use buy, sell, stake, shares, contracts, portfolio value, balance, payout, or order-book language for V1 gameplay.
+- **Don't** add XP or purchasable prediction currency.
+- **Don't** imply real-money wagering or redemption.
+- **Don't** hide the exactly-10 requirement behind secondary screens.
+- **Don't** let frontend state be the only enforcement for lock or pick-count rules.

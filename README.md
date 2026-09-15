@@ -1,26 +1,32 @@
 # CubeCast
 
-Virtual prediction markets for competitive speedcubing.
+CubeCast is being migrated into a free WCA speedcubing prediction game.
 
-CubeCast is currently a virtual-only MVP using CubeCoins. It does not support deposits, withdrawals, crypto, cash balances, or real-money settlement.
+V1 target:
 
-For the living project summary, see [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
-For a local demo path, see [docs/MVP_DEMO.md](docs/MVP_DEMO.md).
-For environment and database notes, see [docs/DEPLOYMENT_NOTES.md](docs/DEPLOYMENT_NOTES.md).
+- WCA-authenticated gameplay
+- curated contest slates
+- approximately 20-30 fixed-probability markets per slate
+- exactly 10 picks for a valid entry
+- 1,000-point starting score
+- transparent score changes based on published probabilities
+- official WCA result settlement
+- immutable settlement snapshots
+- slate leaderboard with deterministic tiebreakers
+- prize-ready architecture disabled by default
 
-## Current Scope
+CubeCast V1 is not a real-money prediction market. It does not support deposits, withdrawals, wagering, purchasable currency, staking, user-funded prize pools, or buying extra predictions.
 
-- Next.js, React, TypeScript app
-- Prisma schema for users, competitions, markets, purchases, positions, ledger transactions, and settlements
-- PostgreSQL persistence
-- Auth.js/NextAuth with local demo credential sign-in
-- Seed data with demo users, competitions, markets, purchases, positions, and a resolved market
-- Kalshi-inspired market browsing and order ticket
-- Home page quick-trade market board with YES/NO review modal
-- CubeCoin YES/NO purchases
-- Portfolio, trade history, ledger, and leaderboard
-- Admin competition creation, market creation, and market resolution
-- Trading smoke tests for purchases, insufficient balance, payout settlement, and canceled-market refunds
+## Migration Status
+
+The existing repository still contains an older CubeCoin trading MVP. That implementation is being migrated incrementally rather than rewritten from scratch.
+
+Current planning docs:
+
+- [PRODUCT.md](PRODUCT.md)
+- [DESIGN.md](DESIGN.md)
+- [docs/V1_IMPLEMENTATION_PLAN.md](docs/V1_IMPLEMENTATION_PLAN.md)
+- [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md)
 
 ## Local Setup
 
@@ -51,7 +57,7 @@ For environment and database notes, see [docs/DEPLOYMENT_NOTES.md](docs/DEPLOYME
    npm run dev
    ```
 
-Demo accounts created by the seed script use `password123`.
+The current seed still creates legacy demo accounts while V1 migration is underway.
 
 ## Useful Checks
 
@@ -61,3 +67,5 @@ npm run lint
 npm run test:trading
 npm run build
 ```
+
+`npm run test:trading` covers the legacy trading flow and will be replaced by V1 game-rule tests during the migration.

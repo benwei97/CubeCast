@@ -1,12 +1,12 @@
 # MVP Demo Walkthrough
 
-Last updated: 2026-09-14
+Last updated: 2026-09-15
 
-This is the fastest path to see the current CubeCast MVP behavior locally.
+CubeCast is mid-migration from the legacy CubeCoin trading MVP to V1, a free WCA prediction slate game.
 
-CubeCoins are virtual only. The MVP does not include deposits, withdrawals, cash prizes, crypto, or real-money settlement.
+The current runnable app still demonstrates the legacy trading flow. The V1 demo flow will replace it in later phases.
 
-## Start The App
+## Current Legacy Demo
 
 ```bash
 npm install
@@ -28,40 +28,31 @@ admin@cubecast.test / password123
 maya@cubecast.test / password123
 ```
 
-## What To Test
+## Legacy Flow Still Available
 
-1. Sign in as `maya@cubecast.test`.
-2. Open `/`.
-3. Click a YES or NO cents price in the home page market board.
-4. Confirm that the quick-trade modal shows cost, payout, profit, and remaining balance before submitting.
-5. Submit the purchase.
-6. Open the full market detail page to review rules, position, and recent activity.
-7. Confirm that balance, position, portfolio, and leaderboard update.
-8. Sign out and sign in as `admin@cubecast.test`.
-9. Open `/admin`.
-10. Create a competition or market if needed.
-11. Open a market detail page and resolve it as YES, NO, or canceled.
-12. Check the confirmation checkbox before resolving.
-13. Confirm that resolved markets stop accepting purchases and that portfolio, ledger, and leaderboard values update.
+- Browse competitions and markets.
+- Click YES/NO prices.
+- Review a CubeCoin order.
+- Confirm a purchase.
+- View portfolio and leaderboard.
+- Resolve markets as admin.
 
-## What You Should See
+This flow is retained temporarily while the V1 schema and game rules are built.
 
-- Home page with featured markets, direct YES/NO quick trading, and leaderboard preview.
-- Competition list and competition detail pages.
-- Market pages with YES/NO cents pricing, percentage chances, volume, close time, share split, order ticket, recent activity, and user position.
-- Portfolio page with balance, open position value, final positions, trade history, and ledger.
-- Leaderboard ranked by estimated account value.
-- Admin page for creating competitions, creating markets, and finding markets that need resolution.
+## V1 Demo Target
 
-## MVP Completion Checklist
+The V1 demo is successful when:
 
-The minimum MVP is close. Remaining work should stay focused:
-
-- Add a final local QA pass across signed-out, user, and admin flows.
-- Improve validation messages where query-string feedback is too generic.
-- Confirm production environment setup with PostgreSQL, `AUTH_SECRET`, and `AUTH_URL`.
-- Decide whether sell/exit is truly required for MVP. If not, leave it out.
-- Leave advanced filters, charts, complex AMM logic, and real-time sockets for later.
+1. A user signs in with WCA identity or a local development WCA-like account.
+2. The user opens the active slate.
+3. The slate shows approximately 20-30 fixed-probability markets.
+4. The UI displays `X / 10 Picks`.
+5. The user selects exactly 10 predictions before lock.
+6. The user reviews My Picks with probability and score swing.
+7. The entry locks server-side.
+8. Admin settles or voids markets with evidence snapshots.
+9. The leaderboard ranks only valid 10-pick entries.
+10. The finalized slate score starts from 1,000 and applies deterministic scoring.
 
 ## Test Commands
 
@@ -71,3 +62,5 @@ npm run lint
 npm run test:trading
 npm run build
 ```
+
+`npm run test:trading` is legacy and will be replaced by V1 game-rule tests.

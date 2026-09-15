@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-14T00:00:00.000Z",
+  "generatedAt": "2026-09-15T00:00:00.000Z",
   "title": "Design System: CubeCast",
   "extensions": {
     "colorMeta": {
@@ -16,7 +16,7 @@
       },
       "ink": {
         "role": "primary",
-        "displayName": "Desk Ink",
+        "displayName": "Scoreboard Ink",
         "canonical": "#151923"
       },
       "muted": {
@@ -41,18 +41,23 @@
       },
       "accent": {
         "role": "primary",
-        "displayName": "Market Blue",
+        "displayName": "WCA Blue",
         "canonical": "#2557d6"
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Review Amber",
+        "canonical": "#9a5b00"
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Home and auth hero title only."
+        "purpose": "Home or slate hero only."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Major page titles and market detail questions."
+        "purpose": "Major slate, leaderboard, and market detail headings."
       },
       "body": {
         "displayName": "Body",
@@ -60,14 +65,14 @@
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Metadata, headers, and compact controls."
+        "purpose": "Metadata, headers, pick counters, and compact controls."
       }
     },
     "shadows": [
       {
         "name": "modal-lift",
         "value": "0 24px 80px rgb(21 25 35 / 28%)",
-        "purpose": "Protected-focus overlays such as quick-trade modals."
+        "purpose": "Protected-focus overlays such as pick review modals."
       }
     ],
     "motion": [
@@ -85,16 +90,16 @@
     ],
     "rules": [
       {
-        "name": "Semantic Color Rule",
-        "value": "Green and red belong to market sides and account outcomes. Do not use them as decoration."
+        "name": "Exactly Ten",
+        "value": "Player-facing slate surfaces must keep X / 10 Picks visible and explain incomplete or complete entry state."
       },
       {
-        "name": "Market Board First",
-        "value": "Use dense rows with direct YES/NO actions for browsing surfaces where users compare markets."
+        "name": "Probability Plus Score",
+        "value": "Market cards must show published probability and score swing before selection."
       },
       {
-        "name": "Cents And Percentages",
-        "value": "Executable contract prices display as cents. Probability or chance context displays as percentages."
+        "name": "No Trading Language",
+        "value": "Do not use buy, sell, shares, contracts, stake, balance, payout, portfolio value, or order-book language for V1 gameplay."
       }
     ]
   }
