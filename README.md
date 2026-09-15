@@ -1,18 +1,25 @@
 # CubeCast
 
-Virtual prediction markets for competitive speedcubing. This repository currently contains Phase 1 foundation work only.
+Virtual prediction markets for competitive speedcubing.
 
-For a living summary of what has been built, how the app works, and what remains, see [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
+CubeCast is currently a virtual-only MVP using CubeCoins. It does not support deposits, withdrawals, crypto, cash balances, or real-money settlement.
 
-## Phase 1 Scope
+For the living project summary, see [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
+For a local demo path, see [docs/MVP_DEMO.md](docs/MVP_DEMO.md).
+For environment and database notes, see [docs/DEPLOYMENT_NOTES.md](docs/DEPLOYMENT_NOTES.md).
 
-- Next.js, React, TypeScript app scaffold
-- Prisma schema for users, competitions, markets, purchases, positions, transactions, and settlements
-- Auth.js/NextAuth foundation with Google OAuth support when configured
-- Local demo credential sign-in for seeded users
-- First-login onboarding service that grants 1,000 CubeCoins and records a ledger transaction
-- Shared layout, sign-in page, and seed-backed home page
-- Seed script with one admin, five sample users, competitions, markets, purchases, and a resolved market
+## Current Scope
+
+- Next.js, React, TypeScript app
+- Prisma schema for users, competitions, markets, purchases, positions, ledger transactions, and settlements
+- PostgreSQL persistence
+- Auth.js/NextAuth with local demo credential sign-in
+- Seed data with demo users, competitions, markets, purchases, positions, and a resolved market
+- Kalshi-inspired market browsing and order ticket
+- CubeCoin YES/NO purchases
+- Portfolio, trade history, ledger, and leaderboard
+- Admin competition creation, market creation, and market resolution
+- Trading smoke tests for purchases, insufficient balance, payout settlement, and canceled-market refunds
 
 ## Local Setup
 
@@ -45,9 +52,11 @@ For a living summary of what has been built, how the app works, and what remains
 
 Demo accounts created by the seed script use `password123`.
 
-## Phase 1 Deviations
+## Useful Checks
 
-- Google OAuth is wired but not usable until `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` are configured.
-- Credential login exists only to make local seeded verification possible.
-- No real-money, deposit, withdrawal, crypto, or cash-equivalent functionality is present.
-- Pricing, purchase, settlement, portfolio, leaderboard, and admin behavior remain for later phases.
+```bash
+npm run typecheck
+npm run lint
+npm run test:trading
+npm run build
+```

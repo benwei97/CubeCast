@@ -50,6 +50,7 @@ The app reads this through `DATABASE_URL` in `.env`.
 - Shared market pricing helper for YES/NO display and purchase prices
 - Shared account value helper for portfolio and leaderboard calculations
 - Shared pending submit button for server-action forms
+- Shared trading service for purchase and resolution transactions
 
 ### Database Foundation
 
@@ -158,6 +159,7 @@ maya@cubecast.test / password123
 - Shows the signed-in user's current position in the market
 - Shows recent purchase activity when available
 - Admin users can resolve a market as YES, NO, or canceled
+- Admin resolution requires a final confirmation checkbox before submission
 - Resolved markets pay 100 CubeCoins per winning share
 - Canceled markets refund original position costs
 - Resolution updates market status, positions, balances, ledger entries, portfolio, and leaderboard
@@ -210,8 +212,7 @@ maya@cubecast.test / password123
 
 - More realistic automated market maker pricing
 - Sell/exit behavior, if included in MVP scope
-- Prevent trades after close
-- More automated tests around purchase transactions
+- Real-time market board refresh after other users trade
 
 ### Portfolio
 
@@ -219,7 +220,6 @@ maya@cubecast.test / password123
 
 ### Market Resolution
 
-- Stronger confirmation step before final resolution
 - Audit trail beyond payout/refund ledger entries
 
 ### Leaderboard
@@ -236,9 +236,6 @@ maya@cubecast.test / password123
 
 ### Testing And Hardening
 
-- Automated tests for balance changes
-- Automated tests for purchases
-- Automated tests for settlement payouts
 - Better form validation
 - Better error states
 - Loading states
@@ -282,11 +279,22 @@ Run lint:
 npm run lint
 ```
 
+Run trading smoke tests against the configured development database:
+
+```bash
+npm run test:trading
+```
+
 Build production app:
 
 ```bash
 npm run build
 ```
+
+## Related Docs
+
+- [MVP demo walkthrough](MVP_DEMO.md)
+- [Deployment notes](DEPLOYMENT_NOTES.md)
 
 ## Progress Notes
 

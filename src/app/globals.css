@@ -778,6 +778,22 @@ footer {
   justify-content: flex-end;
 }
 
+.resolution-choice-form {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.checkbox-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.checkbox-row input {
+  min-height: auto;
+}
+
 .admin-form-panel {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1014,5 +1030,9 @@ dd {
 
   .resolution-actions {
     justify-content: flex-start;
+  }
+
+  .resolution-choice-form {
+    justify-items: start;
   }
 }

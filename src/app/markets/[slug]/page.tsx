@@ -165,30 +165,25 @@ export default async function MarketDetailPage({
             </div>
             {canResolve ? (
               <div className="resolution-actions">
-                <form action={resolveMarket}>
-                  <input type="hidden" name="slug" value={market.slug} />
-                  <input type="hidden" name="outcome" value="YES" />
-                  <PendingSubmitButton pendingLabel="Resolving...">
-                    Resolve YES
-                  </PendingSubmitButton>
-                </form>
-                <form action={resolveMarket}>
-                  <input type="hidden" name="slug" value={market.slug} />
-                  <input type="hidden" name="outcome" value="NO" />
-                  <PendingSubmitButton pendingLabel="Resolving...">
-                    Resolve NO
-                  </PendingSubmitButton>
-                </form>
-                <form action={resolveMarket}>
-                  <input type="hidden" name="slug" value={market.slug} />
-                  <input type="hidden" name="outcome" value="CANCELED" />
-                  <PendingSubmitButton
-                    className="secondary-button"
-                    pendingLabel="Canceling..."
-                  >
-                    Cancel and refund
-                  </PendingSubmitButton>
-                </form>
+                <ResolutionChoiceForm
+                  label="Resolve YES"
+                  marketSlug={market.slug}
+                  outcome="YES"
+                  pendingLabel="Resolving..."
+                />
+                <ResolutionChoiceForm
+                  label="Resolve NO"
+                  marketSlug={market.slug}
+                  outcome="NO"
+                  pendingLabel="Resolving..."
+                />
+                <ResolutionChoiceForm
+                  buttonClassName="secondary-button"
+                  label="Cancel and refund"
+                  marketSlug={market.slug}
+                  outcome="CANCELED"
+                  pendingLabel="Canceling..."
+                />
               </div>
             ) : (
               <p className="empty-state">This market is already final.</p>
@@ -341,10 +336,38 @@ function getResolutionMessage(resolution?: string) {
     case "unauthorized":
       return "Only admins can resolve markets.";
     case "invalid":
-      return "Choose YES, NO, or canceled.";
+      return "Choose YES, NO, or canceled and confirm the final resolution.";
     case "missing-market":
       return "That market could not be found.";
     default:
       return null;
   }
+}
+
+function ResolutionChoiceForm({
+  buttonClassName,
+  label,
+  marketSlug,
+  outcome,
+  pendingLabel
+}: {
+  buttonClassName?: string;
+  label: string;
+  marketSlug: string;
+  outcome: "YES" | "NO" | "CANCELED";
+  pendingLabel: string;
+}) {
+  return (
+    <form action={resolveMarket} className="resolution-choice-form">
+      <input type="hidden" name="slug" value={marketSlug} />
+      <input type="hidden" name="outcome" value={outcome} />
+      <label className="checkbox-row">
+        <input name="confirmResolution" type="checkbox" value="confirm" />
+        <span>Confirm final</span>
+      </label>
+      <PendingSubmitButton className={buttonClassName} pendingLabel={pendingLabel}>
+        {label}
+      </PendingSubmitButton>
+    </form>
+  );
 }
