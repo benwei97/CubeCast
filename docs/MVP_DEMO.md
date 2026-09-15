@@ -69,8 +69,9 @@ The V1 demo is successful when:
 ```bash
 npm run typecheck
 npm run lint
+npm run test:v1
 npm run test:trading
 npm run build
 ```
 
-`npm run test:trading` is legacy and will be replaced by V1 game-rule tests.
+`npm run test:v1` covers the new V1 game rules. `npm run test:trading` is legacy and will be removed after the old trading flow is retired.

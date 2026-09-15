@@ -142,14 +142,16 @@ Status: complete.
 
 ### Phase 2: Core Game Rules
 
-Status: next.
+Status: complete.
 
-- Implement pure scoring helpers.
-- Implement entry validation helpers.
-- Implement lock/state-machine helpers.
-- Add deterministic tests for scoring, entry rules, voids, H2H ties, and leaderboard tiebreakers.
+- Implemented pure scoring helpers.
+- Implemented entry validation helpers.
+- Implemented lock/state-machine helpers.
+- Added deterministic tests for scoring, entry rules, voids, H2H ties, settlement semantics, and leaderboard tiebreakers.
 
 ### Phase 3: Player Game UI
+
+Status: next.
 
 - Replace trading home flow with active slate feed.
 - Add persistent `X / 10 Picks`.

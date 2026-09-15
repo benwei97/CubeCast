@@ -66,8 +66,9 @@ The current seed still creates legacy demo accounts while V1 migration is underw
 ```bash
 npm run typecheck
 npm run lint
+npm run test:v1
 npm run test:trading
 npm run build
 ```
 
-`npm run test:trading` covers the legacy trading flow and will be replaced by V1 game-rule tests during the migration.
+`npm run test:v1` covers the new V1 game rules. `npm run test:trading` covers the legacy trading flow and will be removed after the old trading UI is retired.

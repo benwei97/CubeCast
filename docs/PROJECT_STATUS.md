@@ -132,14 +132,17 @@ Completed:
 
 ### Phase 2: Core Game Rules
 
-Status: not started.
+Status: complete.
 
-Next tasks:
+Completed:
 
-- Add scoring helpers.
-- Add entry validation helpers.
-- Add lock/state-machine helpers.
-- Add deterministic tests.
+- Added pure V1 scoring helpers.
+- Added exactly-10 entry validation helpers.
+- Added server-side lock/edit eligibility helpers.
+- Added pick-counter label helper.
+- Added H2H, advancement, placement, and performance settlement helpers.
+- Added deterministic leaderboard ranking with shared-rank support.
+- Added `npm run test:v1` for V1 game-rule tests.
 
 ### Phase 3: Player Game UI
 
@@ -198,6 +201,12 @@ Run legacy trading smoke tests:
 
 ```bash
 npm run test:trading
+```
+
+Run V1 game-rule tests:
+
+```bash
+npm run test:v1
 ```
 
 Build production app:
