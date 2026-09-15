@@ -31,6 +31,8 @@ Phase 4 settlement and leaderboard is complete for the manual MVP path: admins c
 
 Phase 5 admin slate tools are complete: admins can create slates, attach competitions, configure diversity caps, create fixed-probability V1 markets, and publish draft V1 markets.
 
+Phase 6 WCA integration is complete: WCA OAuth can be enabled with credentials, WCA identities are stored on login, and admins can import WCA competitions plus refresh result snapshots.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)
@@ -52,7 +54,7 @@ Current planning docs:
    cp .env.example .env
    ```
 
-3. Set `DATABASE_URL` to a PostgreSQL database and set `AUTH_SECRET`.
+3. Set `DATABASE_URL` to a PostgreSQL database and set `AUTH_SECRET`. For WCA login, also set `AUTH_WCA_ID` and `AUTH_WCA_SECRET`.
 
 4. Create tables and seed demo data:
 

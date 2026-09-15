@@ -193,17 +193,29 @@ Completed:
 
 ### Phase 6: WCA Integration
 
-Status: next.
+Status: complete.
 
-Next tasks:
+Completed:
 
 - Add WCA OAuth provider.
 - Store WCA identity from real WCA login.
 - Add WCA competition/result ingestion boundary.
-- Store first-observed official result snapshots from WCA source data.
+- Store WCA competition imports in local `Competition` rows.
+- Store admin-refreshed WCA result snapshots in competition `sourceMetadata`.
 - Keep manual/admin-assisted settlement as the MVP fallback.
 
-### Phase 7+: Prize Shell, Legacy Removal
+### Phase 7: Remove Old Trading System
+
+Status: next.
+
+Next tasks:
+
+- Remove CubeCoin purchase/position/ledger UI from the player experience.
+- Remove old trading services and tests once replacement coverage exists.
+- Drop obsolete tables only after a separate migration/data-retention review.
+- Update docs to remove migration warnings.
+
+### Phase 8+: Prize Shell
 
 Status: planned in `docs/V1_IMPLEMENTATION_PLAN.md`.
 

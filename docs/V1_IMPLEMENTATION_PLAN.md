@@ -184,15 +184,17 @@ Status: complete.
 
 ### Phase 6: WCA Integration
 
-Status: next.
+Status: complete.
 
-- Add WCA OAuth provider.
-- Store WCA identity.
-- Add WCA competition/result ingestion boundary.
-- Store first-observed official result snapshots.
-- Keep manual/admin-assisted settlement available for MVP fallback.
+- Added WCA OAuth provider.
+- Stores WCA identity in `WCAIdentity` on WCA login.
+- Added WCA competition import/update boundary.
+- Added WCA result refresh boundary that stores observed result snapshots in competition metadata.
+- Kept manual/admin-assisted settlement available for MVP fallback.
 
 ### Phase 7: Remove Old Trading System
+
+Status: next.
 
 - Remove CubeCoin purchase/position/ledger UI.
 - Remove old trading services and tests.

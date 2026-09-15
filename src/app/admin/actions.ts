@@ -16,6 +16,11 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify, withTimestampSuffix } from "@/lib/slug";
 import {
+  fetchWCACompetition,
+  fetchWCACompetitionResults,
+  getWCACompetitionUrl
+} from "@/lib/wca";
+import {
   resolveV1Market,
   tieV1Market,
   voidV1Market
@@ -30,6 +35,14 @@ const createCompetitionSchema = z.object({
   endDate: z.coerce.date(),
   status: z.nativeEnum(CompetitionStatus),
   officialUrl: z.string().url().optional().or(z.literal(""))
+});
+
+const importWCACompetitionSchema = z.object({
+  wcaCompetitionId: z.string().min(3).max(80).regex(/^[A-Za-z0-9_-]+$/)
+});
+
+const refreshWCAResultsSchema = z.object({
+  competitionId: z.string().min(1)
 });
 
 const createMarketSchema = z.object({
@@ -148,6 +161,112 @@ export async function createCompetition(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/competitions");
   redirect(`/competitions/${slug}`);
+}
+
+export async function importWCACompetition(formData: FormData) {
+  await requireAdmin();
+  const parsed = importWCACompetitionSchema.safeParse({
+    wcaCompetitionId: formData.get("wcaCompetitionId")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?wca=invalid");
+  }
+
+  const wcaCompetition = await fetchWCACompetition(parsed.data.wcaCompetitionId);
+  const startDate = parseWCADate(wcaCompetition.start_date);
+  const endDate = parseWCADate(wcaCompetition.end_date) ?? startDate;
+
+  if (!startDate || !endDate) {
+    redirect("/admin?wca=missing-dates");
+  }
+
+  const existing = await prisma.competition.findUnique({
+    where: { wcaCompetitionId: wcaCompetition.id },
+    select: { id: true, slug: true }
+  });
+
+  const competitionData = {
+    country: wcaCompetition.country_iso2 ?? "XX",
+    description: `Imported from the WCA competition page for ${wcaCompetition.name}.`,
+    endDate,
+    location: getWCALocation(wcaCompetition),
+    name: wcaCompetition.name,
+    officialUrl: wcaCompetition.url ?? getWCACompetitionUrl(wcaCompetition.id),
+    scheduledEndAt: endDate,
+    scheduledStartAt: startDate,
+    sourceMetadata: {
+      importedAt: new Date().toISOString(),
+      source: "wca-api-v0",
+      wcaCompetition
+    },
+    startDate,
+    status: getCompetitionStatus(startDate, endDate),
+    wcaCompetitionId: wcaCompetition.id
+  };
+
+  const competition = existing
+    ? await prisma.competition.update({
+        where: { id: existing.id },
+        data: competitionData,
+        select: { slug: true }
+      })
+    : await prisma.competition.create({
+        data: {
+          ...competitionData,
+          slug: withTimestampSuffix(slugify(wcaCompetition.name))
+        },
+        select: { slug: true }
+      });
+
+  revalidatePath("/admin");
+  revalidatePath("/competitions");
+  revalidatePath(`/competitions/${competition.slug}`);
+  redirect("/admin?wca=competition-imported");
+}
+
+export async function refreshWCACompetitionResults(formData: FormData) {
+  await requireAdmin();
+  const parsed = refreshWCAResultsSchema.safeParse({
+    competitionId: formData.get("competitionId")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?wca=invalid-results");
+  }
+
+  const competition = await prisma.competition.findUnique({
+    where: { id: parsed.data.competitionId },
+    select: {
+      id: true,
+      sourceMetadata: true,
+      wcaCompetitionId: true
+    }
+  });
+
+  if (!competition?.wcaCompetitionId) {
+    redirect("/admin?wca=missing-wca-id");
+  }
+
+  const results = await fetchWCACompetitionResults(competition.wcaCompetitionId);
+
+  await prisma.competition.update({
+    where: { id: competition.id },
+    data: {
+      sourceMetadata: {
+        ...(isRecord(competition.sourceMetadata) ? competition.sourceMetadata : {}),
+        resultsObservedAt: new Date().toISOString(),
+        resultsSnapshot: results,
+        resultsSource: "wca-api-v0",
+        resultsSourceUrl: getWCACompetitionUrl(competition.wcaCompetitionId),
+        resultCount: results.length
+      }
+    }
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/competitions");
+  redirect("/admin?wca=results-refreshed");
 }
 
 export async function createMarket(formData: FormData) {
@@ -666,4 +785,39 @@ function getDefaultDiversityConfig() {
     maxPerEvent: 12,
     maxPerMarketType: 8
   };
+}
+
+function parseWCADate(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getWCALocation(competition: {
+  city?: string;
+  country_iso2?: string;
+  venue_address?: string;
+}) {
+  return [competition.city, competition.country_iso2].filter(Boolean).join(", ");
+}
+
+function getCompetitionStatus(startDate: Date, endDate: Date): CompetitionStatus {
+  const now = new Date();
+
+  if (endDate < now) {
+    return CompetitionStatus.COMPLETED;
+  }
+
+  if (startDate <= now && endDate >= now) {
+    return CompetitionStatus.ACTIVE;
+  }
+
+  return CompetitionStatus.UPCOMING;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

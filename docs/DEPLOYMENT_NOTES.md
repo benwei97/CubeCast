@@ -23,6 +23,7 @@ AUTH_GOOGLE_ID=""
 AUTH_GOOGLE_SECRET=""
 AUTH_WCA_ID=""
 AUTH_WCA_SECRET=""
+WCA_BASE_URL="https://www.worldcubeassociation.org"
 PRIZES_ENABLED="false"
 ```
 
@@ -46,6 +47,20 @@ During V1 migration, new slate, entry, prediction, WCA identity, settlement snap
 ```text
 http://localhost:3000
 ```
+
+`AUTH_WCA_ID` and `AUTH_WCA_SECRET` enable WCA sign-in. Create a WCA OAuth application and use this callback URL:
+
+```text
+https://your-production-domain.example/api/auth/callback/wca
+```
+
+For local testing:
+
+```text
+http://localhost:3000/api/auth/callback/wca
+```
+
+`WCA_BASE_URL` defaults to the production WCA site. Set it to `https://staging.worldcubeassociation.org` when testing against WCA staging credentials.
 
 ## Database Commands
 

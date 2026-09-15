@@ -35,7 +35,12 @@ export default async function MarketDetailPage({
         include: {
           user: {
             select: {
-              username: true
+              username: true,
+              wcaIdentity: {
+                select: {
+                  name: true
+                }
+              }
             }
           }
         }
@@ -291,7 +296,9 @@ export default async function MarketDetailPage({
             {market.purchases.map((purchase) => (
               <article className="activity-row" key={purchase.id}>
                 <div>
-                  <strong>{purchase.user.username}</strong>
+                  <strong>
+                    {purchase.user.wcaIdentity?.name ?? purchase.user.username}
+                  </strong>
                   <span>
                     bought {purchase.quantity} {purchase.outcome} shares
                   </span>

@@ -36,13 +36,15 @@ maya@cubecast.test / password123
 - Click a market outcome to open the pick review modal.
 - Sign in and add, change, or remove picks before lock.
 - Open `/picks` to review selected markets, probabilities, and score swing.
+- Configure WCA OAuth and sign in with WCA for production-like identity.
 - As admin, open `/admin` to create slates, attach competitions, configure diversity caps, and create/publish V1 markets.
+- As admin, import a competition by WCA competition ID and refresh its result snapshot.
 - As admin, open `/admin` and use the V1 Settlement Queue to resolve, void, or mark an exact tie.
 - Open `/leaderboard` to see valid 10-pick entries ranked by slate score.
 
 The server enforces sign-in, slate status, lock time, market membership, option membership, and the max-10-picks rule.
 
-Settlement now stores snapshot evidence and admin audit records. The current MVP settlement path is manual/admin-assisted; direct WCA result ingestion is still planned.
+Settlement now stores snapshot evidence and admin audit records. WCA competition/result data can be imported into local metadata; the current MVP settlement path remains manual/admin-assisted.
 
 ## Legacy Flow Still Available Temporarily
 

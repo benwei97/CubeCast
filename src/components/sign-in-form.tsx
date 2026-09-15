@@ -6,9 +6,17 @@ import { signIn } from "next-auth/react";
 export function SignInForm({
   provider
 }: {
-  provider: "credentials" | "google";
+  provider: "credentials" | "google" | "wca";
 }) {
   const [error, setError] = useState<string | null>(null);
+
+  if (provider === "wca") {
+    return (
+      <button type="button" onClick={() => signIn("wca", { callbackUrl: "/" })}>
+        Continue with WCA
+      </button>
+    );
+  }
 
   if (provider === "google") {
     return (

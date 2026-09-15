@@ -17,7 +17,9 @@ import {
   createMarket,
   createV1Slate,
   createV1SlateMarket,
+  importWCACompetition,
   publishV1Market,
+  refreshWCACompetitionResults,
   settleV1Market,
   settleV1MarketAsTie,
   updateSlateDiversityConfig,
@@ -35,6 +37,7 @@ export default async function AdminPage({
     v1Market?: string;
     v1Settlement?: string;
     v1Slate?: string;
+    wca?: string;
   }>;
 }) {
   const session = await auth();
@@ -71,7 +74,9 @@ export default async function AdminPage({
         name: true,
         slug: true,
         status: true,
-        startDate: true
+        startDate: true,
+        sourceMetadata: true,
+        wcaCompetitionId: true
       }
     }),
     prisma.market.findMany({
@@ -186,6 +191,9 @@ export default async function AdminPage({
     (competition) => !attachedCompetitionIds.has(competition.id)
   );
   const diversityConfig = getDiversityConfig(manageableSlate?.diversityConfig);
+  const wcaCompetitions = competitions.filter(
+    (competition) => competition.wcaCompetitionId
+  );
 
   return (
     <div className="page-stack">
@@ -196,6 +204,72 @@ export default async function AdminPage({
           Manage V1 slate settlement while legacy market tools remain available
           during the migration.
         </p>
+      </section>
+
+      <section className="admin-form-panel">
+        <div className="section-heading">
+          <h2>WCA Data</h2>
+          <span>{wcaCompetitions.length.toLocaleString()} linked competitions</span>
+        </div>
+        {params.wca?.startsWith("invalid") && (
+          <p className="form-error">Check the WCA fields.</p>
+        )}
+        {params.wca === "missing-dates" && (
+          <p className="form-error">
+            WCA did not return usable start and end dates for that competition.
+          </p>
+        )}
+        {params.wca === "missing-wca-id" && (
+          <p className="form-error">
+            Choose a competition that has a WCA competition ID.
+          </p>
+        )}
+        <div className="admin-slate-grid">
+          <form action={importWCACompetition} className="admin-form">
+            <h3>Import Competition</h3>
+            <label htmlFor="wcaCompetitionId">WCA competition ID</label>
+            <input
+              id="wcaCompetitionId"
+              name="wcaCompetitionId"
+              placeholder="WC2025"
+              required
+            />
+            <PendingSubmitButton pendingLabel="Importing...">
+              Import from WCA
+            </PendingSubmitButton>
+          </form>
+
+          <form action={refreshWCACompetitionResults} className="admin-form">
+            <h3>Refresh Results</h3>
+            <label htmlFor="wca-results-competition">Competition</label>
+            <select id="wca-results-competition" name="competitionId" required>
+              {wcaCompetitions.map((competition) => (
+                <option key={competition.id} value={competition.id}>
+                  {competition.name}
+                </option>
+              ))}
+            </select>
+            <PendingSubmitButton
+              className="secondary-button"
+              pendingLabel="Refreshing..."
+            >
+              Refresh result snapshot
+            </PendingSubmitButton>
+            <div className="admin-slate-list">
+              {wcaCompetitions.slice(0, 4).map((competition) => (
+                <article key={competition.id}>
+                  <div>
+                    <strong>{competition.name}</strong>
+                    <span>{competition.wcaCompetitionId}</span>
+                  </div>
+                  <small>
+                    {getWCAResultSummary(competition.sourceMetadata)}
+                  </small>
+                </article>
+              ))}
+            </div>
+          </form>
+        </div>
       </section>
 
       <section className="admin-form-panel">
@@ -871,4 +945,24 @@ function getDiversityConfig(value: unknown) {
 
 function getConfigNumber(value: unknown, fallback: number) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function getWCAResultSummary(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return "No result snapshot yet";
+  }
+
+  const metadata = value as Record<string, unknown>;
+  const resultCount =
+    typeof metadata.resultCount === "number" ? metadata.resultCount : null;
+  const observedAt =
+    typeof metadata.resultsObservedAt === "string"
+      ? new Date(metadata.resultsObservedAt)
+      : null;
+
+  if (!resultCount || !observedAt || Number.isNaN(observedAt.getTime())) {
+    return "No result snapshot yet";
+  }
+
+  return `${resultCount.toLocaleString()} result rows observed ${observedAt.toLocaleString()}`;
 }
