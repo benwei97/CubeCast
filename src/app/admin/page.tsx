@@ -109,7 +109,7 @@ export default async function AdminPage({
         where: {
           status: { in: ["DRAFT", "OPEN"] }
         },
-        orderBy: [{ status: "asc" }, { lockAt: "asc" }],
+        orderBy: [{ status: "asc" }, { lockAt: "asc" }, { createdAt: "desc" }],
         include: {
           competitions: {
             include: {

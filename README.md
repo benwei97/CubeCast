@@ -51,6 +51,8 @@ Phase 13 settlement ergonomics is complete: the admin settlement queue now shows
 
 Phase 14 WCA recommendation pipeline is complete: admins can generate a draft weekly contest from the largest upcoming U.S. WCA competitions, preview competitor limits and top ranked entrants, and review 10 generated draft markets per competition before publishing.
 
+Phase 14.1 recommendation ranking fix is complete: competition recommendations now fetch all WCA competition pages for the weekly window and sort by all accepted competing registrants, while market generation still uses competitors with WCA IDs.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

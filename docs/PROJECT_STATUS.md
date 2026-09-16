@@ -322,6 +322,17 @@ Completed:
 - Added generated draft H2H markets using simple personal-best probability heuristics.
 - Kept generated markets unpublished so admins manually choose what to release.
 
+### Phase 14.1: Recommendation Ranking Fix
+
+Status: complete.
+
+Completed:
+
+- Fetch all WCA competition pages for the weekly recommendation window.
+- Sort recommended competitions by all accepted competing registrants.
+- Count first-time competitors without WCA IDs in the accepted-registration total.
+- Keep generated markets limited to accepted competitors with WCA IDs.
+
 ### Phase 15: Real-Data Admin Path Cleanup
 
 Status: complete.

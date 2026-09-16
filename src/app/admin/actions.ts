@@ -33,6 +33,8 @@ import {
 
 const RECOMMENDATION_COUNTRY_ISO2 = "US";
 const RECOMMENDATION_COUNTRY_LABEL = "U.S.";
+const WCA_COMPETITION_PAGE_SIZE = 25;
+const WCA_COMPETITION_PAGE_LIMIT = 10;
 
 const refreshWCAResultsSchema = z.object({
   competitionId: z.string().min(1)
@@ -85,7 +87,7 @@ export async function generateWeeklyRecommendedContest() {
   const admin = await requireAdmin();
   const now = new Date();
   const rangeEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const wcaCompetitions = await fetchWCACompetitions({
+  const wcaCompetitions = await fetchAllWCACompetitions({
     end: formatWCADate(rangeEnd),
     start: formatWCADate(now)
   });
@@ -97,10 +99,10 @@ export async function generateWeeklyRecommendedContest() {
             !competition.cancelled_at &&
             competition.country_iso2 === RECOMMENDATION_COUNTRY_ISO2
         )
-        .slice(0, 25)
         .map(async (competition) => {
           const wcif = await fetchWCIFSafely(competition.id);
           const acceptedCompetitors = getAcceptedCompetitors(wcif);
+          const marketEligibleCompetitors = getMarketEligibleCompetitors(wcif);
           const competitorCount =
             acceptedCompetitors.length || competition.competitor_limit || 0;
 
@@ -108,6 +110,7 @@ export async function generateWeeklyRecommendedContest() {
             acceptedCompetitors,
             competition,
             competitorCount,
+            marketEligibleCompetitors,
             wcif
           };
         })
@@ -167,7 +170,7 @@ export async function generateWeeklyRecommendedContest() {
       });
 
       const markets = buildRecommendedMarkets({
-        competitors: recommendation.acceptedCompetitors,
+        competitors: recommendation.marketEligibleCompetitors,
         competitionId: competition.id,
         competitionName: competition.name,
         eventNames: getWCIFEventNames(recommendation.wcif),
@@ -492,17 +495,47 @@ function getCompetitionStatus(startDate: Date, endDate: Date): CompetitionStatus
   return CompetitionStatus.UPCOMING;
 }
 
-type AcceptedWCIFCompetitor = NonNullable<WCIFPublicPayload["persons"]>[number] & {
+type AcceptedWCIFPerson = NonNullable<WCIFPublicPayload["persons"]>[number] & {
   registration: NonNullable<NonNullable<WCIFPublicPayload["persons"]>[number]["registration"]>;
+};
+
+type AcceptedWCIFCompetitor = AcceptedWCIFPerson & {
   wcaId: string;
 };
 
 type WCARecommendation = {
-  acceptedCompetitors: AcceptedWCIFCompetitor[];
+  acceptedCompetitors: AcceptedWCIFPerson[];
   competition: WCACompetitionPayload;
   competitorCount: number;
+  marketEligibleCompetitors: AcceptedWCIFCompetitor[];
   wcif: WCIFPublicPayload | null;
 };
+
+async function fetchAllWCACompetitions({
+  end,
+  start
+}: {
+  end: string;
+  start: string;
+}) {
+  const competitions = [];
+
+  for (let page = 1; page <= WCA_COMPETITION_PAGE_LIMIT; page += 1) {
+    const pageCompetitions = await fetchWCACompetitions({
+      end,
+      page,
+      start
+    });
+
+    competitions.push(...pageCompetitions);
+
+    if (pageCompetitions.length < WCA_COMPETITION_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return competitions;
+}
 
 async function fetchWCIFSafely(wcaCompetitionId: string) {
   try {
@@ -514,10 +547,15 @@ async function fetchWCIFSafely(wcaCompetitionId: string) {
 
 function getAcceptedCompetitors(wcif: WCIFPublicPayload | null) {
   return (wcif?.persons ?? []).filter(
-    (person): person is AcceptedWCIFCompetitor =>
-      Boolean(person.wcaId) &&
+    (person): person is AcceptedWCIFPerson =>
       person.registration?.status === "accepted" &&
       person.registration.isCompeting !== false
+  );
+}
+
+function getMarketEligibleCompetitors(wcif: WCIFPublicPayload | null) {
+  return getAcceptedCompetitors(wcif).filter(
+    (person): person is AcceptedWCIFCompetitor => Boolean(person.wcaId)
   );
 }
 
@@ -590,7 +628,7 @@ async function upsertWCACompetitionFromRecommendation(
     recommendationSource: "weekly-wca-recommendation",
     source: "wca-api-v0",
     topRankedCompetitors: getTopRankedCompetitors({
-      competitors: recommendation.acceptedCompetitors,
+      competitors: recommendation.marketEligibleCompetitors,
       eventNames: getWCIFEventNames(recommendation.wcif)
     }),
     wcaCompetition: recommendation.competition

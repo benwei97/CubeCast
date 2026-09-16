@@ -65,13 +65,24 @@ export async function fetchWCACompetition(wcaCompetitionId: string) {
 
 export async function fetchWCACompetitions({
   end,
+  page,
   start
 }: {
   end: string;
+  page?: number;
   start: string;
 }) {
+  const params = new URLSearchParams({
+    end,
+    start
+  });
+
+  if (page) {
+    params.set("page", page.toString());
+  }
+
   return fetchWCAJson<WCACompetitionPayload[]>(
-    `/api/v0/competitions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`
+    `/api/v0/competitions?${params.toString()}`
   );
 }
 

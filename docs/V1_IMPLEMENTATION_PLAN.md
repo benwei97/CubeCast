@@ -277,6 +277,14 @@ Status: complete.
 - Generated up to 10 draft head-to-head markets per recommended competition.
 - Kept all generated markets unpublished so admins manually choose what to release.
 
+### Phase 14.1: Recommendation Ranking Fix
+
+Status: complete.
+
+- Fetch all WCA competition result pages for the weekly recommendation window.
+- Sort recommended competitions by all accepted competing registrants, including first-time competitors without WCA IDs.
+- Keep market generation limited to accepted competitors with WCA IDs so generated H2H markets have settlement identities.
+
 ### Phase 15: Real-Data Admin Path Cleanup
 
 Status: complete.
