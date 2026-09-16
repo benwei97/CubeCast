@@ -27,7 +27,8 @@ import {
 import {
   fetchWCAOddsHeadToHeadProbability,
   WCA_ODDS_DEFAULT_HALF_LIFE_DAYS,
-  WCA_ODDS_DEFAULT_LOOKBACK_DAYS
+  WCA_ODDS_DEFAULT_LOOKBACK_DAYS,
+  WCA_ODDS_REQUEST_SPACING_MS
 } from "@/lib/wca-odds";
 import {
   resolveV1Market,
@@ -735,25 +736,22 @@ async function buildRecommendedMarkets({
     for (let index = 0; index < rankedCompetitors.length - 1; index += 1) {
       const left = rankedCompetitors[index];
       const right = rankedCompetitors[index + 1];
+      await sleep(WCA_ODDS_REQUEST_SPACING_MS);
+
       const modelProbability = await getHeadToHeadProbability({
         eventId,
-        leftBest: left.personalBest,
         leftCompetitorWcaId: left.competitor.wcaId,
         modelEndDate,
         modelStartDate,
-        rightBest: right.personalBest,
         rightCompetitorWcaId: right.competitor.wcaId
       });
 
-      if (!isTightMarketProbability(modelProbability.probability)) {
+      if (!modelProbability || !isTightMarketProbability(modelProbability)) {
         continue;
       }
 
-      const probability = modelProbability.probability;
-      const probabilitySourceLabel =
-        modelProbability.source === "wca-odds"
-          ? `WCA Odds simulation, ${WCA_ODDS_DEFAULT_LOOKBACK_DAYS}-day history, ${WCA_ODDS_DEFAULT_HALF_LIFE_DAYS}-day half-life`
-          : "personal-best fallback heuristic";
+      const probability = modelProbability;
+      const probabilitySourceLabel = `WCA Odds simulation, ${WCA_ODDS_DEFAULT_LOOKBACK_DAYS}-day history, ${WCA_ODDS_DEFAULT_HALF_LIFE_DAYS}-day half-life`;
       const resolutionRules = `Whoever places higher in the specified official WCA event wins. Probability source: ${probabilitySourceLabel}.`;
       const eventName = eventNames.get(eventId) ?? getEventName(eventId);
 
@@ -815,21 +813,17 @@ function getAveragePersonalBest(competitor: AcceptedWCIFCompetitor, eventId: str
 
 async function getHeadToHeadProbability({
   eventId,
-  leftBest,
   leftCompetitorWcaId,
   modelEndDate,
   modelStartDate,
-  rightBest,
   rightCompetitorWcaId
 }: {
   eventId: string;
-  leftBest: number;
   leftCompetitorWcaId: string;
   modelEndDate: Date;
   modelStartDate: Date;
-  rightBest: number;
   rightCompetitorWcaId: string;
-}): Promise<{ probability: number; source: "fallback" | "wca-odds" }> {
+}): Promise<number | null> {
   try {
     const modelProbability = await fetchWCAOddsHeadToHeadProbability({
       endDate: modelEndDate,
@@ -840,36 +834,13 @@ async function getHeadToHeadProbability({
     });
 
     if (modelProbability) {
-      return {
-        probability: modelProbability.leftProbability,
-        source: modelProbability.source
-      };
+      return modelProbability.leftProbability;
     }
   } catch {
-    return {
-      probability: getPersonalBestFallbackProbability(leftBest, rightBest),
-      source: "fallback"
-    };
+    return null;
   }
 
-  return {
-    probability: getPersonalBestFallbackProbability(leftBest, rightBest),
-    source: "fallback"
-  };
-}
-
-function getPersonalBestFallbackProbability(leftBest: number, rightBest: number) {
-  if (leftBest <= 0 || rightBest <= 0) {
-    return 50;
-  }
-
-  const relativeGap = (rightBest - leftBest) / Math.max(leftBest, rightBest);
-  const estimatedProbability = Math.round(50 + relativeGap * 80);
-
-  return Math.min(
-    MARKET_PROBABILITY_MAX,
-    Math.max(MARKET_PROBABILITY_MIN, estimatedProbability)
-  );
+  return null;
 }
 
 function isTightMarketProbability(probability: number) {

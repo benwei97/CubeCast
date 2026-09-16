@@ -64,7 +64,7 @@ The local MVP flow is successful when:
 
 1. A user signs in with WCA identity or a local development WCA-like account.
 2. The user opens the active contest.
-3. The contest shows approximately 20-30 fixed-probability markets using WCA Odds-style model probabilities where available.
+3. The contest shows fixed-probability markets generated from WCA Odds-style model probabilities.
 4. The UI displays `X / 10 Picks`.
 5. The user selects exactly 10 predictions before lock.
 6. The user reviews My Picks with probability and score swing.

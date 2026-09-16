@@ -1,10 +1,11 @@
 const WCA_ODDS_BASE_URL = getWCAOddsBaseUrl();
-const WCA_ODDS_MAX_RETRIES = 2;
-const WCA_ODDS_RETRY_BASE_DELAY_MS = 1500;
+const WCA_ODDS_MAX_RETRIES = 5;
+const WCA_ODDS_RETRY_BASE_DELAY_MS = 5000;
 const WCA_ODDS_TIMEOUT_MS = 30_000;
 
 export const WCA_ODDS_DEFAULT_HALF_LIFE_DAYS = 180;
 export const WCA_ODDS_DEFAULT_LOOKBACK_DAYS = 365;
+export const WCA_ODDS_REQUEST_SPACING_MS = 1200;
 
 type WCAOddsSimulationResult = {
   competitor_results?: {
@@ -145,7 +146,7 @@ function getRetryDelayMs(response: Response, attempt: number) {
     return retryAfterSeconds * 1000;
   }
 
-  return WCA_ODDS_RETRY_BASE_DELAY_MS * (attempt + 1);
+  return Math.min(WCA_ODDS_RETRY_BASE_DELAY_MS * 2 ** attempt, 60_000);
 }
 
 function sleep(ms: number) {

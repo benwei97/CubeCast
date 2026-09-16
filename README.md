@@ -55,7 +55,7 @@ Phase 14.1 recommendation ranking fix is complete: competition recommendations n
 
 Phase 16.1 global recommendation scope is complete: the recommendation pipeline now considers all non-canceled WCA competitions globally instead of restricting to one country.
 
-Phase 18 WCA Odds probability provider is complete: generated H2H markets use WCA Odds simulation probabilities by default, filter for tight 35%-65% markets, and fall back to the older personal-best estimate only if the model request fails.
+Phase 18 WCA Odds probability provider is complete: generated H2H markets use WCA Odds simulation probabilities, filter for tight 35%-65% markets, and skip matchups when WCA Odds cannot return a probability.
 
 Current planning docs:
 

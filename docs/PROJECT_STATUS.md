@@ -319,7 +319,7 @@ Completed:
 - Added WCA upcoming competition lookup for the next 7 days.
 - Added public WCIF ingestion for accepted competitor counts, registered events, and personal-best data.
 - Added admin generation of a draft weekly contest from the top 3 recommended competitions.
-- Added generated draft H2H markets. Probabilities now use WCA Odds simulation results when available, with a personal-best fallback only if the model request fails.
+- Added generated draft H2H markets. Probabilities now require WCA Odds simulation results; failed or rate-limited model requests are skipped instead of estimated with a different model.
 - Kept generated markets unpublished so admins manually choose what to release.
 
 ### Phase 14.1: Recommendation Ranking Fix
@@ -394,7 +394,8 @@ Completed:
 - Added a WCA Odds simulation client for generated H2H markets.
 - Matched WCA Odds defaults of one year of history and a 180-day half-life.
 - Filtered generated markets to the V1 tight probability band of 35%-65%.
-- Kept the old personal-best estimate only as a fallback when the external simulation request fails.
+- Skipped candidate matchups when WCA Odds cannot return a probability, avoiding mixed probability systems.
+- Added conservative request spacing and longer retry/backoff for WCA Odds rate limits.
 - Added optional `WCA_ODDS_BASE_URL` configuration.
 
 Next MVP gap:

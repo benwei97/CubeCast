@@ -334,7 +334,8 @@ Status: complete.
 - Used the WCA Odds default modeling window: one year of history and a 180-day half-life.
 - Preserved V1 fixed-probability behavior by storing the generated probabilities on immutable market options.
 - Filtered generated markets to 35%-65% so the contest prioritizes tight decisions.
-- Kept a personal-best fallback only for model API failures.
+- Skipped candidate matchups when WCA Odds cannot return a probability, avoiding mixed probability systems.
+- Added conservative request spacing and longer retry/backoff for WCA Odds rate limits.
 
 ## Implementation Notes
 
