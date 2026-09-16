@@ -60,6 +60,8 @@ Settlement stores snapshot evidence and admin audit records. A background monito
 
 ## Admin Contest Workflow Check
 
+Draft market selection starts at 0 / 25. Every candidate can be selected or deselected; no individual Published badge or mandatory previously published pick remains. Only Publish contest releases the selected group.
+
 1. Open /admin. The header shows contest dates and Draft, Active, or Complete status.
 2. In a Draft, generate competition suggestions, select three, and generate markets. Existing drafts retain their previously selected competitions and markets.
 3. Select exactly 25 markets spanning all three competitions, review dates and lock time, and publish the contest.

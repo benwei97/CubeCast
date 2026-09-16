@@ -440,12 +440,11 @@ export async function publishSelectedV1Markets(formData: FormData) {
       if (
         selected.length !== marketIds.length ||
         contest.markets.some(
-          (market) =>
-            market.publishedAt !== null && !marketIds.includes(market.id)
+          (market) => market.status !== "DRAFT" || market.publishedAt !== null
         ) ||
         selected.some(
           (market) =>
-            !["DRAFT", "OPEN"].includes(market.status) ||
+            market.status !== "DRAFT" ||
             market.options.length !== 2 ||
             !featured.has(market.competitionId) ||
             market.options.reduce(

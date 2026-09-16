@@ -165,9 +165,6 @@ export default async function AdminPage({
     ...getCompetitionPreview(competition.sourceMetadata)
   });
   const hasMarkets = Boolean(contest?.markets.length);
-  const hasPreviouslyPublished = Boolean(
-    isDraft && contest?.markets.some((market) => market.publishedAt !== null)
-  );
   const completeEntries =
     contest?.entries.filter(
       (entry) =>
@@ -267,7 +264,7 @@ export default async function AdminPage({
           <section className="admin-draft-step">
             <div className="section-heading">
               <h2>Choose competitions</h2>
-              {!hasPreviouslyPublished && (
+              {
                 <form action={generateWeeklyRecommendedContest}>
                   <input name="contestId" type="hidden" value={contest.id} />
                   <PendingSubmitButton
@@ -281,15 +278,9 @@ export default async function AdminPage({
                       : "Generate competitions"}
                   </PendingSubmitButton>
                 </form>
-              )}
+              }
             </div>
-            {hasPreviouslyPublished && (
-              <p>
-                Earlier published markets are retained in this release. Finish
-                selecting 25 markets to publish the contest.
-              </p>
-            )}
-            {!hasPreviouslyPublished && candidates.length > 0 && (
+            {candidates.length > 0 && (
               <details className="admin-step-details" open={!hasMarkets}>
                 <summary>
                   {hasMarkets

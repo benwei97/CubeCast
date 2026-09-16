@@ -10,7 +10,8 @@ Last updated: 2026-09-16
 - Active contests show entry and settlement progress. Complete contests show final results and immutable evidence.
 - Prepare-next creates/reuses an upcoming draft without replacing the public contest. Publication switches the public current contest, but is blocked until the previous picks lock and for overlapping competition windows.
 - Historical contests remain available for settlement, leaderboard review, and previous user entries. Automatic result monitoring continues for unsettled older contests.
-- Added nullable preparation metadata via additive migration 20260916200000_admin_contest_preparation. Existing data is retained, including earlier partial market publications in drafts.
+- Added nullable preparation metadata via additive migration 20260916200000_admin_contest_preparation. Existing contests, markets, and picks are retained.
+- Removed legacy single-market publication support. Migration 20260916210000_contest_only_publication returns individually opened draft markets to DRAFT, preserving market content and audit history. It stops if picks or settlement evidence would be affected. Publication now requires every market in the draft to be unpublished.
 
 ## Automatic WCA Result Monitoring
 

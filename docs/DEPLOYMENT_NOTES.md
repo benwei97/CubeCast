@@ -76,6 +76,8 @@ Checks preserve first-observed person/event/round result rows and their observat
 
 ## Database Setup
 
+Migration 20260916210000_contest_only_publication clears legacy single-market publications inside draft contests. It preserves market content and audit history and refuses to change markets with picks or settlement evidence. Markets now become public exclusively through whole-contest publication.
+
 The admin contest workflow adds nullable ContestSlate.preparation metadata in migration 20260916200000_admin_contest_preparation. Deploy this migration and regenerate Prisma Client before running the updated app. This is additive and does not delete existing contests, markets, or picks.
 
 For local development:

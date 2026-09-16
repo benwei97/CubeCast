@@ -53,19 +53,11 @@ export function AdminMarketPublisher({
   windowLabel: string;
 }) {
   const draftMarkets = useMemo(
-    () =>
-      markets.filter(
-        (market) => market.status === "DRAFT" || market.status === "OPEN"
-      ),
+    () => markets.filter((market) => market.status === "DRAFT"),
     [markets]
   );
-  const publishedMarkets = markets.length - draftMarkets.length;
   const publishTarget = DEFAULT_MARKET_PUBLISH_TARGET;
-  const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>(() =>
-    markets
-      .filter((market) => market.status === "OPEN")
-      .map((market) => market.id)
-  );
+  const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>([]);
   const [isReviewing, setIsReviewing] = useState(false);
 
   const selectedMarkets = useMemo(
@@ -91,12 +83,6 @@ export function AdminMarketPublisher({
     selectedGroupedMarkets.length === 3;
 
   function toggleMarket(marketId: string) {
-    if (
-      markets.some(
-        (market) => market.id === marketId && market.status === "OPEN"
-      )
-    )
-      return;
     setIsReviewing(false);
     setSelectedMarketIds((current) => {
       if (current.includes(marketId)) {
@@ -113,26 +99,15 @@ export function AdminMarketPublisher({
 
   function clearSelections() {
     setIsReviewing(false);
-    setSelectedMarketIds(
-      markets
-        .filter((market) => market.status === "OPEN")
-        .map((market) => market.id)
-    );
+    setSelectedMarketIds([]);
   }
 
   if (draftMarkets.length === 0) {
     return (
       <div className="admin-publish-flow">
         <div className="admin-publish-empty">
-          <strong>
-            {publishedMarkets > 0
-              ? "All generated markets have been published."
-              : "No markets available for selection."}
-          </strong>
-          <span>
-            {publishedMarkets.toLocaleString()} markets are available to
-            players.
-          </span>
+          <strong>No markets available for selection.</strong>
+          <span>Generate markets before publishing this contest.</span>
         </div>
         {competitions.map((competition) => (
           <section className="admin-market-group" key={competition.name}>
@@ -281,14 +256,14 @@ export function AdminMarketPublisher({
                         className={`admin-market-select-row${
                           isSelected ? " is-selected" : ""
                         }`}
-                        disabled={isDisabled || market.status === "OPEN"}
+                        disabled={isDisabled}
                         aria-pressed={isSelected}
                         key={market.id}
                         onClick={() => toggleMarket(market.id)}
                         type="button"
                       >
                         <span className="admin-market-select-control">
-                      {market.status === "OPEN" ? "Published" : isSelected ? "Selected" : "Select"}
+                          {isSelected ? "Selected" : "Select"}
                         </span>
                         <MarketSummary market={market} />
                       </button>
