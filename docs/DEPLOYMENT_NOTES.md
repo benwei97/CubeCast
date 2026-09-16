@@ -72,7 +72,6 @@ For local development:
 
 ```bash
 npm run prisma:migrate
-npm run prisma:seed
 ```
 
 For production, run Prisma migrations against the production database before serving traffic:
@@ -81,7 +80,7 @@ For production, run Prisma migrations against the production database before ser
 npx prisma migrate deploy
 ```
 
-Only seed production intentionally. The current seed creates local users and local markets, so it is mainly for local testing.
+CubeCast no longer ships fake seeded contests or markets. Production and local contest data should come from WCA sign-in, WCA competition recommendations, generated markets, picks, result snapshots, and settlement records.
 
 ## Real-Money Boundary
 

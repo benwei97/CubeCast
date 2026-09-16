@@ -10,8 +10,7 @@
     "test:v1": "tsx scripts/v1-game-rules-test.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed"
+    "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
@@ -35,8 +34,5 @@
     "tailwindcss": "latest",
     "tsx": "latest",
     "typescript": "latest"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

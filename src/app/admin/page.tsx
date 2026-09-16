@@ -1,21 +1,12 @@
 import Link from "next/link";
-import {
-  MarketCategory,
-  CompetitionStatus,
-  UserRole
-} from "@prisma/client";
+import { UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import {
-  attachCompetitionToSlate,
-  createCompetition,
-  createV1Slate,
-  createV1SlateMarket,
   generateWeeklyRecommendedContest,
-  importWCACompetition,
   publishV1Market,
   refreshContestLifecycle,
   refreshWCACompetitionResults,
@@ -114,7 +105,7 @@ export default async function AdminPage({
           }
         }
       }),
-      prisma.contestSlate.findFirst({
+    prisma.contestSlate.findFirst({
         where: {
           status: { in: ["DRAFT", "OPEN"] }
         },
@@ -180,12 +171,6 @@ export default async function AdminPage({
         }
       })
     ]);
-  const attachedCompetitionIds = new Set(
-    manageableSlate?.competitions.map((item) => item.competitionId) ?? []
-  );
-  const availableCompetitions = competitions.filter(
-    (competition) => !attachedCompetitionIds.has(competition.id)
-  );
   const diversityConfig = getDiversityConfig(manageableSlate?.diversityConfig);
   const wcaCompetitions = competitions.filter(
     (competition) => competition.wcaCompetitionId
@@ -362,20 +347,6 @@ export default async function AdminPage({
             </PendingSubmitButton>
           </form>
 
-          <form action={importWCACompetition} className="admin-form">
-            <h3>Import Competition</h3>
-            <label htmlFor="wcaCompetitionId">WCA competition ID</label>
-            <input
-              id="wcaCompetitionId"
-              name="wcaCompetitionId"
-              placeholder="WC2025"
-              required
-            />
-            <PendingSubmitButton pendingLabel="Importing...">
-              Import from WCA
-            </PendingSubmitButton>
-          </form>
-
           <form action={refreshWCACompetitionResults} className="admin-form">
             <h3>Refresh Results</h3>
             <label htmlFor="wca-results-competition">Competition</label>
@@ -411,74 +382,22 @@ export default async function AdminPage({
 
       <section className="admin-form-panel">
         <div className="section-heading">
-          <h2>Contest Management</h2>
+          <h2>Contest Review</h2>
           <span>{slates.length.toLocaleString()} recent contests</span>
         </div>
-        {params.v1Slate?.startsWith("invalid") && (
-          <p className="form-error">Check the contest management fields.</p>
-        )}
-        <div className="admin-slate-grid">
-          <form action={createV1Slate} className="admin-form">
-            <h3>Create Contest</h3>
-            <label htmlFor="v1-slate-title">Title</label>
-            <input
-              id="v1-slate-title"
-              name="title"
-              placeholder="Spring Championship Contest"
-              required
-            />
-            <label htmlFor="v1-slate-description">Description</label>
-            <textarea
-              id="v1-slate-description"
-              name="description"
-              placeholder="Curated WCA prediction markets for the featured weekend."
-              required
-            />
-            <div className="form-grid">
+        <div className="admin-slate-list">
+          {slates.map((slate) => (
+            <article key={slate.id}>
               <div>
-                <label htmlFor="v1-slate-starts">Starts</label>
-                <input
-                  id="v1-slate-starts"
-                  name="startsAt"
-                  required
-                  type="datetime-local"
-                />
+                <strong>{slate.title}</strong>
+                <span>
+                  {slate.status} · {slate._count.competitions} competitions ·{" "}
+                  {slate._count.markets} markets
+                </span>
               </div>
-              <div>
-                <label htmlFor="v1-slate-ends">Ends</label>
-                <input
-                  id="v1-slate-ends"
-                  name="endsAt"
-                  required
-                  type="datetime-local"
-                />
-              </div>
-            </div>
-            <label htmlFor="v1-slate-status">Status</label>
-            <select id="v1-slate-status" name="status" defaultValue="DRAFT">
-              <option value="DRAFT">DRAFT</option>
-              <option value="OPEN">OPEN</option>
-            </select>
-            <PendingSubmitButton pendingLabel="Creating contest...">
-              Create contest
-            </PendingSubmitButton>
-          </form>
-
-          <div className="admin-slate-list">
-            <h3>Recent Contests</h3>
-            {slates.map((slate) => (
-              <article key={slate.id}>
-                <div>
-                  <strong>{slate.title}</strong>
-                  <span>
-                    {slate.status} · {slate._count.competitions} competitions ·{" "}
-                    {slate._count.markets} markets
-                  </span>
-                </div>
-                <small>Locks {slate.lockAt.toLocaleString()}</small>
-              </article>
-            ))}
-          </div>
+              <small>Locks {slate.lockAt.toLocaleString()}</small>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -493,33 +412,14 @@ export default async function AdminPage({
           </div>
 
           <div className="admin-slate-grid">
-            <form action={attachCompetitionToSlate} className="admin-form">
-              <h3>Attach Competition</h3>
-              <input name="slateId" type="hidden" value={manageableSlate.id} />
-              <label htmlFor="slate-competition-id">Competition</label>
-              <select
-                id="slate-competition-id"
-                name="competitionId"
-                required
-              >
-                {availableCompetitions.map((competition) => (
-                  <option key={competition.id} value={competition.id}>
-                    {competition.name}
-                  </option>
-                ))}
-              </select>
-              <PendingSubmitButton
-                pendingLabel="Attaching..."
-                className="secondary-button"
-              >
-                Attach competition
-              </PendingSubmitButton>
+            <div className="admin-form">
+              <h3>Included Competitions</h3>
               <div className="attached-competition-list">
                 {manageableSlate.competitions.map(({ competition }) => (
                   <span key={competition.id}>{competition.name}</span>
                 ))}
               </div>
-            </form>
+            </div>
 
             <form action={updateSlateDiversityConfig} className="admin-form">
               <h3>Diversity Caps</h3>
@@ -574,123 +474,6 @@ export default async function AdminPage({
               </PendingSubmitButton>
             </form>
           </div>
-        </section>
-      )}
-
-      {manageableSlate && manageableSlate.competitions.length > 0 && (
-        <section className="admin-form-panel">
-          <h2>Create Market</h2>
-          {params.v1Market === "invalid" && (
-            <p className="form-error">Check the market fields.</p>
-          )}
-          {params.v1Market === "probability-total" && (
-            <p className="form-error">The two probabilities must total 100.</p>
-          )}
-          <form action={createV1SlateMarket} className="admin-form">
-            <input name="slateId" type="hidden" value={manageableSlate.id} />
-            <div className="form-grid">
-              <div>
-                <label htmlFor="v1-market-competition">Competition</label>
-                <select
-                  id="v1-market-competition"
-                  name="competitionId"
-                  required
-                >
-                  {manageableSlate.competitions.map(({ competition }) => (
-                    <option key={competition.id} value={competition.id}>
-                      {competition.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="v1-market-category">Market type</label>
-                <select
-                  id="v1-market-category"
-                  name="category"
-                  defaultValue="HEAD_TO_HEAD"
-                >
-                  {Object.values(MarketCategory)
-                    .filter((category) => category !== "TIME_THRESHOLD")
-                    .map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            </div>
-            <label htmlFor="v1-market-question">Question</label>
-            <input
-              id="v1-market-question"
-              name="question"
-              placeholder="Who places higher in 3x3?"
-              required
-            />
-            <label htmlFor="v1-market-description">Description</label>
-            <textarea
-              id="v1-market-description"
-              name="description"
-              placeholder="Head-to-head result using official WCA placement."
-              required
-            />
-            <div className="form-grid">
-              <div>
-                <label htmlFor="v1-event-id">Event ID</label>
-                <input id="v1-event-id" name="eventId" placeholder="333" required />
-              </div>
-              <div>
-                <label htmlFor="v1-event-name">Event name</label>
-                <input
-                  id="v1-event-name"
-                  name="eventName"
-                  placeholder="3x3"
-                  required
-                />
-              </div>
-            </div>
-            <div className="outcome-admin-grid">
-              <div>
-                <h3>Option A</h3>
-                <label htmlFor="option-a-label">Label</label>
-                <input id="option-a-label" name="optionALabel" required />
-                <label htmlFor="option-a-probability">Probability</label>
-                <input
-                  id="option-a-probability"
-                  max="65"
-                  min="35"
-                  name="optionAProbability"
-                  required
-                  type="number"
-                />
-                <label htmlFor="option-a-wca">Competitor WCA ID</label>
-                <input id="option-a-wca" name="optionACompetitorWcaId" />
-              </div>
-              <div>
-                <h3>Option B</h3>
-                <label htmlFor="option-b-label">Label</label>
-                <input id="option-b-label" name="optionBLabel" required />
-                <label htmlFor="option-b-probability">Probability</label>
-                <input
-                  id="option-b-probability"
-                  max="65"
-                  min="35"
-                  name="optionBProbability"
-                  required
-                  type="number"
-                />
-                <label htmlFor="option-b-wca">Competitor WCA ID</label>
-                <input id="option-b-wca" name="optionBCompetitorWcaId" />
-              </div>
-            </div>
-            <label className="checkbox-row">
-              <input name="publishNow" type="checkbox" />
-              Publish immediately
-            </label>
-            <PendingSubmitButton pendingLabel="Creating market...">
-              Create market
-            </PendingSubmitButton>
-          </form>
         </section>
       )}
 
@@ -849,66 +632,6 @@ export default async function AdminPage({
         ) : (
           <p className="empty-state">No markets currently need settlement.</p>
         )}
-      </section>
-
-      <section className="detail-grid">
-        <article className="admin-form-panel">
-          <h2>Create Competition</h2>
-          {params.competition === "invalid" && (
-            <p className="form-error">Check the competition fields and dates.</p>
-          )}
-          <form action={createCompetition} className="admin-form">
-            <label htmlFor="competition-name">Name</label>
-            <input id="competition-name" name="name" required />
-
-            <label htmlFor="competition-description">Description</label>
-            <textarea id="competition-description" name="description" required />
-
-            <div className="form-grid">
-              <div>
-                <label htmlFor="location">Location</label>
-                <input id="location" name="location" required />
-              </div>
-              <div>
-                <label htmlFor="country">Country</label>
-                <input
-                  id="country"
-                  maxLength={2}
-                  name="country"
-                  placeholder="US"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-grid">
-              <div>
-                <label htmlFor="startDate">Start date</label>
-                <input id="startDate" name="startDate" required type="date" />
-              </div>
-              <div>
-                <label htmlFor="endDate">End date</label>
-                <input id="endDate" name="endDate" required type="date" />
-              </div>
-            </div>
-
-            <label htmlFor="competition-status">Status</label>
-            <select id="competition-status" name="status" defaultValue="UPCOMING">
-              {Object.values(CompetitionStatus).map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-
-            <label htmlFor="officialUrl">Official URL</label>
-            <input id="officialUrl" name="officialUrl" type="url" />
-
-            <PendingSubmitButton pendingLabel="Creating competition...">
-              Create competition
-            </PendingSubmitButton>
-          </form>
-        </article>
       </section>
 
       {manageableSlate && manageableSlate.markets.length > 0 && (

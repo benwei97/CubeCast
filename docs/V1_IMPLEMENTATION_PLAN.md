@@ -136,7 +136,7 @@ Status: complete.
 - Added feature flag documentation for `PRIZES_ENABLED=false`.
 - Kept old trading tables temporarily.
 - Generated Prisma client.
-- Added seed data for one seeded contest with 20 markets.
+- Added early seed data for local testing. This has since been removed so contest data is generated from real WCA data.
 - Applied migration `20260915000000_v1_schema_foundation`.
 
 ### Phase 2: Core Game Rules
@@ -219,7 +219,7 @@ Status: complete.
 - Removed legacy balance, share outstanding, liquidity, and winning-outcome columns.
 - Removed old trading enums from Prisma.
 - Simplified onboarding and auth session data around V1 identity only.
-- Removed legacy seed data; seed data is now V1-only.
+- Removed legacy seed data.
 
 ### Phase 9: Prize-Ready Disabled Layer
 
@@ -276,6 +276,15 @@ Status: complete.
 - Generated a draft weekly contest from the top 3 competitions.
 - Generated up to 10 draft head-to-head markets per recommended competition.
 - Kept all generated markets unpublished so admins manually choose what to release.
+
+### Phase 15: Real-Data Admin Path Cleanup
+
+Status: complete.
+
+- Removed fake local contest and market seed data.
+- Removed the seed script and package entry point.
+- Removed manual admin forms/actions for creating competitions, contests, attaching competitions, importing one-off competitions, and hand-creating markets.
+- Kept real-data recommendation generation, draft market review/publishing, result snapshot refresh, settlement, lifecycle maintenance, diversity caps, and finalized contest review.
 
 ## Implementation Notes
 

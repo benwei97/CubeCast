@@ -128,7 +128,7 @@ Completed:
 - Added prize award and payout shell models with prize behavior still disabled.
 - Added optional WCA/contest/event/published/lock fields to existing competition and market models.
 - Generated and applied migration `20260915000000_v1_schema_foundation`.
-- Updated seed data with one seeded contest, two contest competitions, 20 V1 markets, 40 market options, four WCA identities, and one admin audit action.
+- Added early V1 seed data for local testing. This has since been removed in favor of real WCA-generated contests and markets.
 
 ### Phase 2: Core Game Rules
 
@@ -243,7 +243,7 @@ Completed:
 - Removed legacy trading enums from the Prisma schema.
 - Updated auth/session typing to stop exposing balance.
 - Simplified onboarding so it only assigns a unique internal username.
-- Removed legacy trading seed data; local seed data is now V1-only.
+- Removed legacy trading seed data.
 
 ### Phase 9: Prize-Ready Disabled Layer
 
@@ -322,6 +322,18 @@ Completed:
 - Added generated draft H2H markets using simple personal-best probability heuristics.
 - Kept generated markets unpublished so admins manually choose what to release.
 
+### Phase 15: Real-Data Admin Path Cleanup
+
+Status: complete.
+
+Completed:
+
+- Removed fake local contest and market seed data.
+- Removed the seed script and npm seed entry point.
+- Removed manual admin creation paths for competitions, contests, contest attachments, one-off competition imports, and hand-created markets.
+- Kept the real-data WCA recommendation flow as the source of new contests and markets.
+- Kept admin review/publishing, diversity caps, WCA result snapshots, settlement, lifecycle maintenance, and finalized contest review.
+
 Next MVP gap:
 
 - Add a final MVP readiness checklist covering remaining acceptance criteria and manual end-to-end test steps.
@@ -338,12 +350,6 @@ Apply database migrations:
 
 ```bash
 npm run prisma:migrate
-```
-
-Seed local data:
-
-```bash
-npm run prisma:seed
 ```
 
 Start local dev server:

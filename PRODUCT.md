@@ -12,7 +12,7 @@ CubeCast serves speedcubing fans, competitors, and spectators who want a free we
 
 The primary user signs in with WCA, reviews a curated contest, chooses exactly 10 predictions from roughly 20-30 available markets, and competes on a contest leaderboard.
 
-Secondary users are administrators who curate competitions, generate or manually create markets, publish probabilities, settle outcomes from official WCA results, inspect evidence, void markets, and finalize contests.
+Secondary users are administrators who generate recommended contests from real WCA competitions, review generated markets, publish probabilities, settle outcomes from official WCA results, inspect evidence, void markets, and finalize contests.
 
 ## Product Purpose
 
@@ -30,7 +30,7 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 Users browse active contests, inspect markets, add/remove/change picks before the contest lock time, and review a persistent `X / 10 Picks` state. Once the contest locks, entries are immutable. Users with exactly 10 locked predictions receive a valid contest entry and appear on the official leaderboard.
 
-Administrators select featured WCA competitions, create contests, publish approximately 20-30 markets, configure diversity constraints, settle or void markets, preserve immutable settlement snapshots, and finalize contests after every market is resolved or void.
+Administrators generate featured contests from upcoming WCA competitions, publish approximately 20-30 generated markets, configure diversity constraints, settle or void markets, preserve immutable settlement snapshots, and finalize contests after every market is resolved or void.
 
 ## Capabilities and Constraints
 
