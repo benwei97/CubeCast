@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { V1ContestBoard } from "@/components/v1-slate-board";
+import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import { getPickCounterLabel } from "@/lib/v1-game";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await auth();
+  await maintainContestLockState();
   const now = new Date();
 
   const activeSlate = await prisma.contestSlate.findFirst({

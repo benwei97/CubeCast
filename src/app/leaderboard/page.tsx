@@ -1,12 +1,14 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
+import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
   const session = await auth();
+  await maintainContestLockState();
   const slate = await prisma.contestSlate.findFirst({
     orderBy: [{ finalizedAt: "desc" }, { lockAt: "desc" }],
     include: {

@@ -257,9 +257,22 @@ Completed:
 - Added deterministic tied-rank award planning that pools tied positions and splits cents predictably.
 - Added V1 tests for disabled prize behavior, eligibility, and prize award planning.
 
+### Phase 10: Contest Lock Maintenance
+
+Status: complete.
+
+Completed:
+
+- Added server-side contest lock maintenance.
+- Run lock maintenance before home, picks, leaderboard, and admin page reads.
+- Run lock maintenance inside pick selection transactions before accepting changes.
+- Lock due open contests and their open markets.
+- Mark exactly-10 entries as locked and incomplete entries as invalid.
+- Added V1 tests for the lock-status decision.
+
 Next MVP gap:
 
-- Add an automatic contest lock/finalization maintenance path so entries transition from editable to locked without relying only on request-time checks.
+- Add a small admin-facing maintenance/status panel for contest lifecycle visibility and manual refresh.
 
 ## Useful Commands
 

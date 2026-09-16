@@ -231,6 +231,16 @@ Status: complete.
 - Added deterministic tied-rank award planning with pooled prize positions.
 - Kept prize behavior out of gameplay while disabled.
 
+### Phase 10: Contest Lock Maintenance
+
+Status: complete.
+
+- Added server-side contest lock maintenance.
+- Persisted due open contests as locked when server pages or pick actions run.
+- Locked open markets when the parent contest locks.
+- Marked exactly-10 entries as locked and incomplete entries as invalid.
+- Kept settlement and finalization in the existing settlement path.
+
 ## Implementation Notes
 
 - Do not implement XP.
@@ -250,6 +260,7 @@ Add deterministic tests before relying on each rule:
 - 11th pick rejected
 - edits allowed before lock
 - edits rejected after lock
+- automatic lock transition marks 10-pick entries locked and incomplete entries invalid
 - void prediction scores 0
 - H2H exact tie half-win
 - advancement cutoff semantics

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import { getPickCounterLabel } from "@/lib/v1-game";
 import { removePrediction } from "./actions";
@@ -15,6 +16,8 @@ export default async function PicksPage() {
   if (!session?.user?.id) {
     redirect("/sign-in");
   }
+
+  await maintainContestLockState();
 
   const activeSlate = await prisma.contestSlate.findFirst({
     where: { status: { in: ["OPEN", "LOCKED", "SETTLING", "FINALIZED"] } },

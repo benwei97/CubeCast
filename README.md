@@ -41,6 +41,8 @@ Phase 8 legacy database cleanup is complete: purchase, position, ledger, balance
 
 Phase 9 prize-ready disabled layer is complete: prize configuration is feature-flagged off by default, eligibility hooks are tested, and tied-rank award planning is deterministic without exposing prizes in gameplay.
 
+Phase 10 contest lock maintenance is complete: server reads and pick actions now persist due contests as locked, lock open markets, and mark entries as locked or invalid based on the exactly-10 rule.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

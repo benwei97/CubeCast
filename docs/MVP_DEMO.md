@@ -76,7 +76,7 @@ The local MVP flow is successful when:
 4. The UI displays `X / 10 Picks`.
 5. The user selects exactly 10 predictions before lock.
 6. The user reviews My Picks with probability and score swing.
-7. The entry locks server-side. Partially implemented through lock/edit enforcement; automatic lock transition is still planned.
+7. The entry locks server-side; exactly-10 entries become locked and incomplete entries become invalid.
 8. Admin settles or voids markets with evidence snapshots.
 9. The leaderboard ranks only valid 10-pick entries.
 10. The finalized contest score starts from 1,000 and applies deterministic scoring.

@@ -4,6 +4,7 @@ import {
   calculateEntryScore,
   canAddPrediction,
   canModifyPrediction,
+  getLockedEntryStatus,
   getPickCounterLabel,
   getPredictionScoreChange,
   isValidLockedEntry,
@@ -59,6 +60,8 @@ function testEntryRules() {
 
   assert.equal(isValidLockedEntry({ pickCount: 9 }), false);
   assert.equal(isValidLockedEntry({ pickCount: 10 }), true);
+  assert.equal(getLockedEntryStatus({ pickCount: 9 }), "INVALID");
+  assert.equal(getLockedEntryStatus({ pickCount: 10 }), "LOCKED");
   assert.equal(canAddPrediction({ currentPickCount: 10, lockAt, now: beforeLock }), false);
   assert.equal(canAddPrediction({ currentPickCount: 9, lockAt, now: beforeLock }), true);
   assert.equal(canModifyPrediction({ lockAt, now: beforeLock }), true);

@@ -7,6 +7,7 @@ import {
 
 import { auth } from "@/auth";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import {
   attachCompetitionToSlate,
@@ -53,6 +54,8 @@ export default async function AdminPage({
       </div>
     );
   }
+
+  await maintainContestLockState();
 
   const [
     competitions,

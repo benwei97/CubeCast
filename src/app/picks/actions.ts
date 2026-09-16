@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { ContestEntryStatus } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { lockContestIfDue } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import {
   canAddPrediction,
@@ -28,6 +29,8 @@ export async function selectPrediction(formData: FormData) {
   }
 
   await prisma.$transaction(async (tx) => {
+    await lockContestIfDue(tx, slateId);
+
     const slate = await tx.contestSlate.findUnique({
       where: { id: slateId },
       select: { baseScore: true, id: true, lockAt: true, maxPicks: true, status: true }
@@ -151,7 +154,7 @@ export async function removePrediction(formData: FormData) {
         entry: {
           select: {
             slate: {
-              select: { lockAt: true }
+              select: { id: true, lockAt: true }
             }
           }
         }
@@ -161,6 +164,8 @@ export async function removePrediction(formData: FormData) {
     if (!prediction) {
       throw new Error("Prediction not found.");
     }
+
+    await lockContestIfDue(tx, prediction.entry.slate.id);
 
     if (!canModifyPrediction({ lockAt: prediction.entry.slate.lockAt })) {
       throw new Error("This contest is locked.");

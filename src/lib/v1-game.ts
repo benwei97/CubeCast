@@ -18,6 +18,8 @@ export type RankedLeaderboardEntry = LeaderboardInput & {
   isSharedRank: boolean;
 };
 
+export type LockedEntryStatus = "LOCKED" | "INVALID";
+
 export function getPredictionScoreChange({
   probability,
   result
@@ -59,6 +61,16 @@ export function isValidLockedEntry({
   requiredPicks?: number;
 }) {
   return pickCount === requiredPicks;
+}
+
+export function getLockedEntryStatus({
+  pickCount,
+  requiredPicks = V1_REQUIRED_PICKS
+}: {
+  pickCount: number;
+  requiredPicks?: number;
+}): LockedEntryStatus {
+  return isValidLockedEntry({ pickCount, requiredPicks }) ? "LOCKED" : "INVALID";
 }
 
 export function canAddPrediction({
