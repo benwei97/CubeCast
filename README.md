@@ -55,6 +55,8 @@ Phase 14.1 recommendation ranking fix is complete: competition recommendations n
 
 Phase 16.1 global recommendation scope is complete: the recommendation pipeline now considers all non-canceled WCA competitions globally instead of restricting to one country.
 
+Phase 18 WCA Odds probability provider is complete: generated H2H markets use WCA Odds simulation probabilities by default, filter for tight 35%-65% markets, and fall back to the older personal-best estimate only if the model request fails.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)
@@ -76,7 +78,7 @@ Current planning docs:
    cp .env.example .env
    ```
 
-3. Set `DATABASE_URL` to a PostgreSQL database and set `AUTH_SECRET`. For WCA login, also set `AUTH_WCA_ID` and `AUTH_WCA_SECRET`.
+3. Set `DATABASE_URL` to a PostgreSQL database and set `AUTH_SECRET`. For WCA login, also set `AUTH_WCA_ID` and `AUTH_WCA_SECRET`. `WCA_ODDS_BASE_URL` is optional and defaults to `https://odds.nmckee.org`.
 
 4. Create tables:
 

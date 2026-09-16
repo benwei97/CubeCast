@@ -25,6 +25,11 @@ import {
   type WCIFPublicPayload
 } from "@/lib/wca";
 import {
+  fetchWCAOddsHeadToHeadProbability,
+  WCA_ODDS_DEFAULT_HALF_LIFE_DAYS,
+  WCA_ODDS_DEFAULT_LOOKBACK_DAYS
+} from "@/lib/wca-odds";
+import {
   resolveV1Market,
   type SettlementSourceEvidence,
   tieV1Market,
@@ -34,6 +39,8 @@ import {
 const WCA_COMPETITION_PAGE_SIZE = 25;
 const WCA_COMPETITION_PAGE_LIMIT = 10;
 const WCA_RECOMMENDATION_REQUEST_SPACING_MS = 250;
+const MARKET_PROBABILITY_MIN = 35;
+const MARKET_PROBABILITY_MAX = 65;
 
 const refreshWCAResultsSchema = z.object({
   competitionId: z.string().min(1)
@@ -115,6 +122,19 @@ export async function generateWeeklyRecommendedContest() {
   );
   const lockAt = new Date(startsAt.getTime() - 60 * 60 * 1000);
   const title = `Weekly WCA Contest - ${formatContestDate(startsAt)}`;
+  const recommendedMarketsByCompetition = new Map<string, RecommendedMarket[]>();
+
+  for (const recommendation of recommendations) {
+    recommendedMarketsByCompetition.set(
+      recommendation.competition.id,
+      await buildRecommendedMarkets({
+        competitors: recommendation.marketEligibleCompetitors,
+        competitionName: recommendation.competition.name,
+        eventNames: getWCIFEventNames(recommendation.wcif),
+        lockAt
+      })
+    );
+  }
 
   await prisma.$transaction(async (tx) => {
     const contest = await tx.contestSlate.create({
@@ -144,24 +164,18 @@ export async function generateWeeklyRecommendedContest() {
         }
       });
 
-      const markets = buildRecommendedMarkets({
-        competitors: recommendation.marketEligibleCompetitors,
-        competitionId: competition.id,
-        competitionName: competition.name,
-        eventNames: getWCIFEventNames(recommendation.wcif),
-        lockAt,
-        slateId: contest.id
-      });
+      const markets =
+        recommendedMarketsByCompetition.get(recommendation.competition.id) ?? [];
 
       for (const market of markets) {
         await tx.market.create({
           data: {
             category: MarketCategory.HEAD_TO_HEAD,
             closeTime: lockAt,
-            competitionId: market.competitionId,
+            competitionId: competition.id,
             createdByUserId: admin.id,
             description:
-              "Generated head-to-head market using accepted WCA registrations and personal-best heuristics. Review before publishing.",
+              "Generated head-to-head market using accepted WCA registrations and WCA Odds simulation probabilities. Review before publishing.",
             eventId: market.eventId,
             eventName: market.eventName,
             lockAt,
@@ -170,8 +184,7 @@ export async function generateWeeklyRecommendedContest() {
             },
             publishedAt: null,
             question: market.question,
-            resolutionRules:
-              "Whoever places higher in the specified official WCA event wins.",
+            resolutionRules: market.resolutionRules,
             resolutionSource: "Official WCA competition results",
             settlementRuleVersion: "v1",
             slateId: contest.id,
@@ -486,6 +499,21 @@ type WCARecommendation = {
   wcif: WCIFPublicPayload | null;
 };
 
+type RecommendedMarket = {
+  eventId: string;
+  eventName: string;
+  lockAt: Date;
+  options: {
+    competitorWcaId: string;
+    displayOrder: number;
+    label: string;
+    probability: number;
+    sideKey: string;
+  }[];
+  question: string;
+  resolutionRules: string;
+};
+
 async function fetchAllWCACompetitions({
   end,
   start
@@ -672,23 +700,23 @@ async function upsertWCACompetitionFromRecommendation(
   });
 }
 
-function buildRecommendedMarkets({
+async function buildRecommendedMarkets({
   competitors,
-  competitionId,
   competitionName,
   eventNames,
-  lockAt,
-  slateId
+  lockAt
 }: {
   competitors: AcceptedWCIFCompetitor[];
-  competitionId: string;
   competitionName: string;
   eventNames: Map<string, string>;
   lockAt: Date;
-  slateId: string;
-}) {
-  const markets = [];
+}): Promise<RecommendedMarket[]> {
+  const markets: RecommendedMarket[] = [];
   const eventIds = getRecommendedEventIds(competitors);
+  const modelEndDate = new Date();
+  const modelStartDate = new Date(
+    modelEndDate.getTime() - WCA_ODDS_DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000
+  );
 
   for (const eventId of eventIds) {
     const rankedCompetitors = competitors
@@ -702,19 +730,34 @@ function buildRecommendedMarkets({
           entry.competitor.registration.eventIds?.includes(eventId) === true
       )
       .sort((left, right) => left.personalBest - right.personalBest)
-      .slice(0, 8);
+      .slice(0, 16);
 
-    for (let index = 0; index < rankedCompetitors.length - 1; index += 2) {
+    for (let index = 0; index < rankedCompetitors.length - 1; index += 1) {
       const left = rankedCompetitors[index];
       const right = rankedCompetitors[index + 1];
-      const probability = getHeadToHeadProbability(
-        left.personalBest,
-        right.personalBest
-      );
+      const modelProbability = await getHeadToHeadProbability({
+        eventId,
+        leftBest: left.personalBest,
+        leftCompetitorWcaId: left.competitor.wcaId,
+        modelEndDate,
+        modelStartDate,
+        rightBest: right.personalBest,
+        rightCompetitorWcaId: right.competitor.wcaId
+      });
+
+      if (!isTightMarketProbability(modelProbability.probability)) {
+        continue;
+      }
+
+      const probability = modelProbability.probability;
+      const probabilitySourceLabel =
+        modelProbability.source === "wca-odds"
+          ? `WCA Odds simulation, ${WCA_ODDS_DEFAULT_LOOKBACK_DAYS}-day history, ${WCA_ODDS_DEFAULT_HALF_LIFE_DAYS}-day half-life`
+          : "personal-best fallback heuristic";
+      const resolutionRules = `Whoever places higher in the specified official WCA event wins. Probability source: ${probabilitySourceLabel}.`;
       const eventName = eventNames.get(eventId) ?? getEventName(eventId);
 
       markets.push({
-        competitionId,
         eventId,
         eventName,
         lockAt,
@@ -735,7 +778,7 @@ function buildRecommendedMarkets({
           }
         ],
         question: `Who places higher in ${eventName} at ${competitionName}?`,
-        slateId
+        resolutionRules
       });
 
       if (markets.length >= 10) {
@@ -770,7 +813,52 @@ function getAveragePersonalBest(competitor: AcceptedWCIFCompetitor, eventId: str
   return personalBest?.best ?? null;
 }
 
-function getHeadToHeadProbability(leftBest: number, rightBest: number) {
+async function getHeadToHeadProbability({
+  eventId,
+  leftBest,
+  leftCompetitorWcaId,
+  modelEndDate,
+  modelStartDate,
+  rightBest,
+  rightCompetitorWcaId
+}: {
+  eventId: string;
+  leftBest: number;
+  leftCompetitorWcaId: string;
+  modelEndDate: Date;
+  modelStartDate: Date;
+  rightBest: number;
+  rightCompetitorWcaId: string;
+}): Promise<{ probability: number; source: "fallback" | "wca-odds" }> {
+  try {
+    const modelProbability = await fetchWCAOddsHeadToHeadProbability({
+      endDate: modelEndDate,
+      eventId,
+      leftCompetitorWcaId,
+      rightCompetitorWcaId,
+      startDate: modelStartDate
+    });
+
+    if (modelProbability) {
+      return {
+        probability: modelProbability.leftProbability,
+        source: modelProbability.source
+      };
+    }
+  } catch {
+    return {
+      probability: getPersonalBestFallbackProbability(leftBest, rightBest),
+      source: "fallback"
+    };
+  }
+
+  return {
+    probability: getPersonalBestFallbackProbability(leftBest, rightBest),
+    source: "fallback"
+  };
+}
+
+function getPersonalBestFallbackProbability(leftBest: number, rightBest: number) {
   if (leftBest <= 0 || rightBest <= 0) {
     return 50;
   }
@@ -778,7 +866,18 @@ function getHeadToHeadProbability(leftBest: number, rightBest: number) {
   const relativeGap = (rightBest - leftBest) / Math.max(leftBest, rightBest);
   const estimatedProbability = Math.round(50 + relativeGap * 80);
 
-  return Math.min(65, Math.max(35, estimatedProbability));
+  return Math.min(
+    MARKET_PROBABILITY_MAX,
+    Math.max(MARKET_PROBABILITY_MIN, estimatedProbability)
+  );
+}
+
+function isTightMarketProbability(probability: number) {
+  return (
+    Number.isFinite(probability) &&
+    probability >= MARKET_PROBABILITY_MIN &&
+    probability <= MARKET_PROBABILITY_MAX
+  );
 }
 
 function getEventName(eventId: string) {

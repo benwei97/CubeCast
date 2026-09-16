@@ -66,7 +66,7 @@ Use product language such as picks, score, probability, leaderboard, results, co
 - Existing admin/user role infrastructure.
 - Existing dense market-board UI patterns.
 - Current trading/CubeCoin code that must be migrated away from the V1 product model.
-- WCA Odds methodology has been identified as the target probability-engine direction, but full model implementation and backtesting are not yet present in the repo.
+- Generated H2H market probabilities now use the public WCA Odds simulation API by default, with one year of historical results and a 180-day half-life. Full in-repo model implementation and backtesting are still future work.
 - No production WCA OAuth credentials, WCA ingestion pipeline, official rules, prize terms, legal compliance docs, or real prize provider integration are present.
 
 ## Product Principles

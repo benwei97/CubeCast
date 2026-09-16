@@ -1,6 +1,6 @@
 # CubeCast V1 Implementation Plan
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 This document records the migration plan from the current CubeCoin trading MVP to CubeCast V1: a free WCA-based weekly contest prediction game.
 
@@ -325,6 +325,16 @@ Status: complete.
 - Stored accepted competitor count, competitor limit, and top ranked registered cubers in generated competition metadata.
 - Added an admin preview for each included competition before publishing markets.
 - Top ranked cubers are derived from public WCIF personal-best average world rankings for registered events.
+
+### Phase 18: WCA Odds Probability Provider
+
+Status: complete.
+
+- Added WCA Odds simulation calls for generated H2H market probabilities.
+- Used the WCA Odds default modeling window: one year of history and a 180-day half-life.
+- Preserved V1 fixed-probability behavior by storing the generated probabilities on immutable market options.
+- Filtered generated markets to 35%-65% so the contest prioritizes tight decisions.
+- Kept a personal-best fallback only for model API failures.
 
 ## Implementation Notes
 

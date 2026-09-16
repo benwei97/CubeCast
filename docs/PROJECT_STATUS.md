@@ -1,6 +1,6 @@
 # CubeCast Project Status
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 CubeCast is being migrated from an older virtual CubeCoin trading MVP into V1: a free WCA speedcubing prediction game based on contests, exactly 10 picks, fixed model probabilities, WCA settlement, and score leaderboards.
 
@@ -319,7 +319,7 @@ Completed:
 - Added WCA upcoming competition lookup for the next 7 days.
 - Added public WCIF ingestion for accepted competitor counts, registered events, and personal-best data.
 - Added admin generation of a draft weekly contest from the top 3 recommended competitions.
-- Added generated draft H2H markets using simple personal-best probability heuristics.
+- Added generated draft H2H markets. Probabilities now use WCA Odds simulation results when available, with a personal-best fallback only if the model request fails.
 - Kept generated markets unpublished so admins manually choose what to release.
 
 ### Phase 14.1: Recommendation Ranking Fix
@@ -384,6 +384,18 @@ Completed:
 - Stored accepted competitor count, competitor limit, and top ranked registered cubers in generated competition metadata.
 - Added an admin preview for each included competition before publishing markets.
 - Derived top ranked cubers from public WCIF personal-best average world rankings for registered events.
+
+### Phase 18: WCA Odds Probability Provider
+
+Status: complete.
+
+Completed:
+
+- Added a WCA Odds simulation client for generated H2H markets.
+- Matched WCA Odds defaults of one year of history and a 180-day half-life.
+- Filtered generated markets to the V1 tight probability band of 35%-65%.
+- Kept the old personal-best estimate only as a fallback when the external simulation request fails.
+- Added optional `WCA_ODDS_BASE_URL` configuration.
 
 Next MVP gap:
 

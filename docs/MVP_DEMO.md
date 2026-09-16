@@ -1,6 +1,6 @@
 # Local MVP Walkthrough
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 CubeCast is a free WCA prediction contest game.
 
@@ -26,7 +26,7 @@ Use WCA sign-in for local testing. After the first sign-in, promote your user to
 
 - As admin, open `/admin` and generate a recommended weekly contest from the largest upcoming WCA competitions.
 - Review each included competition's accepted registrations, competitor limit, and top ranked cubers.
-- Review the generated draft markets and publish the markets you want in the contest.
+- Review the generated draft markets with WCA Odds-style simulation probabilities and publish the markets you want in the contest.
 - Open the active contest on `/`.
 - Scan fixed-probability markets across real WCA competitions.
 - See `X / 10 Picks` in the contest entry panel.
@@ -64,7 +64,7 @@ The local MVP flow is successful when:
 
 1. A user signs in with WCA identity or a local development WCA-like account.
 2. The user opens the active contest.
-3. The contest shows approximately 20-30 fixed-probability markets.
+3. The contest shows approximately 20-30 fixed-probability markets using WCA Odds-style model probabilities where available.
 4. The UI displays `X / 10 Picks`.
 5. The user selects exactly 10 predictions before lock.
 6. The user reviews My Picks with probability and score swing.

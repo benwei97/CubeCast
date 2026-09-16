@@ -339,8 +339,9 @@ export default async function AdminPage({
             <h3>Recommend Weekly Contest</h3>
             <p>
               Find the largest upcoming WCA competitions in the next 7 days,
-              create a draft contest, and generate 10 draft head-to-head markets
-              per competition.
+              create a draft contest, and generate tight draft head-to-head
+              markets per competition using WCA Odds-style simulation
+              probabilities.
             </p>
             <PendingSubmitButton pendingLabel="Generating recommendations...">
               Generate recommendations
