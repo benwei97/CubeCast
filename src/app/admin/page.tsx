@@ -63,7 +63,8 @@ export default async function AdminPage({
     competitions,
     activeSlate,
     manageableSlate,
-    slates
+    slates,
+    finalizedSlate
   ] =
     await Promise.all([
     prisma.competition.findMany({
@@ -148,6 +149,34 @@ export default async function AdminPage({
             }
           }
         }
+      }),
+      prisma.contestSlate.findFirst({
+        where: { status: "FINALIZED" },
+        orderBy: [{ finalizedAt: "desc" }, { lockAt: "desc" }],
+        include: {
+          leaderboardEntries: {
+            include: {
+              user: {
+                select: {
+                  username: true,
+                  wcaIdentity: {
+                    select: {
+                      name: true,
+                      wcaId: true
+                    }
+                  }
+                }
+              }
+            },
+            orderBy: [{ rank: "asc" }, { finalScore: "desc" }],
+            take: 5
+          },
+          markets: {
+            select: {
+              status: true
+            }
+          }
+        }
       })
     ]);
   const attachedCompetitionIds = new Set(
@@ -161,6 +190,7 @@ export default async function AdminPage({
     (competition) => competition.wcaCompetitionId
   );
   const lifecycleStats = getLifecycleStats(activeSlate);
+  const finalizedStats = getFinalizedStats(finalizedSlate);
 
   return (
     <div className="page-stack">
@@ -220,6 +250,72 @@ export default async function AdminPage({
             Refresh lifecycle status
           </PendingSubmitButton>
         </form>
+      </section>
+
+      <section className="admin-form-panel">
+        <div className="section-heading">
+          <h2>Finalized Contest Review</h2>
+          <span>
+            {finalizedSlate?.finalizedAt
+              ? `Finalized ${finalizedSlate.finalizedAt.toLocaleString()}`
+              : "No finalized contests"}
+          </span>
+        </div>
+        <div className="summary-grid">
+          <article className="summary-card">
+            <span>Contest</span>
+            <strong>{finalizedSlate ? "FINALIZED" : "None"}</strong>
+            <small>{finalizedSlate?.title ?? "Settle all markets to finalize"}</small>
+          </article>
+          <article className="summary-card">
+            <span>Official entries</span>
+            <strong>{finalizedSlate?.leaderboardEntries.length ?? 0}</strong>
+            <small>Leaderboard entries cached</small>
+          </article>
+          <article className="summary-card">
+            <span>Markets</span>
+            <strong>{finalizedStats.terminalMarkets.toLocaleString()}</strong>
+            <small>
+              {finalizedStats.resolvedMarkets.toLocaleString()} resolved ·{" "}
+              {finalizedStats.voidMarkets.toLocaleString()} void
+            </small>
+          </article>
+          <article className="summary-card">
+            <span>Winner</span>
+            <strong>{finalizedStats.winnerScore}</strong>
+            <small>{finalizedStats.winnerName}</small>
+          </article>
+        </div>
+        {finalizedSlate && finalizedSlate.leaderboardEntries.length > 0 ? (
+          <div className="leaderboard-table compact-admin-table">
+            <div className="leaderboard-header v1-leaderboard-header">
+              <span>Rank</span>
+              <span>User</span>
+              <span>Score</span>
+              <span>Correct</span>
+              <span>Hardest correct</span>
+              <span>Tie</span>
+            </div>
+            {finalizedSlate.leaderboardEntries.map((entry) => (
+              <article className="leaderboard-row v1-leaderboard-row" key={entry.id}>
+                <strong>#{entry.rank}</strong>
+                <span>{getAdminDisplayName(entry.user)}</span>
+                <strong>{entry.finalScore.toLocaleString()}</strong>
+                <span>{entry.correctCount.toLocaleString()}</span>
+                <span>
+                  {entry.hardestCorrectProbability === null
+                    ? "-"
+                    : `${entry.hardestCorrectProbability}%`}
+                </span>
+                <span>{entry.isSharedRank ? "Shared" : "-"}</span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">
+            Finalized contests with official 10-pick entries will appear here.
+          </p>
+        )}
       </section>
 
       <section className="admin-form-panel">
@@ -1051,4 +1147,59 @@ function getLifecycleStats(
     nextAction: "Review",
     nextActionDetail: "Lifecycle status is up to date"
   };
+}
+
+function getFinalizedStats(
+  contest: {
+    leaderboardEntries: {
+      finalScore: number;
+      user: {
+        username: string;
+        wcaIdentity: {
+          name: string;
+          wcaId: string | null;
+        } | null;
+      };
+    }[];
+    markets: { status: string }[];
+  } | null
+) {
+  if (!contest) {
+    return {
+      resolvedMarkets: 0,
+      terminalMarkets: 0,
+      voidMarkets: 0,
+      winnerName: "No finalized leaderboard",
+      winnerScore: "-"
+    };
+  }
+
+  const winner = contest.leaderboardEntries[0] ?? null;
+
+  return {
+    resolvedMarkets: contest.markets.filter((market) => market.status === "RESOLVED")
+      .length,
+    terminalMarkets: contest.markets.filter((market) =>
+      ["RESOLVED", "VOID", "CANCELED"].includes(market.status)
+    ).length,
+    voidMarkets: contest.markets.filter((market) => market.status === "VOID").length,
+    winnerName: winner ? getAdminDisplayName(winner.user) : "No official entries",
+    winnerScore: winner ? winner.finalScore.toLocaleString() : "-"
+  };
+}
+
+function getAdminDisplayName(user: {
+  username: string;
+  wcaIdentity: {
+    name: string;
+    wcaId: string | null;
+  } | null;
+}) {
+  if (user.wcaIdentity?.name) {
+    return user.wcaIdentity.wcaId
+      ? `${user.wcaIdentity.name} (${user.wcaIdentity.wcaId})`
+      : user.wcaIdentity.name;
+  }
+
+  return user.username;
 }

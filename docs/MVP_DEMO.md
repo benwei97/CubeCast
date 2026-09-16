@@ -41,6 +41,7 @@ maya@cubecast.test / password123
 - As admin, use the Contest Lifecycle panel to refresh lock status and review entry/market counts.
 - As admin, import a competition by WCA competition ID and refresh its result snapshot.
 - As admin, open `/admin` and use the Settlement Queue to review imported WCA evidence, attach a result row, and resolve, void, or mark an exact tie.
+- As admin, review finalized contest totals and top official entries in the Finalized Contest Review panel.
 - Open `/leaderboard` to see valid 10-pick entries ranked by contest score.
 
 The server enforces sign-in, contest status, lock time, market membership, option membership, and the max-10-picks rule.

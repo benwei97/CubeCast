@@ -250,6 +250,14 @@ Status: complete.
 - Added a manual lifecycle refresh action that runs server-side lock maintenance and revalidates contest pages.
 - Kept the maintenance action admin-only.
 
+### Phase 12: Finalized Contest Review
+
+Status: complete.
+
+- Added a finalized contest review panel to the admin console.
+- Show the most recent finalized contest, finalized timestamp, terminal market totals, official entry count, winner, and top leaderboard rows.
+- Kept review read-only so final scoring remains driven by settlement snapshots and cached leaderboard entries.
+
 ## Implementation Notes
 
 - Do not implement XP.

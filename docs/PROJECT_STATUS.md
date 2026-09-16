@@ -285,7 +285,19 @@ Completed:
 
 Next MVP gap:
 
-- Tighten the admin operational flow for market settlement and contest finalization, including clearer finalized-state review.
+### Phase 12: Finalized Contest Review
+
+Status: complete.
+
+Completed:
+
+- Added latest finalized contest review to the admin console.
+- Show finalized timestamp, terminal market totals, official entry count, winner, and top leaderboard rows.
+- Keep finalized review read-only so settlement snapshots and leaderboard cache remain the source of truth.
+
+Next MVP gap:
+
+- Improve admin settlement ergonomics with clearer evidence selection and result-state cues before broader design polish.
 
 ## Useful Commands
 

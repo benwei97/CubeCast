@@ -45,6 +45,8 @@ Phase 10 contest lock maintenance is complete: server reads and pick actions now
 
 Phase 11 admin lifecycle visibility is complete: admins can review contest lifecycle counts and manually refresh status maintenance from `/admin`.
 
+Phase 12 finalized contest review is complete: admins can review the latest finalized contest, terminal market totals, cached official entries, and top leaderboard results from `/admin`.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

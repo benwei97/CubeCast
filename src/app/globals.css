@@ -1194,6 +1194,10 @@ footer {
   font-size: 30px;
 }
 
+.compact-admin-table {
+  margin-top: 4px;
+}
+
 .detail-grid {
   display: grid;
   gap: 18px;
