@@ -258,6 +258,15 @@ Status: complete.
 - Show the most recent finalized contest, finalized timestamp, terminal market totals, official entry count, winner, and top leaderboard rows.
 - Kept review read-only so final scoring remains driven by settlement snapshots and cached leaderboard entries.
 
+### Phase 13: Settlement Ergonomics
+
+Status: complete.
+
+- Added clearer settlement action feedback for resolved, tie, and void outcomes.
+- Added evidence-match counts and market result-state cues to each settlement row.
+- Clarified manual-evidence fallback when no imported WCA result row matches.
+- Made evidence select options explicit about what evidence will be stored.
+
 ## Implementation Notes
 
 - Do not implement XP.

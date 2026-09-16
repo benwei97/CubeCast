@@ -681,10 +681,29 @@ export default async function AdminPage({
         {params.v1Settlement === "invalid" && (
           <p className="form-error">Check the settlement fields.</p>
         )}
+        {params.v1Settlement === "resolved" && (
+          <p className="form-success">
+            Market resolved. Scores, snapshots, and leaderboard cache were updated.
+          </p>
+        )}
+        {params.v1Settlement === "tie" && (
+          <p className="form-success">
+            Exact tie recorded. Both sides received the half-win score change.
+          </p>
+        )}
+        {params.v1Settlement === "void" && (
+          <p className="form-success">
+            Market voided. Selected predictions on that market now score 0.
+          </p>
+        )}
         {activeSlate && activeSlate.markets.length > 0 ? (
           <div className="v1-settlement-list">
             {activeSlate.markets.map((market) => {
               const evidenceRows = getMarketWCAEvidenceRows(market);
+              const evidenceSummary =
+                evidenceRows.length > 0
+                  ? `${evidenceRows.length.toLocaleString()} matching WCA rows`
+                  : "Manual evidence needed";
 
               return (
                 <article className="v1-settlement-row" key={market.id}>
@@ -698,20 +717,35 @@ export default async function AdminPage({
                       {market.category} · {market._count.predictions} picks ·{" "}
                       {market.status}
                     </small>
+                    <div className="settlement-status-row">
+                      <span>{evidenceSummary}</span>
+                      <span>
+                        {market.status === "PENDING_RESULT"
+                          ? "Awaiting result"
+                          : "Ready to review"}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="wca-evidence-panel">
                     <strong>WCA evidence</strong>
                     {evidenceRows.length > 0 ? (
-                      <div className="wca-evidence-list">
-                        {evidenceRows.slice(0, 6).map((row) => (
-                          <span key={row.id}>{row.label}</span>
-                        ))}
-                      </div>
+                      <>
+                        <small>
+                          Choose the official result row that supports the selected
+                          outcome.
+                        </small>
+                        <div className="wca-evidence-list">
+                          {evidenceRows.slice(0, 6).map((row) => (
+                            <span key={row.id}>{row.label}</span>
+                          ))}
+                        </div>
+                      </>
                     ) : (
                       <small>
                         No matching imported WCA result rows. Refresh this
-                        competition snapshot or settle manually.
+                        competition snapshot, or enter a WCA result URL and note
+                        before settling manually.
                       </small>
                     )}
                   </div>
@@ -730,10 +764,10 @@ export default async function AdminPage({
                       ))}
                     </select>
                     <select aria-label="WCA evidence row" name="sourceEvidence">
-                      <option value="">No evidence row</option>
+                      <option value="">Manual evidence or no matched row</option>
                       {evidenceRows.map((row) => (
                         <option key={row.id} value={row.value}>
-                          {row.label}
+                          Store evidence: {row.label}
                         </option>
                       ))}
                     </select>

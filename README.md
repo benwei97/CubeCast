@@ -47,6 +47,8 @@ Phase 11 admin lifecycle visibility is complete: admins can review contest lifec
 
 Phase 12 finalized contest review is complete: admins can review the latest finalized contest, terminal market totals, cached official entries, and top leaderboard results from `/admin`.
 
+Phase 13 settlement ergonomics is complete: the admin settlement queue now shows clearer action feedback, evidence-match counts, manual-evidence guidance, and explicit evidence selection labels.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

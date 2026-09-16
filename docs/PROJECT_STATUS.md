@@ -297,7 +297,20 @@ Completed:
 
 Next MVP gap:
 
-- Improve admin settlement ergonomics with clearer evidence selection and result-state cues before broader design polish.
+### Phase 13: Settlement Ergonomics
+
+Status: complete.
+
+Completed:
+
+- Added clear success feedback after resolve, exact tie, and void actions.
+- Added evidence-match counts and result-state cues inside settlement rows.
+- Clarified manual settlement requirements when imported WCA evidence is missing.
+- Made evidence dropdown labels explicit about the row that will be stored.
+
+Next MVP gap:
+
+- Add a final MVP readiness checklist covering remaining acceptance criteria and manual end-to-end test steps.
 
 ## Useful Commands
 
