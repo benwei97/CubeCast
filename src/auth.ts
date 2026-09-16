@@ -138,7 +138,6 @@ export const authOptions = {
           name: true,
           username: true,
           role: true,
-          balance: true,
           wcaIdentity: {
             select: {
               name: true,
@@ -154,7 +153,6 @@ export const authOptions = {
         session.user.name =
           dbUser.wcaIdentity?.name ?? dbUser.name ?? dbUser.username;
         session.user.role = dbUser.role;
-        session.user.balance = dbUser.balance;
         session.user.wcaId = dbUser.wcaIdentity?.wcaId ?? null;
         session.user.wcaUserId = dbUser.wcaIdentity?.wcaUserId ?? null;
       }

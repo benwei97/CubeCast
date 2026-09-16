@@ -35,7 +35,9 @@ Phase 6 WCA integration is complete: WCA OAuth can be enabled with credentials, 
 
 Phase 6.5 WCA-assisted settlement is complete: imported WCA result snapshots now appear in the admin V1 Settlement Queue, and admins can attach a selected WCA evidence row to immutable settlement snapshots when resolving markets.
 
-Phase 7 legacy trading UI removal is complete: the old market-detail trading route, portfolio route, trading services, quick-trade components, and legacy trading smoke test have been removed. Legacy database tables remain until a separate cleanup migration.
+Phase 7 legacy trading UI removal is complete: the old market-detail trading route, portfolio route, trading services, quick-trade components, and legacy trading smoke test have been removed.
+
+Phase 8 legacy database cleanup is complete: purchase, position, ledger, balance, liquidity, and old settlement schema have been removed in migration `20260915230000_phase8_legacy_db_cleanup`, and the seed is V1-only.
 
 Current planning docs:
 

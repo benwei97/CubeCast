@@ -230,14 +230,20 @@ Completed:
 - Removed the legacy trading smoke test and package script.
 - Removed old trading admin panels for legacy market creation, review, and resolution.
 - Converted competition pages to V1 read-only probability summaries instead of legacy price/share links.
-- Kept obsolete database tables for a separate cleanup migration/data-retention review.
 
 ### Phase 8: Legacy Database Cleanup
 
-Status: planned.
+Status: complete.
 
-- Remove obsolete purchase/position/ledger/balance fields and seed data after a separate migration review.
-- Confirm no production data depends on legacy trading tables before dropping anything.
+Completed:
+
+- Added migration `20260915230000_phase8_legacy_db_cleanup`.
+- Dropped legacy purchase, position, ledger transaction, and old settlement tables.
+- Removed legacy balance, share outstanding, liquidity, and winning-outcome columns.
+- Removed legacy trading enums from the Prisma schema.
+- Updated auth/session typing to stop exposing balance.
+- Simplified onboarding so it only assigns a unique internal username.
+- Removed legacy trading seed data; local seed data is now V1-only.
 
 ### Phase 9+: Prize Shell
 

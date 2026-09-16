@@ -4,7 +4,7 @@ Last updated: 2026-09-15
 
 CubeCast currently uses a standard Next.js, Prisma, PostgreSQL, and Auth.js setup.
 
-CubeCast V1 is a free WCA speedcubing prediction slate game. The legacy trading UI and services have been removed; old trading database tables may still exist until a separate cleanup migration.
+CubeCast V1 is a free WCA speedcubing prediction slate game. The legacy trading UI, services, and database tables have been removed.
 
 ## Required Services
 
@@ -41,7 +41,7 @@ PRIZES_ENABLED="false"
 - admin audit records
 - prize/payout shell records while prizes remain disabled
 
-Legacy purchase, position, ledger, and balance columns may still exist in older development databases until the cleanup migration is run.
+Legacy purchase, position, ledger, and balance columns were removed by migration `20260915230000_phase8_legacy_db_cleanup`.
 
 `AUTH_SECRET` signs auth cookies and tokens. Generate a long random value for each environment.
 

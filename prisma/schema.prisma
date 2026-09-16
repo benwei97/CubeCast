@@ -30,11 +30,6 @@ enum MarketStatus {
   CANCELED
 }
 
-enum MarketOutcome {
-  YES
-  NO
-}
-
 enum MarketCategory {
   WINNER
   PODIUM
@@ -107,21 +102,6 @@ enum PayoutStatus {
   CANCELLED
 }
 
-enum PositionStatus {
-  OPEN
-  WON
-  LOST
-  REFUNDED
-}
-
-enum TransactionType {
-  STARTING_BALANCE
-  MARKET_PURCHASE
-  MARKET_PAYOUT
-  MARKET_REFUND
-  ADMIN_ADJUSTMENT
-}
-
 model User {
   id                  String               @id @default(cuid())
   name                String?
@@ -131,16 +111,11 @@ model User {
   username            String               @unique @default(cuid())
   usernameLower       String               @unique @default(cuid())
   role                UserRole             @default(USER)
-  balance             Int                  @default(0)
   passwordHash        String?
   accounts            Account[]
   sessions            Session[]
   wcaIdentity         WCAIdentity?
   createdMarkets      Market[]             @relation("CreatedMarkets")
-  purchases           Purchase[]
-  positions           Position[]
-  transactions        LedgerTransaction[]
-  settlements         Settlement[]         @relation("SettledBy")
   contestEntries      ContestEntry[]
   leaderboardEntries  LeaderboardEntry[]
   adminActions        AdminAction[]
@@ -281,16 +256,8 @@ model Market {
   publishedAt           DateTime?
   resolvedAt            DateTime?
   voidReason            String?
-  winningOutcome        MarketOutcome?
-  yesSharesOutstanding  Int                  @default(0)
-  noSharesOutstanding   Int                  @default(0)
-  liquidityParameter    Int                  @default(1000)
   createdByUserId       String
   createdBy             User                 @relation("CreatedMarkets", fields: [createdByUserId], references: [id])
-  purchases             Purchase[]
-  positions             Position[]
-  transactions          LedgerTransaction[]
-  settlement            Settlement?
   options               MarketOption[]
   predictions           Prediction[]
   settlementSnapshots   SettlementSnapshot[]
@@ -408,64 +375,6 @@ model AdminAction {
   market      Market?         @relation(fields: [marketId], references: [id], onDelete: SetNull)
   metadata    Json?
   createdAt   DateTime        @default(now())
-}
-
-model Purchase {
-  id           String              @id @default(cuid())
-  userId       String
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  marketId     String
-  market       Market              @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  outcome      MarketOutcome
-  quantity     Int
-  totalCost    Int
-  averagePrice Int
-  transactions LedgerTransaction[]
-  createdAt    DateTime            @default(now())
-}
-
-model Position {
-  id           String         @id @default(cuid())
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  marketId     String
-  market       Market         @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  yesShares    Int            @default(0)
-  noShares     Int            @default(0)
-  totalYesCost Int            @default(0)
-  totalNoCost  Int            @default(0)
-  payout       Int            @default(0)
-  status       PositionStatus @default(OPEN)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@unique([userId, marketId])
-}
-
-model LedgerTransaction {
-  id           String          @id @default(cuid())
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  marketId     String?
-  market       Market?         @relation(fields: [marketId], references: [id], onDelete: SetNull)
-  purchaseId   String?
-  purchase     Purchase?       @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
-  type         TransactionType
-  amount       Int
-  balanceAfter Int
-  description  String
-  createdAt    DateTime        @default(now())
-}
-
-model Settlement {
-  id              String        @id @default(cuid())
-  marketId        String        @unique
-  market          Market        @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  outcome         MarketOutcome
-  settledByUserId String
-  settledBy       User          @relation("SettledBy", fields: [settledByUserId], references: [id])
-  totalPayout     Int
-  createdAt       DateTime      @default(now())
 }
 
 model PrizeAward {

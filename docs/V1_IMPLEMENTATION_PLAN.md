@@ -78,14 +78,13 @@ CubeCast V1 is a free forecasting game:
 
 ## Required Database Direction
 
-Add V1 models alongside the current trading tables first. Remove obsolete tables only after the V1 flow works.
+V1 models were added alongside the old trading tables first. After the V1 flow was working, the obsolete trading tables were removed in migration `20260915230000_phase8_legacy_db_cleanup`.
 
 Likely models:
 
 - `WCAIdentity`
 - `ContestSlate`
 - `ContestCompetition`
-- `MarketOutcome`
 - `ContestEntry`
 - `Prediction`
 - `SettlementSnapshot`
@@ -94,29 +93,29 @@ Likely models:
 - `PrizeAward`
 - `Payout`
 
-Likely changed models:
+Changed models:
 
 - `User`
 - `Competition`
 - `Market`
-- `Settlement`
 
-Likely deprecated models:
+Removed legacy models:
 
 - `Purchase`
 - `Position`
 - `LedgerTransaction`
+- old `Settlement`
 
 ## Data-Loss Risks
 
-The current demo data does not map cleanly to V1. Existing purchases, positions, ledger transactions, and CubeCoin balances should be treated as obsolete demo data unless real users are introduced before migration.
+The old demo trading data did not map cleanly to V1. Purchases, positions, ledger transactions, CubeCoin balances, and old settlements were treated as obsolete demo data and removed during Phase 8.
 
-Safe path:
+Completed safe path:
 
 1. Add V1 tables without dropping old trading tables.
 2. Build V1 UI and server actions against the new tables.
 3. Hide old trading UI.
-4. Delete old trading tables in a later cleanup migration.
+4. Delete old trading tables in migration `20260915230000_phase8_legacy_db_cleanup`.
 
 ## Phase Plan
 
@@ -210,14 +209,17 @@ Status: complete.
 - Removed old trading services, account-value helpers, quick-trade/order-ticket components, and trading smoke test.
 - Removed legacy admin market creation/review/resolution panels.
 - Converted competition pages to V1 probability summaries.
-- Kept obsolete database tables for a later explicit cleanup migration.
 
 ### Phase 8: Legacy Database Cleanup
 
-Status: planned.
+Status: complete.
 
-- Remove obsolete purchase/position/ledger/balance schema after a separate migration/data-retention review.
-- Remove legacy seed data that only exists for the old trading model.
+- Added migration `20260915230000_phase8_legacy_db_cleanup`.
+- Dropped legacy purchase, position, ledger transaction, and old settlement tables.
+- Removed legacy balance, share outstanding, liquidity, and winning-outcome columns.
+- Removed old trading enums from Prisma.
+- Simplified onboarding and auth session data around V1 identity only.
+- Removed legacy seed data; seed data is now V1-only.
 
 ### Phase 9: Prize-Ready Disabled Layer
 
