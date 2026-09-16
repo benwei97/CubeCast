@@ -180,6 +180,9 @@ Controls and surfaces use modest radii. Standard cards and rows use `8px`; contr
 
 ### Admin
 
+- **Primary workflow:** Current contest first, competition-grouped market selection, a persistent selection counter, and a dedicated review state before publishing.
+- **Progressive disclosure:** Ranked entrants, generation settings, lifecycle status, history, and settlement tools expand on demand. Accepted counts and competitor limits stay visible with each competition.
+
 - **Style:** Dense operation panels and tables.
 - **Critical Actions:** Publishing, voiding, settlement, and finalization require confirmation and audit logs.
 - **Evidence:** Settlement inspection should foreground WCA source details and immutable snapshots.

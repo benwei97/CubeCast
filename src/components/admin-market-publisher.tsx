@@ -22,10 +22,23 @@ export type AdminPublishMarket = {
   status: string;
 };
 
+type CompetitionPreview = {
+  name: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  wcaCompetitionId: string | null;
+  acceptedCompetitors: number | null;
+  competitorLimit: number | null;
+  topRankedCompetitors: { wcaId: string; eventId: string; name: string; eventName: string; worldRanking: number }[];
+};
+
 export function AdminMarketPublisher({
-  markets
+  markets,
+  competitions
 }: {
   markets: AdminPublishMarket[];
+  competitions: CompetitionPreview[];
 }) {
   const draftMarkets = useMemo(
     () => markets.filter((market) => market.status === "DRAFT"),
@@ -76,11 +89,18 @@ export function AdminMarketPublisher({
 
   if (draftMarkets.length === 0) {
     return (
-      <div className="admin-publish-empty">
-        <strong>All generated markets have been published.</strong>
+      <div className="admin-publish-flow">
+        <div className="admin-publish-empty">
+        <strong>{publishedMarkets > 0 ? "All generated markets have been published." : "No markets available for selection."}</strong>
         <span>
           {publishedMarkets.toLocaleString()} markets are available to players.
         </span>
+        </div>
+        {competitions.map((competition) => (
+          <section className="admin-market-group" key={competition.name}>
+            <CompetitionHeading competition={competition} />
+          </section>
+        ))}
       </div>
     );
   }
@@ -93,26 +113,25 @@ export function AdminMarketPublisher({
             {selectedMarketIds.length} / {publishTarget} markets selected
           </strong>
           <span>
-            {publishedMarkets.toLocaleString()} already public ·{" "}
-            {draftMarkets.length.toLocaleString()} draft markets available
+            {isReviewing ? "Ready to publish" : "Contest selection"}
           </span>
         </div>
         <div className="admin-publish-toolbar-actions">
-          <button
+          {!isReviewing && <button
             className="secondary-button"
             disabled={selectedMarketIds.length === 0}
             onClick={clearSelections}
             type="button"
           >
             Clear
-          </button>
-          <button
+          </button>}
+          {!isReviewing && <button
             disabled={!isComplete}
             onClick={() => setIsReviewing(true)}
             type="button"
           >
             Review selected
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -153,12 +172,21 @@ export function AdminMarketPublisher({
         </section>
       )}
 
-      <div className="admin-market-groups">
-        {groupedMarkets.map((group) => (
+      {!isReviewing && <div className="admin-market-groups">
+        {competitions.filter((competition) => !groupedMarkets.some((group) => group.competitionName === competition.name)).map((competition) => (
+          <section className="admin-market-group" key={competition.name}>
+            <CompetitionHeading competition={competition} />
+            <p className="empty-state">No draft markets available for this competition.</p>
+          </section>
+        ))}
+        {groupedMarkets.map((group) => {
+          const competition = competitions.find((item) => item.name === group.competitionName);
+          return (
           <section className="admin-market-group" key={group.competitionName}>
+            {competition && <CompetitionHeading competition={competition} />}
             <div className="admin-market-group-heading">
-              <strong>{group.competitionName}</strong>
-              <span>{group.markets.length.toLocaleString()} draft markets</span>
+              <strong>{competition ? "Markets" : group.competitionName}</strong>
+              <span>{group.markets.filter((market) => selectedMarketIds.includes(market.id)).length} / {group.markets.length} selected</span>
             </div>
             <div className="admin-market-selection-list">
               {group.markets.map((market) => {
@@ -171,6 +199,7 @@ export function AdminMarketPublisher({
                       isSelected ? " is-selected" : ""
                     }`}
                     disabled={isDisabled}
+                    aria-pressed={isSelected}
                     key={market.id}
                     onClick={() => toggleMarket(market.id)}
                     type="button"
@@ -184,8 +213,34 @@ export function AdminMarketPublisher({
               })}
             </div>
           </section>
-        ))}
+        );})}
+      </div>}
+    </div>
+  );
+}
+
+function CompetitionHeading({ competition }: { competition: CompetitionPreview }) {
+  return (
+    <div className="admin-competition-preview">
+      <h3>{competition.name}</h3>
+      <div className="admin-competition-meta">
+        <span>{competition.location} · {competition.startDate}{competition.endDate !== competition.startDate ? ` – ${competition.endDate}` : ""}</span>
+        {competition.wcaCompetitionId && (
+          <a href={`https://www.worldcubeassociation.org/competitions/${competition.wcaCompetitionId}`} target="_blank" rel="noreferrer">WCA details</a>
+        )}
       </div>
+      <p>
+        {competition.acceptedCompetitors === null ? "Accepted count unavailable" : `${competition.acceptedCompetitors.toLocaleString()} accepted`}
+        {competition.competitorLimit !== null && ` · ${competition.competitorLimit.toLocaleString()} competitor limit`}
+      </p>
+      {competition.topRankedCompetitors.length > 0 && (
+        <details className="admin-entrants">
+          <summary>Top ranked cubers</summary>
+          <ul>{competition.topRankedCompetitors.map((competitor) => (
+            <li key={`${competitor.wcaId}-${competitor.eventId}`}>{competitor.name} · {competitor.eventName} #{competitor.worldRanking.toLocaleString()}</li>
+          ))}</ul>
+        </details>
+      )}
     </div>
   );
 }

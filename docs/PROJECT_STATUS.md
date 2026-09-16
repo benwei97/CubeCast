@@ -2,6 +2,14 @@
 
 Last updated: 2026-09-16
 
+## Admin Workspace Simplification
+
+- Current contest and grouped market selection lead the admin page.
+- Competition dates, location, accepted count, and capacity appear with markets; ranked entrants expand on demand.
+- Review replaces selection until publishing or returning to editing.
+- Settlement, lifecycle, generation settings, and history remain in collapsed sections.
+- Test: open /admin, inspect competitions, fill the market counter, review, return to editing or publish; expand operational sections for existing tools.
+
 CubeCast is being migrated from an older virtual CubeCoin trading MVP into V1: a free WCA speedcubing prediction game based on contests, exactly 10 picks, fixed model probabilities, WCA settlement, and score leaderboards.
 
 ## Current Architecture

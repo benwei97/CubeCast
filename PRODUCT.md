@@ -28,6 +28,8 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 ## Operating Context
 
+The admin workspace focuses on the current generated contest: review competitions and markets, select the release, review it, and publish. Operational tools and history remain available in collapsed sections below.
+
 Users browse active contests, inspect markets, add/remove/change picks before the contest lock time, and review a persistent `X / 10 Picks` state. Once the contest locks, entries are immutable. Users with exactly 10 locked predictions receive a valid contest entry and appear on the official leaderboard.
 
 Administrators generate featured contests from upcoming WCA competitions, preview competitor limits and top ranked entrants, publish approximately 20-30 generated markets, configure diversity constraints, settle or void markets, preserve immutable settlement snapshots, and finalize contests after every market is resolved or void.

@@ -1162,6 +1162,60 @@ footer {
   gap: 16px;
 }
 
+.admin-contest-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-contest-heading h1 { font-size: 28px; margin: 0 0 8px; }
+.admin-contest-heading p { margin: 0 0 4px; }
+
+.admin-contest-heading small,
+.admin-competition-meta,
+.admin-competition-preview p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-competition-preview h3 {
+  font-size: 18px;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.admin-competition-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-competition-preview p { margin: 8px 0; }
+.admin-entrants summary,
+.admin-secondary > summary {
+  cursor: pointer;
+  min-height: 40px;
+  padding: 10px 0;
+}
+.admin-entrants summary { font-size: 13px; }
+.admin-entrants ul { padding-left: 20px; font-size: 13px; line-height: 1.8; }
+.admin-operations { margin-top: 24px; border-top: 1px solid var(--line); }
+.admin-secondary { border-bottom: 1px solid var(--line); padding: 8px 0; }
+.admin-secondary > summary { font-weight: 600; }
+.admin-secondary > section,
+.admin-secondary > form { margin: 16px 0; }
+.admin-secondary .admin-form-panel { border: 0; background: transparent; padding: 0; }
+.admin-market-select-row > *,
+.admin-market-summary { min-width: 0; overflow-wrap: anywhere; }
+.admin-secondary summary:focus-visible,
+.admin-entrants summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.admin-publish-flow > .admin-market-groups > .admin-market-group,
+.admin-publish-review { border: 0; border-radius: 0; padding: 16px 0; background: transparent; }
+.admin-publish-review-list .admin-market-group { border: 0; padding: 12px 0; }
+
 .admin-publish-toolbar {
   align-items: center;
   background: var(--surface);

@@ -180,135 +180,20 @@ export default async function AdminPage({
 
   return (
     <div className="page-stack">
-      <section>
-        <p className="eyebrow">Admin console</p>
-        <h1>Market Operations</h1>
-        <p>
-          Manage contests, markets, WCA evidence, and settlement.
-        </p>
-      </section>
-
-      <section className="admin-form-panel">
-        <div className="section-heading">
-          <h2>Contest Lifecycle</h2>
-          <span>
-            {activeSlate
-              ? `${activeSlate.status} · Locks ${activeSlate.lockAt.toLocaleString()}`
-              : "No active contest"}
-          </span>
+      <section className="admin-contest-heading">
+        <div>
+          <h1>Contest Manager</h1>
+          <p>{manageableSlate?.title ?? "Upcoming contest"}</p>
+          {manageableSlate && (
+            <small>{manageableSlate.status === "DRAFT" ? "Draft" : "Open"} · Picks lock {manageableSlate.lockAt.toLocaleString()}</small>
+          )}
         </div>
-        {params.lifecycle === "refreshed" && (
-          <p className="form-success">Contest lifecycle status refreshed.</p>
-        )}
-        <div className="summary-grid">
-          <article className="summary-card">
-            <span>Contest</span>
-            <strong>{activeSlate?.status ?? "None"}</strong>
-            <small>{activeSlate?.title ?? "Create or open a contest"}</small>
-          </article>
-          <article className="summary-card">
-            <span>Entries</span>
-            <strong>{lifecycleStats.totalEntries.toLocaleString()}</strong>
-            <small>
-              {lifecycleStats.lockedEntries.toLocaleString()} locked ·{" "}
-              {lifecycleStats.invalidEntries.toLocaleString()} invalid
-            </small>
-          </article>
-          <article className="summary-card">
-            <span>Markets</span>
-            <strong>{lifecycleStats.totalMarkets.toLocaleString()}</strong>
-            <small>
-              {lifecycleStats.lockedMarkets.toLocaleString()} locked ·{" "}
-              {lifecycleStats.pendingMarkets.toLocaleString()} pending
-            </small>
-          </article>
-          <article className="summary-card">
-            <span>Next action</span>
-            <strong>{lifecycleStats.nextAction}</strong>
-            <small>{lifecycleStats.nextActionDetail}</small>
-          </article>
-        </div>
-        <form action={refreshContestLifecycle} className="inline-form">
-          <PendingSubmitButton
-            className="secondary-button"
-            pendingLabel="Refreshing..."
-          >
-            Refresh lifecycle status
+        <form action={generateWeeklyRecommendedContest}>
+          <PendingSubmitButton className={manageableSlate ? "secondary-button" : undefined} pendingLabel="Generating...">
+            {manageableSlate ? "Regenerate recommendations" : "Generate contest"}
           </PendingSubmitButton>
         </form>
       </section>
-
-      <section className="admin-form-panel">
-        <div className="section-heading">
-          <h2>Finalized Contest Review</h2>
-          <span>
-            {finalizedSlate?.finalizedAt
-              ? `Finalized ${finalizedSlate.finalizedAt.toLocaleString()}`
-              : "No finalized contests"}
-          </span>
-        </div>
-        <div className="summary-grid">
-          <article className="summary-card">
-            <span>Contest</span>
-            <strong>{finalizedSlate ? "FINALIZED" : "None"}</strong>
-            <small>{finalizedSlate?.title ?? "Settle all markets to finalize"}</small>
-          </article>
-          <article className="summary-card">
-            <span>Official entries</span>
-            <strong>{finalizedSlate?.leaderboardEntries.length ?? 0}</strong>
-            <small>Leaderboard entries cached</small>
-          </article>
-          <article className="summary-card">
-            <span>Markets</span>
-            <strong>{finalizedStats.terminalMarkets.toLocaleString()}</strong>
-            <small>
-              {finalizedStats.resolvedMarkets.toLocaleString()} resolved ·{" "}
-              {finalizedStats.voidMarkets.toLocaleString()} void
-            </small>
-          </article>
-          <article className="summary-card">
-            <span>Winner</span>
-            <strong>{finalizedStats.winnerScore}</strong>
-            <small>{finalizedStats.winnerName}</small>
-          </article>
-        </div>
-        {finalizedSlate && finalizedSlate.leaderboardEntries.length > 0 ? (
-          <div className="leaderboard-table compact-admin-table">
-            <div className="leaderboard-header v1-leaderboard-header">
-              <span>Rank</span>
-              <span>User</span>
-              <span>Score</span>
-              <span>Correct</span>
-              <span>Hardest correct</span>
-              <span>Tie</span>
-            </div>
-            {finalizedSlate.leaderboardEntries.map((entry) => (
-              <article className="leaderboard-row v1-leaderboard-row" key={entry.id}>
-                <strong>#{entry.rank}</strong>
-                <span>{getAdminDisplayName(entry.user)}</span>
-                <strong>{entry.finalScore.toLocaleString()}</strong>
-                <span>{entry.correctCount.toLocaleString()}</span>
-                <span>
-                  {entry.hardestCorrectProbability === null
-                    ? "-"
-                    : `${entry.hardestCorrectProbability}%`}
-                </span>
-                <span>{entry.isSharedRank ? "Shared" : "-"}</span>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="empty-state">
-            Finalized contests with official 10-pick entries will appear here.
-          </p>
-        )}
-      </section>
-
-      <section className="admin-form-panel">
-        <div className="section-heading">
-          <h2>WCA Data</h2>
-          <span>{wcaCompetitions.length.toLocaleString()} linked competitions</span>
-        </div>
         {params.wca?.startsWith("invalid") && (
           <p className="form-error">Check the WCA fields.</p>
         )}
@@ -334,21 +219,46 @@ export default async function AdminPage({
             markets. Review the markets before publishing.
           </p>
         )}
-        <div className="admin-slate-grid">
-          <form action={generateWeeklyRecommendedContest} className="admin-form">
-            <h3>Recommend Weekly Contest</h3>
-            <p>
-              Find the largest upcoming WCA competitions in the next 7 days,
-              create a draft contest, and generate tight draft head-to-head
-              markets per competition using WCA Odds-style simulation
-              probabilities.
-            </p>
-            <PendingSubmitButton pendingLabel="Generating recommendations...">
-              Generate recommendations
-            </PendingSubmitButton>
-          </form>
 
-          <form action={refreshWCACompetitionResults} className="admin-form">
+      {params.v1Market === "published" && (
+        <p className="form-success" role="status">Selected markets are now public.</p>
+      )}
+      {!manageableSlate && (
+        <p className="empty-state">No contest is ready for market selection.</p>
+      )}
+      {manageableSlate && (
+        <section>
+          <div className="section-heading">
+            <h2>Select Markets</h2>
+          </div>
+          <AdminMarketPublisher
+            competitions={manageableSlate.competitions.map(({ competition }) => ({
+              name: competition.name,
+              location: `${competition.location} · ${competition.country}`,
+              startDate: competition.startDate.toLocaleDateString(),
+              endDate: competition.endDate.toLocaleDateString(),
+              wcaCompetitionId: competition.wcaCompetitionId,
+              ...getCompetitionPreview(competition.sourceMetadata)
+            }))}
+            markets={manageableSlate.markets.map((market) => ({
+              competitionName: market.competition.name,
+              eventName: market.eventName ?? market.eventId ?? "Event",
+              id: market.id,
+              options: market.options.map((option) => ({
+                id: option.id,
+                label: option.label,
+                probability: option.probability
+              })),
+              question: market.question,
+              status: market.status
+            }))}
+          />
+        </section>
+      )}
+      <div className="admin-operations">
+      <details className="admin-secondary" open={Boolean(params.v1Settlement || params.wca === "results-refreshed")}>
+        <summary>Results & settlement</summary>
+        <section className="admin-results-refresh">          <form action={refreshWCACompetitionResults} className="admin-form">
             <h3>Refresh Results</h3>
             <label htmlFor="wca-results-competition">Competition</label>
             <select id="wca-results-competition" name="competitionId" required>
@@ -377,148 +287,7 @@ export default async function AdminPage({
                 </article>
               ))}
             </div>
-          </form>
-        </div>
-      </section>
-
-      <section className="admin-form-panel">
-        <div className="section-heading">
-          <h2>Contest Review</h2>
-          <span>{slates.length.toLocaleString()} recent contests</span>
-        </div>
-        <div className="admin-slate-list">
-          {slates.map((slate) => (
-            <article key={slate.id}>
-              <div>
-                <strong>{slate.title}</strong>
-                <span>
-                  {slate.status} · {slate._count.competitions} competitions ·{" "}
-                  {slate._count.markets} markets
-                </span>
-              </div>
-              <small>Locks {slate.lockAt.toLocaleString()}</small>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {manageableSlate && (
-        <section className="admin-form-panel">
-          <div className="section-heading">
-            <h2>Build {manageableSlate.title}</h2>
-            <span>
-              {manageableSlate.status} · Locks{" "}
-              {manageableSlate.lockAt.toLocaleString()}
-            </span>
-          </div>
-
-          <div className="admin-slate-grid">
-            <div className="admin-form">
-              <h3>Included Competitions</h3>
-              <div className="competition-preview-list">
-                {manageableSlate.competitions.map(({ competition }) => {
-                  const preview = getCompetitionPreview(competition.sourceMetadata);
-
-                  return (
-                    <article className="competition-preview-card" key={competition.id}>
-                      <div className="competition-preview-heading">
-                        <div>
-                          <strong>{competition.name}</strong>
-                          <small>
-                            {competition.location} · {competition.country}
-                          </small>
-                        </div>
-                        <span>{competition.wcaCompetitionId ?? "WCA"}</span>
-                      </div>
-
-                      <div className="competition-preview-stats">
-                        <span>
-                          <strong>{formatNullableCount(preview.acceptedCompetitors)}</strong>
-                          accepted
-                        </span>
-                        <span>
-                          <strong>{formatNullableCount(preview.competitorLimit)}</strong>
-                          competitor limit
-                        </span>
-                      </div>
-
-                      <div className="ranked-cuber-preview">
-                        <span>Top ranked cubers</span>
-                        {preview.topRankedCompetitors.length > 0 ? (
-                          <div>
-                            {preview.topRankedCompetitors.map((competitor) => (
-                              <small key={`${competitor.wcaId}-${competitor.eventId}`}>
-                                #{competitor.worldRanking.toLocaleString()}{" "}
-                                {competitor.eventName}: {competitor.name}
-                              </small>
-                            ))}
-                          </div>
-                        ) : (
-                          <small>No public ranking preview available.</small>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-
-            <form action={updateSlateDiversityConfig} className="admin-form">
-              <h3>Diversity Caps</h3>
-              <input name="slateId" type="hidden" value={manageableSlate.id} />
-              <div className="form-grid">
-                <div>
-                  <label htmlFor="maxPerCompetition">Per competition</label>
-                  <input
-                    id="maxPerCompetition"
-                    min="1"
-                    name="maxPerCompetition"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerCompetition}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="maxPerCompetitor">Per competitor</label>
-                  <input
-                    id="maxPerCompetitor"
-                    min="1"
-                    name="maxPerCompetitor"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerCompetitor}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="maxPerEvent">Per event</label>
-                  <input
-                    id="maxPerEvent"
-                    min="1"
-                    name="maxPerEvent"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerEvent}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="maxPerMarketType">Per market type</label>
-                  <input
-                    id="maxPerMarketType"
-                    min="1"
-                    name="maxPerMarketType"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerMarketType}
-                  />
-                </div>
-              </div>
-              <PendingSubmitButton
-                className="secondary-button"
-                pendingLabel="Saving caps..."
-              >
-                Save caps
-              </PendingSubmitButton>
-            </form>
-          </div>
-        </section>
-      )}
-
+          </form></section>
       <section>
         <div className="section-heading">
           <h2>Settlement Queue</h2>
@@ -676,28 +445,215 @@ export default async function AdminPage({
         )}
       </section>
 
-      {manageableSlate && manageableSlate.markets.length > 0 && (
-        <section>
-          <div className="section-heading">
-            <h2>Select Markets</h2>
-            <span>{manageableSlate.markets.length.toLocaleString()} generated</span>
-          </div>
-          <AdminMarketPublisher
-            markets={manageableSlate.markets.map((market) => ({
-              competitionName: market.competition.name,
-              eventName: market.eventName ?? market.eventId ?? "Event",
-              id: market.id,
-              options: market.options.map((option) => ({
-                id: option.id,
-                label: option.label,
-                probability: option.probability
-              })),
-              question: market.question,
-              status: market.status
-            }))}
-          />
-        </section>
+
+      </details>
+
+      <details className="admin-secondary" open={Boolean(params.lifecycle)}>
+        <summary>Contest status</summary>
+      <section className="admin-form-panel">
+        <div className="section-heading">
+          <h2>Contest Lifecycle</h2>
+          <span>
+            {activeSlate
+              ? `${activeSlate.status} · Locks ${activeSlate.lockAt.toLocaleString()}`
+              : "No active contest"}
+          </span>
+        </div>
+        {params.lifecycle === "refreshed" && (
+          <p className="form-success">Contest lifecycle status refreshed.</p>
+        )}
+        <div className="summary-grid">
+          <article className="summary-card">
+            <span>Contest</span>
+            <strong>{activeSlate?.status ?? "None"}</strong>
+            <small>{activeSlate?.title ?? "Create or open a contest"}</small>
+          </article>
+          <article className="summary-card">
+            <span>Entries</span>
+            <strong>{lifecycleStats.totalEntries.toLocaleString()}</strong>
+            <small>
+              {lifecycleStats.lockedEntries.toLocaleString()} locked ·{" "}
+              {lifecycleStats.invalidEntries.toLocaleString()} invalid
+            </small>
+          </article>
+          <article className="summary-card">
+            <span>Markets</span>
+            <strong>{lifecycleStats.totalMarkets.toLocaleString()}</strong>
+            <small>
+              {lifecycleStats.lockedMarkets.toLocaleString()} locked ·{" "}
+              {lifecycleStats.pendingMarkets.toLocaleString()} pending
+            </small>
+          </article>
+          <article className="summary-card">
+            <span>Next action</span>
+            <strong>{lifecycleStats.nextAction}</strong>
+            <small>{lifecycleStats.nextActionDetail}</small>
+          </article>
+        </div>
+        <form action={refreshContestLifecycle} className="inline-form">
+          <PendingSubmitButton
+            className="secondary-button"
+            pendingLabel="Refreshing..."
+          >
+            Refresh lifecycle status
+          </PendingSubmitButton>
+        </form>
+      </section>
+
+
+      </details>
+
+      {manageableSlate && (
+      <details className="admin-secondary">
+        <summary>Generation settings</summary>
+            <form action={updateSlateDiversityConfig} className="admin-form">
+              <h3>Diversity Caps</h3>
+              <input name="slateId" type="hidden" value={manageableSlate.id} />
+              <div className="form-grid">
+                <div>
+                  <label htmlFor="maxPerCompetition">Per competition</label>
+                  <input
+                    id="maxPerCompetition"
+                    min="1"
+                    name="maxPerCompetition"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerCompetition}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxPerCompetitor">Per competitor</label>
+                  <input
+                    id="maxPerCompetitor"
+                    min="1"
+                    name="maxPerCompetitor"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerCompetitor}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxPerEvent">Per event</label>
+                  <input
+                    id="maxPerEvent"
+                    min="1"
+                    name="maxPerEvent"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerEvent}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxPerMarketType">Per market type</label>
+                  <input
+                    id="maxPerMarketType"
+                    min="1"
+                    name="maxPerMarketType"
+                    type="number"
+                    defaultValue={diversityConfig.maxPerMarketType}
+                  />
+                </div>
+              </div>
+              <PendingSubmitButton
+                className="secondary-button"
+                pendingLabel="Saving caps..."
+              >
+                Save caps
+              </PendingSubmitButton>
+            </form>
+      </details>
+
       )}
+      <details className="admin-secondary">
+        <summary>Past contests</summary>
+      <section className="admin-form-panel">
+        <div className="section-heading">
+          <h2>Contest Review</h2>
+          <span>{slates.length.toLocaleString()} recent contests</span>
+        </div>
+        <div className="admin-slate-list">
+          {slates.map((slate) => (
+            <article key={slate.id}>
+              <div>
+                <strong>{slate.title}</strong>
+                <span>
+                  {slate.status} · {slate._count.competitions} competitions ·{" "}
+                  {slate._count.markets} markets
+                </span>
+              </div>
+              <small>Locks {slate.lockAt.toLocaleString()}</small>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="admin-form-panel">
+        <div className="section-heading">
+          <h2>Finalized Contest Review</h2>
+          <span>
+            {finalizedSlate?.finalizedAt
+              ? `Finalized ${finalizedSlate.finalizedAt.toLocaleString()}`
+              : "No finalized contests"}
+          </span>
+        </div>
+        <div className="summary-grid">
+          <article className="summary-card">
+            <span>Contest</span>
+            <strong>{finalizedSlate ? "FINALIZED" : "None"}</strong>
+            <small>{finalizedSlate?.title ?? "Settle all markets to finalize"}</small>
+          </article>
+          <article className="summary-card">
+            <span>Official entries</span>
+            <strong>{finalizedSlate?.leaderboardEntries.length ?? 0}</strong>
+            <small>Leaderboard entries cached</small>
+          </article>
+          <article className="summary-card">
+            <span>Markets</span>
+            <strong>{finalizedStats.terminalMarkets.toLocaleString()}</strong>
+            <small>
+              {finalizedStats.resolvedMarkets.toLocaleString()} resolved ·{" "}
+              {finalizedStats.voidMarkets.toLocaleString()} void
+            </small>
+          </article>
+          <article className="summary-card">
+            <span>Winner</span>
+            <strong>{finalizedStats.winnerScore}</strong>
+            <small>{finalizedStats.winnerName}</small>
+          </article>
+        </div>
+        {finalizedSlate && finalizedSlate.leaderboardEntries.length > 0 ? (
+          <div className="leaderboard-table compact-admin-table">
+            <div className="leaderboard-header v1-leaderboard-header">
+              <span>Rank</span>
+              <span>User</span>
+              <span>Score</span>
+              <span>Correct</span>
+              <span>Hardest correct</span>
+              <span>Tie</span>
+            </div>
+            {finalizedSlate.leaderboardEntries.map((entry) => (
+              <article className="leaderboard-row v1-leaderboard-row" key={entry.id}>
+                <strong>#{entry.rank}</strong>
+                <span>{getAdminDisplayName(entry.user)}</span>
+                <strong>{entry.finalScore.toLocaleString()}</strong>
+                <span>{entry.correctCount.toLocaleString()}</span>
+                <span>
+                  {entry.hardestCorrectProbability === null
+                    ? "-"
+                    : `${entry.hardestCorrectProbability}%`}
+                </span>
+                <span>{entry.isSharedRank ? "Shared" : "-"}</span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">
+            Finalized contests with official 10-pick entries will appear here.
+          </p>
+        )}
+      </section>
+
+
+      </details>
+
+      </div>
     </div>
   );
 }
@@ -739,10 +695,6 @@ function getCompetitionPreview(sourceMetadata: unknown) {
     competitorLimit: getNumber(metadata?.competitorLimit),
     topRankedCompetitors
   };
-}
-
-function formatNullableCount(value: number | null) {
-  return value === null ? "-" : value.toLocaleString();
 }
 
 function getDiversityConfig(value: unknown) {
