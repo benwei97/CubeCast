@@ -12,8 +12,8 @@ export default function SignInPage() {
         <p className="eyebrow">Welcome to CubeCast</p>
         <h1>Sign in</h1>
         <p>
-          WCA login is the production identity for CubeCast. Seeded demo
-          accounts remain available for local development.
+          Use your WCA account for official contest entries. Local access is
+          available while CubeCast is running in development.
         </p>
         {wcaEnabled && <SignInForm provider="wca" />}
         {googleEnabled && <SignInForm provider="google" />}

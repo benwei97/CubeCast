@@ -27,7 +27,7 @@ Browser
 
 The repository still contains the legacy CubeCoin trading implementation:
 
-- credential demo auth
+- local credential auth
 - optional Google OAuth
 - admin/user roles
 - competitions
@@ -128,7 +128,7 @@ Completed:
 - Added prize award and payout shell models with prize behavior still disabled.
 - Added optional WCA/contest/event/published/lock fields to existing competition and market models.
 - Generated and applied migration `20260915000000_v1_schema_foundation`.
-- Updated seed data with one demo V1 contest, two contest competitions, 20 V1 markets, 40 market options, four WCA identities, and one admin audit action.
+- Updated seed data with one seeded contest, two contest competitions, 20 V1 markets, 40 market options, four WCA identities, and one admin audit action.
 
 ### Phase 2: Core Game Rules
 
@@ -263,7 +263,7 @@ Apply database migrations:
 npm run prisma:migrate
 ```
 
-Seed demo data:
+Seed local data:
 
 ```bash
 npm run prisma:seed

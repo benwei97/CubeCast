@@ -8,7 +8,7 @@ This document records the migration plan from the current CubeCoin trading MVP t
 
 The existing app is a Next.js App Router application with Prisma, PostgreSQL, and Auth.js/NextAuth. It currently implements a virtual trading product:
 
-- credential demo auth plus optional Google OAuth
+- local credential auth plus optional Google OAuth
 - admin/user roles
 - competitions
 - binary markets
@@ -108,7 +108,7 @@ Removed legacy models:
 
 ## Data-Loss Risks
 
-The old demo trading data did not map cleanly to V1. Purchases, positions, ledger transactions, CubeCoin balances, and old settlements were treated as obsolete demo data and removed during Phase 8.
+The old trading data did not map cleanly to V1. Purchases, positions, ledger transactions, CubeCoin balances, and old settlements were treated as obsolete data and removed during Phase 8.
 
 Completed safe path:
 
@@ -136,7 +136,7 @@ Status: complete.
 - Added feature flag documentation for `PRIZES_ENABLED=false`.
 - Kept old trading tables temporarily.
 - Generated Prisma client.
-- Added seed data for one demo contest with 20 markets.
+- Added seed data for one seeded contest with 20 markets.
 - Applied migration `20260915000000_v1_schema_foundation`.
 
 ### Phase 2: Core Game Rules

@@ -62,7 +62,7 @@ Current planning docs:
 
 3. Set `DATABASE_URL` to a PostgreSQL database and set `AUTH_SECRET`. For WCA login, also set `AUTH_WCA_ID` and `AUTH_WCA_SECRET`.
 
-4. Create tables and seed demo data:
+4. Create tables and seed local data:
 
    ```bash
    npm run prisma:migrate
@@ -75,7 +75,7 @@ Current planning docs:
    npm run dev
    ```
 
-The current seed still creates development demo accounts while V1 migration is underway.
+The current seed still creates local development accounts while V1 migration is underway.
 
 ## Useful Checks
 

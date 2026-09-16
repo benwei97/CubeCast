@@ -92,7 +92,7 @@ async function createV1Market(input: {
       eventId: input.eventId,
       eventName: input.eventName,
       resolutionRules:
-        "Resolves from first-published official WCA results using CubeCast V1 settlement rules.",
+        "Resolves from first-published official WCA results using CubeCast settlement rules.",
       resolutionSource: "Official WCA competition results",
       settlementRuleVersion: "v1",
       status: "OPEN",
@@ -159,7 +159,8 @@ async function main() {
     data: {
       name: "WCA World Championship 2027",
       slug: "wca-world-championship-2027",
-      description: "A fictional demo championship for validating CubeCast.",
+      description:
+        "Featured championship markets across headline events and top-ranked competitors.",
       location: "Seoul",
       country: "KR",
       startDate: dateFromNow(40),
@@ -180,7 +181,8 @@ async function main() {
     data: {
       name: "CubingUSA Nationals 2027",
       slug: "cubingusa-nationals-2027",
-      description: "A fictional demo national competition.",
+      description:
+        "Featured national championship markets across 3x3, 2x2, and one-handed events.",
       location: "Chicago, IL",
       country: "US",
       startDate: dateFromNow(75),
@@ -231,10 +233,10 @@ async function main() {
   const v1LockAt = new Date(worlds.startDate.getTime() - 60 * 60 * 1000);
   const v1Slate = await prisma.contestSlate.create({
     data: {
-      title: "Worlds Preview Contest",
-      slug: "worlds-preview-contest",
+      title: "Championship Weekend Contest",
+      slug: "championship-weekend-contest",
       description:
-        "Demo V1 contest with fixed-probability WCA prediction markets.",
+        "Pick 10 markets from the weekend's featured WCA competitions before entries lock.",
       diversityConfig: {
         maxPerCompetition: 16,
         maxPerCompetitor: 6,
@@ -545,9 +547,9 @@ async function main() {
     )
   );
 
-  console.log("Seeded CubeCast demo data.");
-  console.log("Demo admin: admin@cubecast.test / password123");
-  console.log("Demo user: maya@cubecast.test / password123");
+  console.log("Seeded CubeCast local data.");
+  console.log("Local admin: admin@cubecast.test / password123");
+  console.log("Local user: maya@cubecast.test / password123");
 }
 
 main()

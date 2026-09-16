@@ -65,7 +65,7 @@ export function SignInForm({
         defaultValue="password123"
         required
       />
-      <button type="submit">Sign in with demo account</button>
+      <button type="submit">Continue with local account</button>
       {error && <p className="form-error">{error}</p>}
     </form>
   );

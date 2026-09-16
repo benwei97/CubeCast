@@ -123,7 +123,7 @@ async function settleV1Market({
     });
 
     if (!market?.slateId || !market.slate) {
-      throw new Error("Only V1 contest markets can be settled here.");
+      throw new Error("Only contest markets can be settled here.");
     }
 
     if (

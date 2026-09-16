@@ -157,7 +157,7 @@ export default async function AdminPage({
         <p className="eyebrow">Admin console</p>
         <h1>Market Operations</h1>
         <p>
-          Manage V1 contests, markets, WCA evidence, and settlement.
+          Manage contests, markets, WCA evidence, and settlement.
         </p>
       </section>
 
@@ -229,7 +229,7 @@ export default async function AdminPage({
 
       <section className="admin-form-panel">
         <div className="section-heading">
-          <h2>V1 Contest Management</h2>
+          <h2>Contest Management</h2>
           <span>{slates.length.toLocaleString()} recent contests</span>
         </div>
         {params.v1Slate?.startsWith("invalid") && (
@@ -397,9 +397,9 @@ export default async function AdminPage({
 
       {manageableSlate && manageableSlate.competitions.length > 0 && (
         <section className="admin-form-panel">
-          <h2>Create V1 Market</h2>
+          <h2>Create Market</h2>
           {params.v1Market === "invalid" && (
-            <p className="form-error">Check the V1 market fields.</p>
+            <p className="form-error">Check the market fields.</p>
           )}
           {params.v1Market === "probability-total" && (
             <p className="form-error">The two probabilities must total 100.</p>
@@ -505,8 +505,8 @@ export default async function AdminPage({
               <input name="publishNow" type="checkbox" />
               Publish immediately
             </label>
-            <PendingSubmitButton pendingLabel="Creating V1 market...">
-              Create V1 market
+            <PendingSubmitButton pendingLabel="Creating market...">
+              Create market
             </PendingSubmitButton>
           </form>
         </section>
@@ -514,7 +514,7 @@ export default async function AdminPage({
 
       <section>
         <div className="section-heading">
-          <h2>V1 Settlement Queue</h2>
+          <h2>Settlement Queue</h2>
           <span>
             {activeSlate
               ? `${activeSlate.markets.length.toLocaleString()} open markets`
@@ -522,7 +522,7 @@ export default async function AdminPage({
           </span>
         </div>
         {params.v1Settlement === "invalid" && (
-          <p className="form-error">Check the V1 settlement fields.</p>
+          <p className="form-error">Check the settlement fields.</p>
         )}
         {activeSlate && activeSlate.markets.length > 0 ? (
           <div className="v1-settlement-list">
@@ -631,7 +631,7 @@ export default async function AdminPage({
             })}
           </div>
         ) : (
-          <p className="empty-state">No V1 markets currently need settlement.</p>
+          <p className="empty-state">No markets currently need settlement.</p>
         )}
       </section>
 
@@ -698,7 +698,7 @@ export default async function AdminPage({
       {manageableSlate && manageableSlate.markets.length > 0 && (
         <section>
           <div className="section-heading">
-            <h2>V1 Market Review</h2>
+            <h2>Market Review</h2>
             <span>{manageableSlate.markets.length.toLocaleString()} markets</span>
           </div>
           <div className="market-board">

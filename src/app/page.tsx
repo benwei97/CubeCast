@@ -53,8 +53,8 @@ export default async function HomePage() {
           <div>
             <h1>CubeCast</h1>
             <p>
-              No open contest is published yet. Seed the database or publish a
-              V1 contest from admin tools to start testing picks.
+              No open contest is published yet. Publish a contest from admin
+              tools to start collecting picks.
             </p>
           </div>
         </section>

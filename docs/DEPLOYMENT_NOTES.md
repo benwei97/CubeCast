@@ -80,7 +80,7 @@ For production, run Prisma migrations against the production database before ser
 npx prisma migrate deploy
 ```
 
-Only seed production intentionally. The current seed creates demo users and demo markets, so it is mainly for local testing.
+Only seed production intentionally. The current seed creates local users and local markets, so it is mainly for local testing.
 
 ## Real-Money Boundary
 

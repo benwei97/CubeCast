@@ -485,7 +485,7 @@ export async function createV1SlateMarket(formData: FormData) {
         publishedAt: publishNow ? new Date() : null,
         question: parsed.data.question,
         resolutionRules:
-          "Resolves from first-published official WCA results using CubeCast V1 settlement rules.",
+          "Resolves from first-published official WCA results using CubeCast settlement rules.",
         resolutionSource: "Official WCA competition results",
         settlementRuleVersion: "v1",
         slateId: parsed.data.slateId,
@@ -549,11 +549,11 @@ export async function publishV1Market(formData: FormData) {
     });
 
     if (!market?.slateId || market.status !== MarketStatus.DRAFT) {
-      throw new Error("Only draft V1 markets can be published.");
+      throw new Error("Only draft markets can be published.");
     }
 
     if (market.options.length !== 2) {
-      throw new Error("V1 markets must have two outcomes before publishing.");
+      throw new Error("Markets must have two outcomes before publishing.");
     }
 
     await tx.market.update({
