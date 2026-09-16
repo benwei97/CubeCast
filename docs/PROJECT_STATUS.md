@@ -310,6 +310,20 @@ Completed:
 
 Next MVP gap:
 
+### Phase 14: WCA Recommendation Pipeline
+
+Status: complete.
+
+Completed:
+
+- Added WCA upcoming competition lookup for the next 7 days.
+- Added public WCIF ingestion for accepted competitor counts, registered events, and personal-best data.
+- Added admin generation of a draft weekly contest from the top 3 recommended competitions.
+- Added generated draft H2H markets using simple personal-best probability heuristics.
+- Kept generated markets unpublished so admins manually choose what to release.
+
+Next MVP gap:
+
 - Add a final MVP readiness checklist covering remaining acceptance criteria and manual end-to-end test steps.
 
 ## Useful Commands

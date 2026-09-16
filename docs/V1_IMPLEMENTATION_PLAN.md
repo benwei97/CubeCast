@@ -267,6 +267,16 @@ Status: complete.
 - Clarified manual-evidence fallback when no imported WCA result row matches.
 - Made evidence select options explicit about what evidence will be stored.
 
+### Phase 14: WCA Recommendation Pipeline
+
+Status: complete.
+
+- Added an admin action that fetches upcoming WCA competitions for the next 7 days.
+- Ranked competitions by accepted competitor count from public WCIF data, with competitor limit as fallback.
+- Generated a draft weekly contest from the top 3 competitions.
+- Generated up to 10 draft head-to-head markets per recommended competition.
+- Kept all generated markets unpublished so admins manually choose what to release.
+
 ## Implementation Notes
 
 - Do not implement XP.

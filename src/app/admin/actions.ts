@@ -17,9 +17,13 @@ import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import { slugify, withTimestampSuffix } from "@/lib/slug";
 import {
+  fetchWCACompetitions,
   fetchWCACompetition,
   fetchWCACompetitionResults,
-  getWCACompetitionUrl
+  fetchWCAPublicWCIF,
+  getWCACompetitionUrl,
+  type WCACompetitionPayload,
+  type WCIFPublicPayload
 } from "@/lib/wca";
 import {
   resolveV1Market,
@@ -160,6 +164,131 @@ export async function refreshContestLifecycle() {
   await maintainContestLockState();
   revalidateV1Paths();
   redirect("/admin?lifecycle=refreshed");
+}
+
+export async function generateWeeklyRecommendedContest() {
+  const admin = await requireAdmin();
+  const now = new Date();
+  const rangeEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const wcaCompetitions = await fetchWCACompetitions({
+    end: formatWCADate(rangeEnd),
+    start: formatWCADate(now)
+  });
+  const recommendations = (
+    await Promise.all(
+      wcaCompetitions
+        .filter((competition) => !competition.cancelled_at)
+        .slice(0, 25)
+        .map(async (competition) => {
+          const wcif = await fetchWCIFSafely(competition.id);
+          const acceptedCompetitors = getAcceptedCompetitors(wcif);
+          const competitorCount =
+            acceptedCompetitors.length || competition.competitor_limit || 0;
+
+          return {
+            acceptedCompetitors,
+            competition,
+            competitorCount,
+            wcif
+          };
+        })
+    )
+  )
+    .filter(({ competition }) => parseWCADate(competition.start_date))
+    .sort((left, right) => right.competitorCount - left.competitorCount)
+    .slice(0, 3);
+
+  if (recommendations.length === 0) {
+    redirect("/admin?wca=no-recommendations");
+  }
+
+  const startsAt = new Date(
+    Math.min(
+      ...recommendations.map(({ competition }) =>
+        parseWCADate(competition.start_date)?.getTime() ?? now.getTime()
+      )
+    )
+  );
+  const endsAt = new Date(
+    Math.max(
+      ...recommendations.map(({ competition }) =>
+        parseWCADate(competition.end_date)?.getTime() ?? startsAt.getTime()
+      )
+    )
+  );
+  const lockAt = new Date(startsAt.getTime() - 60 * 60 * 1000);
+  const title = `Weekly WCA Contest - ${formatContestDate(startsAt)}`;
+
+  await prisma.$transaction(async (tx) => {
+    const contest = await tx.contestSlate.create({
+      data: {
+        description:
+          "Generated from the largest upcoming WCA competitions. Review and publish selected markets.",
+        diversityConfig: getDefaultDiversityConfig(),
+        endsAt,
+        lockAt,
+        slug: withTimestampSuffix(slugify(title)),
+        startsAt,
+        status: ContestSlateStatus.DRAFT,
+        title
+      }
+    });
+
+    for (const recommendation of recommendations) {
+      const competition = await upsertWCACompetitionFromRecommendation(
+        tx,
+        recommendation
+      );
+
+      await tx.contestCompetition.create({
+        data: {
+          competitionId: competition.id,
+          slateId: contest.id
+        }
+      });
+
+      const markets = buildRecommendedMarkets({
+        competitors: recommendation.acceptedCompetitors,
+        competitionId: competition.id,
+        competitionName: competition.name,
+        eventNames: getWCIFEventNames(recommendation.wcif),
+        lockAt,
+        slateId: contest.id
+      });
+
+      for (const market of markets) {
+        await tx.market.create({
+          data: {
+            category: MarketCategory.HEAD_TO_HEAD,
+            closeTime: lockAt,
+            competitionId: market.competitionId,
+            createdByUserId: admin.id,
+            description:
+              "Generated head-to-head market using accepted WCA registrations and personal-best heuristics. Review before publishing.",
+            eventId: market.eventId,
+            eventName: market.eventName,
+            lockAt,
+            options: {
+              create: market.options
+            },
+            publishedAt: null,
+            question: market.question,
+            resolutionRules:
+              "Whoever places higher in the specified official WCA event wins.",
+            resolutionSource: "Official WCA competition results",
+            settlementRuleVersion: "v1",
+            slateId: contest.id,
+            slug: withTimestampSuffix(slugify(market.question)),
+            status: MarketStatus.DRAFT
+          }
+        });
+      }
+    }
+  });
+
+  revalidateV1Paths();
+  revalidatePath("/competitions");
+  redirect("/admin?wca=recommendations-generated");
 }
 
 export async function importWCACompetition(formData: FormData) {
@@ -786,6 +915,225 @@ function getCompetitionStatus(startDate: Date, endDate: Date): CompetitionStatus
   }
 
   return CompetitionStatus.UPCOMING;
+}
+
+type AcceptedWCIFCompetitor = NonNullable<WCIFPublicPayload["persons"]>[number] & {
+  registration: NonNullable<NonNullable<WCIFPublicPayload["persons"]>[number]["registration"]>;
+  wcaId: string;
+};
+
+type WCARecommendation = {
+  acceptedCompetitors: AcceptedWCIFCompetitor[];
+  competition: WCACompetitionPayload;
+  competitorCount: number;
+  wcif: WCIFPublicPayload | null;
+};
+
+async function fetchWCIFSafely(wcaCompetitionId: string) {
+  try {
+    return await fetchWCAPublicWCIF(wcaCompetitionId);
+  } catch {
+    return null;
+  }
+}
+
+function getAcceptedCompetitors(wcif: WCIFPublicPayload | null) {
+  return (wcif?.persons ?? []).filter(
+    (person): person is AcceptedWCIFCompetitor =>
+      Boolean(person.wcaId) &&
+      person.registration?.status === "accepted" &&
+      person.registration.isCompeting !== false
+  );
+}
+
+function getWCIFEventNames(wcif: WCIFPublicPayload | null) {
+  return new Map((wcif?.events ?? []).map((event) => [event.id, event.name ?? event.id]));
+}
+
+async function upsertWCACompetitionFromRecommendation(
+  tx: Prisma.TransactionClient,
+  recommendation: WCARecommendation
+) {
+  const startDate = parseWCADate(recommendation.competition.start_date) ?? new Date();
+  const endDate = parseWCADate(recommendation.competition.end_date) ?? startDate;
+  const metadata = {
+    acceptedCompetitorCount: recommendation.acceptedCompetitors.length,
+    competitorLimit: recommendation.competition.competitor_limit ?? null,
+    generatedAt: new Date().toISOString(),
+    recommendationSource: "weekly-wca-recommendation",
+    source: "wca-api-v0",
+    wcaCompetition: recommendation.competition
+  };
+  const existing = await tx.competition.findUnique({
+    where: { wcaCompetitionId: recommendation.competition.id },
+    select: { id: true }
+  });
+
+  const data = {
+    country: recommendation.competition.country_iso2 ?? "XX",
+    description: `Recommended from upcoming WCA competitions with ${recommendation.competitorCount.toLocaleString()} registered or available competitor slots.`,
+    endDate,
+    location: getWCALocation(recommendation.competition),
+    name: recommendation.competition.name,
+    officialUrl:
+      recommendation.competition.url ??
+      getWCACompetitionUrl(recommendation.competition.id),
+    scheduledEndAt: endDate,
+    scheduledStartAt: startDate,
+    sourceMetadata: metadata,
+    startDate,
+    status: getCompetitionStatus(startDate, endDate),
+    wcaCompetitionId: recommendation.competition.id
+  };
+
+  if (existing) {
+    return tx.competition.update({
+      where: { id: existing.id },
+      data,
+      select: { id: true, name: true }
+    });
+  }
+
+  return tx.competition.create({
+    data: {
+      ...data,
+      slug: withTimestampSuffix(slugify(recommendation.competition.name))
+    },
+    select: { id: true, name: true }
+  });
+}
+
+function buildRecommendedMarkets({
+  competitors,
+  competitionId,
+  competitionName,
+  eventNames,
+  lockAt,
+  slateId
+}: {
+  competitors: AcceptedWCIFCompetitor[];
+  competitionId: string;
+  competitionName: string;
+  eventNames: Map<string, string>;
+  lockAt: Date;
+  slateId: string;
+}) {
+  const markets = [];
+  const eventIds = getRecommendedEventIds(competitors);
+
+  for (const eventId of eventIds) {
+    const rankedCompetitors = competitors
+      .map((competitor) => ({
+        competitor,
+        personalBest: getAveragePersonalBest(competitor, eventId)
+      }))
+      .filter(
+        (entry): entry is { competitor: AcceptedWCIFCompetitor; personalBest: number } =>
+          entry.personalBest !== null &&
+          entry.competitor.registration.eventIds?.includes(eventId) === true
+      )
+      .sort((left, right) => left.personalBest - right.personalBest)
+      .slice(0, 8);
+
+    for (let index = 0; index < rankedCompetitors.length - 1; index += 2) {
+      const left = rankedCompetitors[index];
+      const right = rankedCompetitors[index + 1];
+      const probability = getHeadToHeadProbability(
+        left.personalBest,
+        right.personalBest
+      );
+      const eventName = eventNames.get(eventId) ?? getEventName(eventId);
+
+      markets.push({
+        competitionId,
+        eventId,
+        eventName,
+        lockAt,
+        options: [
+          {
+            competitorWcaId: left.competitor.wcaId,
+            displayOrder: 0,
+            label: left.competitor.name,
+            probability,
+            sideKey: "YES"
+          },
+          {
+            competitorWcaId: right.competitor.wcaId,
+            displayOrder: 1,
+            label: right.competitor.name,
+            probability: 100 - probability,
+            sideKey: "NO"
+          }
+        ],
+        question: `Who places higher in ${eventName} at ${competitionName}?`,
+        slateId
+      });
+
+      if (markets.length >= 10) {
+        return markets;
+      }
+    }
+  }
+
+  return markets;
+}
+
+function getRecommendedEventIds(competitors: AcceptedWCIFCompetitor[]) {
+  const eventCounts = new Map<string, number>();
+
+  for (const competitor of competitors) {
+    for (const eventId of competitor.registration.eventIds ?? []) {
+      eventCounts.set(eventId, (eventCounts.get(eventId) ?? 0) + 1);
+    }
+  }
+
+  return [...eventCounts.entries()]
+    .filter(([eventId]) => ["222", "333", "333oh", "444", "555"].includes(eventId))
+    .sort((left, right) => right[1] - left[1])
+    .map(([eventId]) => eventId);
+}
+
+function getAveragePersonalBest(competitor: AcceptedWCIFCompetitor, eventId: string) {
+  const personalBest = competitor.personalBests?.find(
+    (best) => best.eventId === eventId && best.type === "average"
+  );
+
+  return personalBest?.best ?? null;
+}
+
+function getHeadToHeadProbability(leftBest: number, rightBest: number) {
+  if (leftBest <= 0 || rightBest <= 0) {
+    return 50;
+  }
+
+  const relativeGap = (rightBest - leftBest) / Math.max(leftBest, rightBest);
+  const estimatedProbability = Math.round(50 + relativeGap * 80);
+
+  return Math.min(65, Math.max(35, estimatedProbability));
+}
+
+function getEventName(eventId: string) {
+  const eventNames: Record<string, string> = {
+    "222": "2x2",
+    "333": "3x3",
+    "333oh": "3x3 One-Handed",
+    "444": "4x4",
+    "555": "5x5"
+  };
+
+  return eventNames[eventId] ?? eventId;
+}
+
+function formatWCADate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatContestDate(date: Date) {
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC"
+  }).format(date);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -2,8 +2,11 @@ const WCA_BASE_URL = getWCABaseUrl();
 
 export type WCACompetitionPayload = {
   city?: string;
+  cancelled_at?: string | null;
+  competitor_limit?: number | null;
   country_iso2?: string;
   end_date?: string;
+  event_ids?: string[];
   id: string;
   name: string;
   start_date?: string;
@@ -31,15 +34,56 @@ export type WCACompetitionResultPayload = {
   average?: number;
 };
 
+export type WCIFPublicPayload = {
+  events?: {
+    id: string;
+    name?: string;
+  }[];
+  persons?: {
+    countryIso2?: string;
+    name: string;
+    personalBests?: {
+      best: number;
+      eventId: string;
+      type: "average" | "single";
+      worldRanking?: number | null;
+    }[];
+    registration?: {
+      eventIds?: string[];
+      isCompeting?: boolean;
+      status?: string;
+    };
+    wcaId?: string | null;
+  }[];
+};
+
 export async function fetchWCACompetition(wcaCompetitionId: string) {
   return fetchWCAJson<WCACompetitionPayload>(
     `/api/v0/competitions/${encodeURIComponent(wcaCompetitionId)}`
   );
 }
 
+export async function fetchWCACompetitions({
+  end,
+  start
+}: {
+  end: string;
+  start: string;
+}) {
+  return fetchWCAJson<WCACompetitionPayload[]>(
+    `/api/v0/competitions?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`
+  );
+}
+
 export async function fetchWCACompetitionResults(wcaCompetitionId: string) {
   return fetchWCAJson<WCACompetitionResultPayload[]>(
     `/api/v0/competitions/${encodeURIComponent(wcaCompetitionId)}/results`
+  );
+}
+
+export async function fetchWCAPublicWCIF(wcaCompetitionId: string) {
+  return fetchWCAJson<WCIFPublicPayload>(
+    `/api/v0/competitions/${encodeURIComponent(wcaCompetitionId)}/wcif/public`
   );
 }
 

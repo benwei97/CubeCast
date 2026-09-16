@@ -14,6 +14,7 @@ import {
   createCompetition,
   createV1Slate,
   createV1SlateMarket,
+  generateWeeklyRecommendedContest,
   importWCACompetition,
   publishV1Market,
   refreshContestLifecycle,
@@ -336,7 +337,31 @@ export default async function AdminPage({
             Choose a competition that has a WCA competition ID.
           </p>
         )}
+        {params.wca === "no-recommendations" && (
+          <p className="form-error">
+            CubeCast could not find upcoming WCA competitions with usable public
+            registration data for the next week.
+          </p>
+        )}
+        {params.wca === "recommendations-generated" && (
+          <p className="form-success">
+            Generated a draft contest with recommended competitions and draft
+            markets. Review the markets before publishing.
+          </p>
+        )}
         <div className="admin-slate-grid">
+          <form action={generateWeeklyRecommendedContest} className="admin-form">
+            <h3>Recommend Weekly Contest</h3>
+            <p>
+              Find the largest upcoming WCA competitions in the next 7 days,
+              create a draft contest, and generate 10 draft head-to-head markets
+              per competition.
+            </p>
+            <PendingSubmitButton pendingLabel="Generating recommendations...">
+              Generate recommendations
+            </PendingSubmitButton>
+          </form>
+
           <form action={importWCACompetition} className="admin-form">
             <h3>Import Competition</h3>
             <label htmlFor="wcaCompetitionId">WCA competition ID</label>

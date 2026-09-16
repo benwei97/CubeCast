@@ -37,6 +37,7 @@ maya@cubecast.test / password123
 - Sign in and add, change, or remove picks before lock.
 - Open `/picks` to review selected markets, probabilities, and score swing.
 - Configure WCA OAuth and sign in with WCA for production-like identity.
+- As admin, generate a recommended weekly contest from the largest upcoming WCA competitions.
 - As admin, open `/admin` to create contests, attach competitions, configure diversity caps, and create/publish markets.
 - As admin, use the Contest Lifecycle panel to refresh lock status and review entry/market counts.
 - As admin, import a competition by WCA competition ID and refresh its result snapshot.
