@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-15
 
-CubeCast is being migrated from an older virtual CubeCoin trading MVP into V1: a free WCA speedcubing prediction game based on contest slates, exactly 10 picks, fixed model probabilities, WCA settlement, and score leaderboards.
+CubeCast is being migrated from an older virtual CubeCoin trading MVP into V1: a free WCA speedcubing prediction game based on contests, exactly 10 picks, fixed model probabilities, WCA settlement, and score leaderboards.
 
 ## Current Architecture
 
@@ -48,9 +48,9 @@ These pieces are useful as infrastructure and UI reference, but the trading doma
 V1 should support:
 
 - WCA-authenticated users
-- contest slates that include one or more WCA competitions
-- one global slate lock time
-- approximately 20-30 fixed-probability markets per slate
+- contests that include one or more WCA competitions
+- one global contest lock time
+- approximately 20-30 fixed-probability markets per contest
 - exactly 10 user predictions for a valid entry
 - immutable published probabilities
 - 1,000-point starting score
@@ -119,16 +119,16 @@ Completed:
 
 - Added V1 Prisma enums and models alongside legacy trading tables.
 - Added WCA identity model.
-- Added contest slate and contest competition models.
+- Added contest and contest competition models.
 - Added market options for immutable published probabilities.
 - Added contest entry and prediction models.
 - Added settlement snapshot model.
 - Added leaderboard cache model.
 - Added admin action audit model.
 - Added prize award and payout shell models with prize behavior still disabled.
-- Added optional WCA/slate/event/published/lock fields to existing competition and market models.
+- Added optional WCA/contest/event/published/lock fields to existing competition and market models.
 - Generated and applied migration `20260915000000_v1_schema_foundation`.
-- Updated seed data with one demo V1 slate, two slate competitions, 20 V1 markets, 40 market options, four WCA identities, and one admin audit action.
+- Updated seed data with one demo V1 contest, two contest competitions, 20 V1 markets, 40 market options, four WCA identities, and one admin audit action.
 
 ### Phase 2: Core Game Rules
 
@@ -150,12 +150,12 @@ Status: complete.
 
 Completed:
 
-- Replaced the home page with the active V1 slate feed.
+- Replaced the home page with the active V1 contest feed.
 - Added persistent `X / 10 Picks` entry status.
 - Added market rows with fixed probabilities and score swing.
-- Added quick pick review modal from the slate board.
+- Added quick pick review modal from the contest board.
 - Added server actions for selecting, changing, and removing picks.
-- Enforced sign-in, slate status, lock time, market membership, option membership, and max-10 picks server-side.
+- Enforced sign-in, contest status, lock time, market membership, option membership, and max-10 picks server-side.
 - Added `/picks` as the My Picks review screen.
 - Updated app shell copy away from CubeCoin balance language.
 
@@ -172,23 +172,23 @@ Completed:
 - Added score calculation from each entry's 1,000-point baseline.
 - Added V1 leaderboard generation for valid 10-pick entries.
 - Added deterministic leaderboard ranks with shared-rank support.
-- Added slate finalization when every market is resolved, void, or canceled.
-- Updated player pages so settling/finalized slates remain visible and non-editable markets show their terminal state.
-- Replaced the legacy leaderboard route with the V1 slate leaderboard.
+- Added contest finalization when every market is resolved, void, or canceled.
+- Updated player pages so settling/finalized contests remain visible and non-editable markets show their terminal state.
+- Replaced the legacy leaderboard route with the V1 contest leaderboard.
 
-### Phase 5: Admin Slate Tools
+### Phase 5: Admin Contest Tools
 
 Status: complete.
 
 Completed:
 
-- Create/edit slates from the admin UI.
-- Attach WCA competitions to slates from the admin UI.
+- Create/edit contests from the admin UI.
+- Attach WCA competitions to contests from the admin UI.
 - Create/publish V1 markets and outcomes with immutable probabilities.
 - Configure diversity limits.
 - Added basic V1 market review with draft publish action.
 - Added migration `20260915220059_add_slate_diversity_config`.
-- Recomputed slate start/end/lock windows when competitions are attached.
+- Recomputed contest start/end/lock windows when competitions are attached.
 - Kept settlement inspection and exception handling available through the V1 settlement queue.
 
 ### Phase 6: WCA Integration

@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "CubeCast",
-  description: "Free WCA speedcubing prediction slates."
+  description: "Free WCA speedcubing prediction contests."
 };
 
 const navItems = [

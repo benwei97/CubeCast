@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
-import { V1SlateBoard } from "@/components/v1-slate-board";
+import { V1ContestBoard } from "@/components/v1-slate-board";
 import { prisma } from "@/lib/prisma";
 import { getPickCounterLabel } from "@/lib/v1-game";
 
@@ -53,8 +53,8 @@ export default async function HomePage() {
           <div>
             <h1>CubeCast</h1>
             <p>
-              No open slate is published yet. Seed the database or publish a V1
-              slate from admin tools to start testing picks.
+              No open contest is published yet. Seed the database or publish a
+              V1 contest from admin tools to start testing picks.
             </p>
           </div>
         </section>
@@ -108,11 +108,11 @@ export default async function HomePage() {
         </div>
 
         <aside className="pick-status-panel">
-          <span>Slate entry</span>
+          <span>Contest entry</span>
           <strong>{pickCounterLabel}</strong>
           <p>
             {isLocked
-              ? "The slate is locked. Picks are now read-only."
+              ? "The contest is locked. Picks are now read-only."
               : "Choose exactly 10 picks before lock for an official entry."}
           </p>
           <Link className="button-link secondary-button" href="/picks">
@@ -121,7 +121,7 @@ export default async function HomePage() {
         </aside>
       </section>
 
-      <section className="competition-strip" aria-label="Slate competitions">
+      <section className="competition-strip" aria-label="Contest competitions">
         {activeSlate.competitions.map(({ competition }) => (
           <article key={competition.id}>
             <span>{competition.location}</span>
@@ -139,7 +139,7 @@ export default async function HomePage() {
           <Link href="/picks">My Picks</Link>
         </div>
 
-        <V1SlateBoard
+        <V1ContestBoard
           isLocked={isLocked}
           isSignedIn={Boolean(session?.user?.id)}
           markets={markets}

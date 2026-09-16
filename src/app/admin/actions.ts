@@ -440,14 +440,14 @@ export async function createV1SlateMarket(formData: FormData) {
     });
 
     if (!slateCompetition) {
-      throw new Error("Competition must be attached to the selected slate.");
+      throw new Error("Competition must be attached to the selected contest.");
     }
 
     if (
       slateCompetition.slate.status !== ContestSlateStatus.DRAFT &&
       slateCompetition.slate.status !== ContestSlateStatus.OPEN
     ) {
-      throw new Error("Only draft or open slates can receive new markets.");
+      throw new Error("Only draft or open contests can receive new markets.");
     }
 
     const publishNow = parsed.data.publishNow === "on";

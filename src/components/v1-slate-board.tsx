@@ -9,20 +9,20 @@ import {
 } from "@/app/picks/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 
-type SlateMarketOption = {
+type ContestMarketOption = {
   id: string;
   label: string;
   probability: number;
   sideKey: string;
 };
 
-type SlateMarket = {
+type ContestMarket = {
   category: string;
   competitionName: string;
   eventName: string;
   id: string;
   lockLabel: string;
-  options: SlateMarketOption[];
+  options: ContestMarketOption[];
   question: string;
   status: string;
 };
@@ -34,11 +34,11 @@ type SelectedPick = {
 };
 
 type PendingSelection = {
-  market: SlateMarket;
-  option: SlateMarketOption;
+  market: ContestMarket;
+  option: ContestMarketOption;
 };
 
-export function V1SlateBoard({
+export function V1ContestBoard({
   isLocked,
   isSignedIn,
   markets,
@@ -49,7 +49,7 @@ export function V1SlateBoard({
 }: {
   isLocked: boolean;
   isSignedIn: boolean;
-  markets: SlateMarket[];
+  markets: ContestMarket[];
   pickCount: number;
   pickLimit: number;
   selectedPicks: SelectedPick[];
@@ -91,9 +91,7 @@ export function V1SlateBoard({
                   {market.competitionName} · {market.eventName}
                 </span>
                 <strong>{market.question}</strong>
-                <small>
-                  {market.category} · Locks {market.lockLabel}
-                </small>
+                <small>{market.category} · Locks {market.lockLabel}</small>
               </div>
 
               {market.options.map((option) => {
@@ -208,7 +206,7 @@ function PickReviewModal({
               {isChangingExistingPick
                 ? "This changes your pick for this market."
                 : `This adds pick ${nextPickCount} of ${pickLimit}.`}{" "}
-              You can edit picks until the slate locks.
+              You can edit picks until the contest locks.
             </p>
 
             <div className="review-actions">
@@ -254,7 +252,7 @@ function PickReviewModal({
           </>
         ) : (
           <div className="signed-out-trade">
-            <p>Sign in to choose 10 picks for this slate.</p>
+            <p>Sign in to choose 10 picks for this contest.</p>
             <Link className="button-link" href="/sign-in">
               Sign in
             </Link>

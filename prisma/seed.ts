@@ -231,10 +231,10 @@ async function main() {
   const v1LockAt = new Date(worlds.startDate.getTime() - 60 * 60 * 1000);
   const v1Slate = await prisma.contestSlate.create({
     data: {
-      title: "Worlds Preview Slate",
-      slug: "worlds-preview-slate",
+      title: "Worlds Preview Contest",
+      slug: "worlds-preview-contest",
       description:
-        "Demo V1 slate with fixed-probability WCA prediction markets.",
+        "Demo V1 contest with fixed-probability WCA prediction markets.",
       diversityConfig: {
         maxPerCompetition: 16,
         maxPerCompetitor: 6,

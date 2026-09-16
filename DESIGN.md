@@ -1,6 +1,6 @@
 ---
 name: CubeCast
-description: Free WCA speedcubing prediction slates with a compact forecasting-game interface.
+description: Free WCA speedcubing prediction contests with a compact forecasting-game interface.
 colors:
   background: "#f7f8fb"
   surface: "#ffffff"
@@ -69,7 +69,7 @@ components:
 
 **Creative North Star: "The Forecasting Scoreboard"**
 
-CubeCast should feel like a compact competitive forecasting surface for speedcubing. The interface is operational: users scan a slate, compare probabilities, understand score upside/downside, select exactly 10 picks, and track results.
+CubeCast should feel like a compact competitive forecasting surface for speedcubing. The interface is operational: users scan a contest, compare probabilities, understand score upside/downside, select exactly 10 picks, and track results.
 
 The app should borrow interaction clarity from prediction-market products without sounding like finance or wagering. Probability is central, but the user is making picks for points, not buying contracts.
 
@@ -118,8 +118,8 @@ The palette is a light forecasting dashboard system: cool neutral pages, white s
 
 ### Hierarchy
 
-- **Display** (800, `clamp(42px, 7vw, 76px)`, 0.95): Home or slate hero only.
-- **Headline** (800, `clamp(34px, 5vw, 58px)`, 1): Major slate, leaderboard, and market detail headings.
+- **Display** (800, `clamp(42px, 7vw, 76px)`, 0.95): Home or contest hero only.
+- **Headline** (800, `clamp(34px, 5vw, 58px)`, 1): Major contest, leaderboard, and market detail headings.
 - **Title** (700-800, 20-30px): Section headings, card titles, modal headings, metric values.
 - **Body** (400, 16-18px, 1.45-1.6): Supporting copy and row content.
 - **Label** (700-800, 12-13px): Table headers, metadata labels, pick counters, compact captions.
@@ -128,7 +128,7 @@ The palette is a light forecasting dashboard system: cool neutral pages, white s
 
 The app uses a centered max-width shell around `1120px` with page stacks spaced at `32px`. Forecasting and admin surfaces use grid rows, compact tables, and two-column desktop layouts that collapse to one column under `760px`.
 
-Slate browsing should prioritize scannable market cards or rows where probability, point swing, competition, event, and selected state are visible without drilling into detail pages.
+Contest browsing should prioritize scannable market cards or rows where probability, point swing, competition, event, and selected state are visible without drilling into detail pages.
 
 ## Elevation & Depth
 
@@ -188,7 +188,7 @@ Controls and surfaces use modest radii. Standard cards and rows use `8px`; contr
 
 ### Do:
 
-- **Do** keep `X / 10 Picks` visible on player-facing slate surfaces.
+- **Do** keep `X / 10 Picks` visible on player-facing contest surfaces.
 - **Do** show probability and score swing before a user picks.
 - **Do** distinguish incomplete, complete, locked, settled, void, and finalized states.
 - **Do** use official WCA result language for settlement and evidence.

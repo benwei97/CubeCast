@@ -34,11 +34,11 @@ export async function selectPrediction(formData: FormData) {
     });
 
     if (!slate || slate.status !== "OPEN") {
-      throw new Error("This slate is not open for picks.");
+      throw new Error("This contest is not open for picks.");
     }
 
     if (!canModifyPrediction({ lockAt: slate.lockAt })) {
-      throw new Error("This slate is locked.");
+      throw new Error("This contest is locked.");
     }
 
     const marketOption = await tx.marketOption.findFirst({
@@ -58,7 +58,7 @@ export async function selectPrediction(formData: FormData) {
     });
 
     if (!marketOption) {
-      throw new Error("That outcome is not available for this slate.");
+      throw new Error("That outcome is not available for this contest.");
     }
 
     const entry = await tx.contestEntry.upsert({
@@ -163,7 +163,7 @@ export async function removePrediction(formData: FormData) {
     }
 
     if (!canModifyPrediction({ lockAt: prediction.entry.slate.lockAt })) {
-      throw new Error("This slate is locked.");
+      throw new Error("This contest is locked.");
     }
 
     await tx.prediction.delete({

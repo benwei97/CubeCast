@@ -46,7 +46,7 @@ export default async function PicksPage() {
         <section className="slate-hero">
           <div>
             <h1>My Picks</h1>
-            <p>No open slate is available right now.</p>
+            <p>No open contest is available right now.</p>
           </div>
         </section>
       </div>
@@ -76,7 +76,7 @@ export default async function PicksPage() {
           <h1>My Picks</h1>
           <p>
             Review your selected markets before lock. Your entry becomes
-            official only if exactly 10 picks are selected when the slate locks.
+            official only if exactly 10 picks are selected when the contest locks.
           </p>
         </div>
         <aside className="pick-status-panel">
@@ -140,7 +140,7 @@ export default async function PicksPage() {
         </section>
       ) : (
         <section className="empty-state pick-empty-state">
-          <p>You have not selected any picks for this slate yet.</p>
+          <p>You have not selected any picks for this contest yet.</p>
           <Link className="button-link" href="/">
             Browse markets
           </Link>

@@ -123,7 +123,7 @@ async function settleV1Market({
     });
 
     if (!market?.slateId || !market.slate) {
-      throw new Error("Only V1 slate markets can be settled here.");
+      throw new Error("Only V1 contest markets can be settled here.");
     }
 
     if (
@@ -296,7 +296,7 @@ export async function refreshV1SlateScores(
   });
 
   if (!slate) {
-    throw new Error("Slate not found.");
+    throw new Error("Contest not found.");
   }
 
   const terminalMarketStatuses = new Set<MarketStatus>([

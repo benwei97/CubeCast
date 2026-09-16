@@ -42,7 +42,7 @@ export default async function CompetitionsPage({
         <p className="eyebrow">Competition markets</p>
         <h1>Competitions</h1>
         <p>
-          Browse WCA competitions attached to CubeCast slates and review fixed
+          Browse WCA competitions attached to CubeCast contests and review fixed
           probability markets.
         </p>
       </section>

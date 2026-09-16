@@ -157,8 +157,7 @@ export default async function AdminPage({
         <p className="eyebrow">Admin console</p>
         <h1>Market Operations</h1>
         <p>
-          Manage V1 slate settlement while legacy market tools remain available
-          during the migration.
+          Manage V1 contests, markets, WCA evidence, and settlement.
         </p>
       </section>
 
@@ -230,20 +229,20 @@ export default async function AdminPage({
 
       <section className="admin-form-panel">
         <div className="section-heading">
-          <h2>V1 Slate Management</h2>
-          <span>{slates.length.toLocaleString()} recent slates</span>
+          <h2>V1 Contest Management</h2>
+          <span>{slates.length.toLocaleString()} recent contests</span>
         </div>
         {params.v1Slate?.startsWith("invalid") && (
-          <p className="form-error">Check the slate management fields.</p>
+          <p className="form-error">Check the contest management fields.</p>
         )}
         <div className="admin-slate-grid">
           <form action={createV1Slate} className="admin-form">
-            <h3>Create Slate</h3>
+            <h3>Create Contest</h3>
             <label htmlFor="v1-slate-title">Title</label>
             <input
               id="v1-slate-title"
               name="title"
-              placeholder="Spring Championship Slate"
+              placeholder="Spring Championship Contest"
               required
             />
             <label htmlFor="v1-slate-description">Description</label>
@@ -278,13 +277,13 @@ export default async function AdminPage({
               <option value="DRAFT">DRAFT</option>
               <option value="OPEN">OPEN</option>
             </select>
-            <PendingSubmitButton pendingLabel="Creating slate...">
-              Create slate
+            <PendingSubmitButton pendingLabel="Creating contest...">
+              Create contest
             </PendingSubmitButton>
           </form>
 
           <div className="admin-slate-list">
-            <h3>Recent Slates</h3>
+            <h3>Recent Contests</h3>
             {slates.map((slate) => (
               <article key={slate.id}>
                 <div>
@@ -519,7 +518,7 @@ export default async function AdminPage({
           <span>
             {activeSlate
               ? `${activeSlate.markets.length.toLocaleString()} open markets`
-              : "No active slate"}
+              : "No active contest"}
           </span>
         </div>
         {params.v1Settlement === "invalid" && (

@@ -40,7 +40,7 @@ export default async function LeaderboardPage() {
       <div className="page-stack">
         <section>
           <h1>Leaderboard</h1>
-          <p>No slate is available yet.</p>
+          <p>No contest is available yet.</p>
         </section>
       </div>
     );
@@ -59,7 +59,7 @@ export default async function LeaderboardPage() {
   return (
     <div className="page-stack">
       <section>
-        <p className="eyebrow">Slate rankings</p>
+        <p className="eyebrow">Contest rankings</p>
         <h1>Leaderboard</h1>
         <p>
           Only official 10-pick entries appear here. Scores start at 1,000 and
@@ -69,7 +69,7 @@ export default async function LeaderboardPage() {
 
       <section className="summary-grid">
         <article className="summary-card">
-          <span>Slate</span>
+          <span>Contest</span>
           <strong>{slate.title}</strong>
           <small>{slate.status}</small>
         </article>
@@ -95,7 +95,7 @@ export default async function LeaderboardPage() {
       <section>
         <div className="section-heading">
           <h2>Official Entries</h2>
-          <Link href="/">Back to slate</Link>
+          <Link href="/">Back to contest</Link>
         </div>
         {slate.leaderboardEntries.length > 0 ? (
           <div className="leaderboard-table">
@@ -136,7 +136,7 @@ export default async function LeaderboardPage() {
               then settle at least one market from the admin queue.
             </p>
             <Link className="button-link" href="/">
-              Open slate
+              Open contest
             </Link>
           </div>
         )}

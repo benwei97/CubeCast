@@ -5,14 +5,14 @@ CubeCast is being migrated into a free WCA speedcubing prediction game.
 V1 target:
 
 - WCA-authenticated gameplay
-- curated contest slates
-- approximately 20-30 fixed-probability markets per slate
+- curated contests
+- approximately 20-30 fixed-probability markets per contest
 - exactly 10 picks for a valid entry
 - 1,000-point starting score
 - transparent score changes based on published probabilities
 - official WCA result settlement
 - immutable settlement snapshots
-- slate leaderboard with deterministic tiebreakers
+- contest leaderboard with deterministic tiebreakers
 - prize-ready architecture disabled by default
 
 CubeCast V1 is not a real-money prediction market. It does not support deposits, withdrawals, wagering, purchasable currency, staking, user-funded prize pools, or buying extra predictions.
@@ -21,15 +21,15 @@ CubeCast V1 is not a real-money prediction market. It does not support deposits,
 
 The existing repository still contains an older CubeCoin trading MVP. That implementation is being migrated incrementally rather than rewritten from scratch.
 
-Phase 1 schema foundation is complete: the database now includes V1 slate, WCA identity, market option, entry, prediction, settlement snapshot, leaderboard, admin audit, prize award, and payout shell models alongside the legacy trading tables.
+Phase 1 schema foundation is complete: the database now includes V1 contest, WCA identity, market option, entry, prediction, settlement snapshot, leaderboard, admin audit, prize award, and payout shell models alongside the legacy trading tables.
 
 Phase 2 core game rules are complete: scoring, exactly-10 entry validation, lock/edit checks, settlement helper semantics, and leaderboard tiebreakers are covered by `npm run test:v1`.
 
-Phase 3 player UI is complete: the home page now opens on the active V1 slate feed, displays `X / 10 Picks`, lets signed-in users select/change/remove picks through server actions, and exposes `/picks` for reviewing the current entry.
+Phase 3 player UI is complete: the home page now opens on the active V1 contest feed, displays `X / 10 Picks`, lets signed-in users select/change/remove picks through server actions, and exposes `/picks` for reviewing the current entry.
 
-Phase 4 settlement and leaderboard is complete for the manual MVP path: admins can resolve, void, or tie V1 markets, settlement snapshots and audit records are stored, valid 10-pick entries are scored from 1,000 points, and `/leaderboard` ranks slate entries.
+Phase 4 settlement and leaderboard is complete for the manual MVP path: admins can resolve, void, or tie V1 markets, settlement snapshots and audit records are stored, valid 10-pick entries are scored from 1,000 points, and `/leaderboard` ranks contest entries.
 
-Phase 5 admin slate tools are complete: admins can create slates, attach competitions, configure diversity caps, create fixed-probability V1 markets, and publish draft V1 markets.
+Phase 5 admin contest tools are complete: admins can create contests, attach competitions, configure diversity caps, create fixed-probability V1 markets, and publish draft V1 markets.
 
 Phase 6 WCA integration is complete: WCA OAuth can be enabled with credentials, WCA identities are stored on login, and admins can import WCA competitions plus refresh result snapshots.
 

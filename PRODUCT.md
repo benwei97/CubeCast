@@ -10,13 +10,13 @@ web
 
 CubeCast serves speedcubing fans, competitors, and spectators who want a free weekly forecasting game around official World Cube Association competition results.
 
-The primary user signs in with WCA, reviews a curated contest slate, chooses exactly 10 predictions from roughly 20-30 available markets, and competes on a slate leaderboard.
+The primary user signs in with WCA, reviews a curated contest, chooses exactly 10 predictions from roughly 20-30 available markets, and competes on a contest leaderboard.
 
 Secondary users are administrators who curate competitions, generate or manually create markets, publish probabilities, settle outcomes from official WCA results, inspect evidence, void markets, and finalize contests.
 
 ## Product Purpose
 
-CubeCast is a free speedcubing prediction game. Each slate contains more markets than a user can select, so the core skill is identifying the 10 predictions where CubeCast's fixed model probabilities are most wrong.
+CubeCast is a free speedcubing prediction game. Each contest contains more markets than a user can select, so the core skill is identifying the 10 predictions where CubeCast's fixed model probabilities are most wrong.
 
 Success for V1 means a WCA-authenticated user can choose 10 predictions before lock, see transparent scoring upside/downside, track results as WCA outcomes settle, and rank on a leaderboard scored from a 1,000-point baseline.
 
@@ -28,15 +28,15 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 ## Operating Context
 
-Users browse active contest slates, inspect markets, add/remove/change picks before the slate lock time, and review a persistent `X / 10 Picks` state. Once the slate locks, entries are immutable. Users with exactly 10 locked predictions receive a valid contest entry and appear on the official leaderboard.
+Users browse active contests, inspect markets, add/remove/change picks before the contest lock time, and review a persistent `X / 10 Picks` state. Once the contest locks, entries are immutable. Users with exactly 10 locked predictions receive a valid contest entry and appear on the official leaderboard.
 
-Administrators select featured WCA competitions, create slates, publish approximately 20-30 markets, configure diversity constraints, settle or void markets, preserve immutable settlement snapshots, and finalize contests after every market is resolved or void.
+Administrators select featured WCA competitions, create contests, publish approximately 20-30 markets, configure diversity constraints, settle or void markets, preserve immutable settlement snapshots, and finalize contests after every market is resolved or void.
 
 ## Capabilities and Constraints
 
 - WCA login is required for official gameplay.
-- A slate can include one or more WCA competitions and is not tied to Monday-Sunday calendar weeks.
-- Slate predictions lock one hour before the earliest included competition starts.
+- A contest can include one or more WCA competitions and is not tied to Monday-Sunday calendar weeks.
+- Contest predictions lock one hour before the earliest included competition starts.
 - Users can select, remove, replace, or change predictions before lock.
 - A valid entry requires exactly 10 predictions at lock.
 - Users with fewer than 10 locked predictions are not official leaderboard participants.
@@ -58,7 +58,7 @@ The product name is CubeCast. The voice should be direct, practical, and forecas
 
 Use interaction inspiration from Kalshi and Polymarket for fast scanning, probability display, binary choices, pick status, and results. Do not clone their branding, copy, or exact visual design.
 
-Use product language such as picks, score, probability, leaderboard, results, slate, market, lock, and void. Avoid unnecessary financial terms such as shares, contracts, portfolio value, order book, buy, sell, payout, stake, and balance.
+Use product language such as picks, score, probability, leaderboard, results, contest, market, lock, and void. Avoid unnecessary financial terms such as shares, contracts, portfolio value, order book, buy, sell, payout, stake, and balance.
 
 ## Evidence on Hand
 

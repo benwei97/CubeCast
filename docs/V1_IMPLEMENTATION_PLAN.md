@@ -2,7 +2,7 @@
 
 Last updated: 2026-09-15
 
-This document records the migration plan from the current CubeCoin trading MVP to CubeCast V1: a free WCA-based weekly/slate prediction game.
+This document records the migration plan from the current CubeCoin trading MVP to CubeCast V1: a free WCA-based weekly contest prediction game.
 
 ## Current Architecture Summary
 
@@ -27,9 +27,9 @@ This infrastructure works, but the core product model conflicts with V1.
 CubeCast V1 is a free forecasting game:
 
 - WCA-authenticated users
-- curated contest slates
-- one or more WCA competitions per slate
-- approximately 20-30 published markets per slate
+- curated contests
+- one or more WCA competitions per contest
+- approximately 20-30 published markets per contest
 - immutable published probabilities
 - exactly 10 user predictions for a valid entry
 - lock one hour before the earliest included competition starts
@@ -55,11 +55,11 @@ CubeCast V1 is a free forecasting game:
 ## Adapt
 
 - `Competition` becomes WCA-backed competition metadata.
-- `Market` becomes a fixed-probability slate market.
+- `Market` becomes a fixed-probability contest market.
 - Current YES/NO UI becomes pick selection UI.
-- Home/market board becomes slate market feed.
-- Leaderboard becomes slate score leaderboard.
-- Admin page becomes slate, market review, publishing, settlement, and audit console.
+- Home/market board becomes contest market feed.
+- Leaderboard becomes contest score leaderboard.
+- Admin page becomes contest, market review, publishing, settlement, and audit console.
 - Settlement evolves into outcome plus immutable WCA snapshot.
 
 ## Remove Or Deprecate
@@ -136,7 +136,7 @@ Status: complete.
 - Added feature flag documentation for `PRIZES_ENABLED=false`.
 - Kept old trading tables temporarily.
 - Generated Prisma client.
-- Added seed data for one demo slate with 20 markets.
+- Added seed data for one demo contest with 20 markets.
 - Applied migration `20260915000000_v1_schema_foundation`.
 
 ### Phase 2: Core Game Rules
@@ -152,12 +152,12 @@ Status: complete.
 
 Status: complete.
 
-- Replaced trading home flow with active slate feed.
+- Replaced trading home flow with active contest feed.
 - Added persistent `X / 10 Picks`.
 - Added market rows with fixed probability and score swing.
 - Added pick/change/remove server actions.
 - Added My Picks view.
-- Enforced sign-in, slate status, lock time, market membership, option membership, and max 10 picks server-side.
+- Enforced sign-in, contest status, lock time, market membership, option membership, and max 10 picks server-side.
 
 ### Phase 4: Settlement And Leaderboard
 
@@ -167,19 +167,19 @@ Status: complete.
 - Implemented void logic.
 - Implemented H2H exact-tie scoring.
 - Added entry score calculation from settled predictions.
-- Built slate leaderboard with deterministic tiebreakers.
+- Built contest leaderboard with deterministic tiebreakers.
 - Finalizes contest when all markets are resolved, void, or canceled.
 
-### Phase 5: Admin Slate Tools
+### Phase 5: Admin Contest Tools
 
 Status: complete.
 
-- Added slate creation UI.
-- Added competition attachment UI with automatic slate window and lock recalculation.
+- Added contest creation UI.
+- Added competition attachment UI with automatic contest window and lock recalculation.
 - Added V1 market creation with two immutable outcome probabilities.
 - Added draft/publish workflow for V1 markets.
 - Added diversity cap configuration.
-- Added audit records for slate creation, slate updates, market creation, market publishing, settlement, and voids.
+- Added audit records for contest creation, contest updates, market creation, market publishing, settlement, and voids.
 
 ### Phase 6: WCA Integration
 

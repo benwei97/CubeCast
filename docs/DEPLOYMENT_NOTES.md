@@ -4,7 +4,7 @@ Last updated: 2026-09-15
 
 CubeCast currently uses a standard Next.js, Prisma, PostgreSQL, and Auth.js setup.
 
-CubeCast V1 is a free WCA speedcubing prediction slate game. The legacy trading UI, services, and database tables have been removed.
+CubeCast V1 is a free WCA speedcubing prediction contest game. The legacy trading UI, services, and database tables have been removed.
 
 ## Required Services
 
@@ -33,7 +33,7 @@ PRIZES_ENABLED="false"
 - auth accounts and sessions
 - competitions
 - markets
-- contest slates
+- contests
 - entries and predictions
 - WCA identities
 - settlement snapshots
