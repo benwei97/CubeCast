@@ -9,7 +9,6 @@ import { prisma } from "@/lib/prisma";
 import {
   generateWeeklyRecommendedContest,
   refreshContestLifecycle,
-  refreshWCACompetitionResults,
   settleV1Market,
   settleV1MarketAsTie,
   updateSlateDiversityConfig,
@@ -52,25 +51,12 @@ export default async function AdminPage({
   await maintainContestLockState();
 
   const [
-    competitions,
     activeSlate,
     manageableSlate,
     slates,
     finalizedSlate
   ] =
     await Promise.all([
-    prisma.competition.findMany({
-      orderBy: [{ startDate: "asc" }, { name: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        status: true,
-        startDate: true,
-        sourceMetadata: true,
-        wcaCompetitionId: true
-      }
-    }),
       prisma.contestSlate.findFirst({
         where: {
           status: { in: ["OPEN", "LOCKED", "SETTLING"] }
@@ -172,9 +158,6 @@ export default async function AdminPage({
       })
     ]);
   const diversityConfig = getDiversityConfig(manageableSlate?.diversityConfig);
-  const wcaCompetitions = competitions.filter(
-    (competition) => competition.wcaCompetitionId
-  );
   const lifecycleStats = getLifecycleStats(activeSlate);
   const finalizedStats = getFinalizedStats(finalizedSlate);
 
@@ -256,38 +239,8 @@ export default async function AdminPage({
         </section>
       )}
       <div className="admin-operations">
-      <details className="admin-secondary" open={Boolean(params.v1Settlement || params.wca === "results-refreshed")}>
+      <details className="admin-secondary" open={Boolean(params.v1Settlement)}>
         <summary>Results & settlement</summary>
-        <section className="admin-results-refresh">          <form action={refreshWCACompetitionResults} className="admin-form">
-            <h3>Refresh Results</h3>
-            <label htmlFor="wca-results-competition">Competition</label>
-            <select id="wca-results-competition" name="competitionId" required>
-              {wcaCompetitions.map((competition) => (
-                <option key={competition.id} value={competition.id}>
-                  {competition.name}
-                </option>
-              ))}
-            </select>
-            <PendingSubmitButton
-              className="secondary-button"
-              pendingLabel="Refreshing..."
-            >
-              Refresh result snapshot
-            </PendingSubmitButton>
-            <div className="admin-slate-list">
-              {wcaCompetitions.slice(0, 4).map((competition) => (
-                <article key={competition.id}>
-                  <div>
-                    <strong>{competition.name}</strong>
-                    <span>{competition.wcaCompetitionId}</span>
-                  </div>
-                  <small>
-                    {getWCAResultSummary(competition.sourceMetadata)}
-                  </small>
-                </article>
-              ))}
-            </div>
-          </form></section>
       <section>
         <div className="section-heading">
           <h2>Settlement Queue</h2>
@@ -362,8 +315,7 @@ export default async function AdminPage({
                       </>
                     ) : (
                       <small>
-                        No matching imported WCA result rows. Refresh this
-                        competition snapshot, or enter a WCA result URL and note
+                        No matching imported WCA result rows. Results are checked automatically. Enter a WCA result URL and note
                         before settling manually.
                       </small>
                     )}
@@ -810,7 +762,7 @@ function buildWCAEvidenceRow({
     best,
     eventId,
     eventName: market.eventName,
-    observedAt,
+    observedAt: getString(result.cubecastObservedAt) ?? observedAt,
     personId,
     personName,
     placement,
@@ -836,24 +788,6 @@ function buildWCAEvidenceRow({
     label: labelParts.join(" · "),
     value: JSON.stringify(evidence)
   };
-}
-
-function getWCAResultSummary(value: unknown) {
-  if (!isRecord(value)) {
-    return "No result snapshot yet";
-  }
-
-  const resultCount = getNumber(value.resultCount);
-  const observedAt =
-    typeof value.resultsObservedAt === "string"
-      ? new Date(value.resultsObservedAt)
-      : null;
-
-  if (!resultCount || !observedAt || Number.isNaN(observedAt.getTime())) {
-    return "No result snapshot yet";
-  }
-
-  return `${resultCount.toLocaleString()} result rows observed ${observedAt.toLocaleString()}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

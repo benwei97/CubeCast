@@ -28,6 +28,8 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 ## Operating Context
 
+Official WCA result evidence is imported automatically for started competitions with unsettled public markets. Administrators review settlement evidence without manually fetching results.
+
 The admin workspace focuses on the current generated contest: review competitions and markets, select the release, review it, and publish. Operational tools and history remain available in collapsed sections below.
 
 Users browse active contests, inspect markets, add/remove/change picks before the contest lock time, and review a persistent `X / 10 Picks` state. Once the contest locks, entries are immutable. Users with exactly 10 locked predictions receive a valid contest entry and appear on the official leaderboard.

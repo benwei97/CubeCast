@@ -66,7 +66,15 @@ http://localhost:3000/api/auth/callback/wca
 
 `WCA_BASE_URL` defaults to the production WCA site. Set it to `https://staging.worldcubeassociation.org` when testing against WCA staging credentials.
 
-## Database Commands
+## Automatic WCA Results
+
+Local development and persistent Node servers start the result monitor automatically through Next.js instrumentation. It checks for due work every minute and fetches each eligible competition at most once every 15 minutes. Only started competitions with unsettled public markets in active contests are queried. Errors retry on the next scheduled check; rate-limit errors do not trigger immediate retries.
+
+On Vercel, vercel.json schedules GET /api/cron/wca-results every 15 minutes. Set CRON_SECRET in the deployment environment; Vercel supplies it as the Bearer authorization header. The hosting plan must support this schedule. For another serverless host, configure a scheduler with the same interval, URL, and Authorization: Bearer <CRON_SECRET> header. A sleeping serverless process cannot run the persistent Node timer reliably.
+
+Checks preserve first-observed person/event/round result rows and their observation timestamps, adding newly published rows without overwriting earlier evidence. Detection time is when CubeCast observes publication, not a claim about the exact WCA publication time. Existing imported results retain their historical observation timestamp. No database migration is required. Market settlement is still admin-reviewed.
+
+## Database Setup
 
 For local development:
 

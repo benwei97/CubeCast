@@ -15,10 +15,10 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
+import { asMetadata } from "@/lib/wca-result-snapshot";
 import { slugify, withTimestampSuffix } from "@/lib/slug";
 import {
   fetchWCACompetitions,
-  fetchWCACompetitionResults,
   fetchWCAPublicWCIF,
   getWCACompetitionUrl,
   type WCACompetitionPayload,
@@ -42,10 +42,6 @@ const WCA_COMPETITION_PAGE_LIMIT = 10;
 const WCA_RECOMMENDATION_REQUEST_SPACING_MS = 250;
 const MARKET_PROBABILITY_MIN = 35;
 const MARKET_PROBABILITY_MAX = 65;
-
-const refreshWCAResultsSchema = z.object({
-  competitionId: z.string().min(1)
-});
 
 const updateDiversityConfigSchema = z.object({
   maxPerCompetition: z.coerce.number().int().min(1).max(30),
@@ -204,50 +200,6 @@ export async function generateWeeklyRecommendedContest() {
   revalidateV1Paths();
   revalidatePath("/competitions");
   redirect("/admin?wca=recommendations-generated");
-}
-
-export async function refreshWCACompetitionResults(formData: FormData) {
-  await requireAdmin();
-  const parsed = refreshWCAResultsSchema.safeParse({
-    competitionId: formData.get("competitionId")
-  });
-
-  if (!parsed.success) {
-    redirect("/admin?wca=invalid-results");
-  }
-
-  const competition = await prisma.competition.findUnique({
-    where: { id: parsed.data.competitionId },
-    select: {
-      id: true,
-      sourceMetadata: true,
-      wcaCompetitionId: true
-    }
-  });
-
-  if (!competition?.wcaCompetitionId) {
-    redirect("/admin?wca=missing-wca-id");
-  }
-
-  const results = await fetchWCACompetitionResults(competition.wcaCompetitionId);
-
-  await prisma.competition.update({
-    where: { id: competition.id },
-    data: {
-      sourceMetadata: {
-        ...(isRecord(competition.sourceMetadata) ? competition.sourceMetadata : {}),
-        resultsObservedAt: new Date().toISOString(),
-        resultsSnapshot: results,
-        resultsSource: "wca-api-v0",
-        resultsSourceUrl: getWCACompetitionUrl(competition.wcaCompetitionId),
-        resultCount: results.length
-      }
-    }
-  });
-
-  revalidatePath("/admin");
-  revalidatePath("/competitions");
-  redirect("/admin?wca=results-refreshed");
 }
 
 export async function updateSlateDiversityConfig(formData: FormData) {
@@ -735,7 +687,7 @@ async function upsertWCACompetitionFromRecommendation(
   };
   const existing = await tx.competition.findUnique({
     where: { wcaCompetitionId: recommendation.competition.id },
-    select: { id: true }
+    select: { id: true, sourceMetadata: true }
   });
 
   const data = {
@@ -749,7 +701,7 @@ async function upsertWCACompetitionFromRecommendation(
       getWCACompetitionUrl(recommendation.competition.id),
     scheduledEndAt: endDate,
     scheduledStartAt: startDate,
-    sourceMetadata: metadata,
+    sourceMetadata: { ...asMetadata(existing?.sourceMetadata), ...metadata } as Prisma.InputJsonObject,
     startDate,
     status: getCompetitionStatus(startDate, endDate),
     wcaCompetitionId: recommendation.competition.id
@@ -948,8 +900,4 @@ function formatContestDate(date: Date) {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

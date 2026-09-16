@@ -90,7 +90,9 @@ export async function fetchWCACompetitions({
 
 export async function fetchWCACompetitionResults(wcaCompetitionId: string) {
   return fetchWCAJson<WCACompetitionResultPayload[]>(
-    `/api/v0/competitions/${encodeURIComponent(wcaCompetitionId)}/results`
+    `/api/v0/competitions/${encodeURIComponent(wcaCompetitionId)}/results`,
+    0,
+    true
   );
 }
 
@@ -104,21 +106,20 @@ export function getWCACompetitionUrl(wcaCompetitionId: string) {
   return `${WCA_BASE_URL}/competitions/${encodeURIComponent(wcaCompetitionId)}`;
 }
 
-async function fetchWCAJson<T>(path: string, attempt = 0): Promise<T> {
+async function fetchWCAJson<T>(path: string, attempt = 0, fresh = false): Promise<T> {
   const response = await fetch(`${WCA_BASE_URL}${path}`, {
     headers: {
       Accept: "application/json",
       "User-Agent": "CubeCast MVP"
     },
-    next: {
-      revalidate: 60 * 30
-    }
+    ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 60 * 30 } }),
+    signal: AbortSignal.timeout(20_000)
   });
 
-  if (response.status === 429 && attempt < WCA_MAX_RETRIES) {
+  if (response.status === 429 && !fresh && attempt < WCA_MAX_RETRIES) {
     await sleep(getRetryDelayMs(response, attempt));
 
-    return fetchWCAJson<T>(path, attempt + 1);
+    return fetchWCAJson<T>(path, attempt + 1, fresh);
   }
 
   if (!response.ok) {

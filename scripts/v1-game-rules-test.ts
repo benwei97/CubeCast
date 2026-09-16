@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert";
+import { mergeFirstObservedResults } from "../src/lib/wca-result-snapshot";
 
 import {
   calculateEntryScore,
@@ -343,6 +344,25 @@ function testPrizeDisabledLayer() {
 }
 
 function main() {
+  const firstAt = "2026-09-16T12:00:00.000Z";
+  const laterAt = "2026-09-16T13:00:00.000Z";
+  const row = { event_id: "333", round_type_id: "1", person_id: "2020TEST01", average: 800, pos: 2 };
+  const empty = mergeFirstObservedResults({}, [], firstAt);
+  assert.equal(empty.resultsObservedAt, null);
+  const first = mergeFirstObservedResults({ customField: "preserved" }, [row], firstAt);
+  const later = mergeFirstObservedResults(first, [
+    { ...row, average: 700, pos: 1 },
+    { ...row, round_type_id: "f", average: 750 }
+  ], laterAt);
+  assert.equal(later.resultsSnapshot.length, 2);
+  assert.equal(later.resultsSnapshot[0].average, 800);
+  assert.equal(later.resultsSnapshot[0].pos, 2);
+  assert.equal(later.resultsSnapshot[0].cubecastObservedAt, firstAt);
+  assert.equal(later.resultsSnapshot[1].cubecastObservedAt, laterAt);
+  assert.equal(later.resultsObservedAt, firstAt);
+  assert.equal(later.customField, "preserved");
+  assert.deepEqual(mergeFirstObservedResults(later, [], laterAt).resultsSnapshot, later.resultsSnapshot);
+  assert.throws(() => mergeFirstObservedResults(first, [{ event_id: "333" }], laterAt));
   testScoring();
   testEntryRules();
   testHeadToHeadSettlement();

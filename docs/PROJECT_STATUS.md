@@ -2,6 +2,14 @@
 
 Last updated: 2026-09-16
 
+## Automatic WCA Result Monitoring
+
+- Removed manual result refresh action and UI.
+- Next.js instrumentation starts automatic monitoring on local and persistent Node servers; Vercel uses a protected scheduled endpoint.
+- Check eligible competitions every 15 minutes, preserve first-observed result rows and timestamps, and retry failures on later checks.
+- Results are automatically imported as settlement evidence; settlement remains admin-reviewed.
+- Added deterministic tests for first observations, subsequent rounds, duplicate/corrected rows, empty responses, and malformed rows.
+
 ## Admin Workspace Simplification
 
 - Current contest and grouped market selection lead the admin page.
