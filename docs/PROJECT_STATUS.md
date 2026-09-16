@@ -398,6 +398,18 @@ Completed:
 - Added conservative request spacing and longer retry/backoff for WCA Odds rate limits.
 - Added optional `WCA_ODDS_BASE_URL` configuration.
 
+### Phase 19: Admin Market Selection Publishing
+
+Status: complete.
+
+Completed:
+
+- Replaced one-click per-market publishing with a grouped market selection flow.
+- Added a `selected / target` market counter for admin publishing.
+- Grouped generated draft markets by competition during review.
+- Added a review step before selected markets are published to the public contest.
+- Added a batch publish action with server-side validation that selected markets are complete drafts from one contest.
+
 Next MVP gap:
 
 - Add a final MVP readiness checklist covering remaining acceptance criteria and manual end-to-end test steps.

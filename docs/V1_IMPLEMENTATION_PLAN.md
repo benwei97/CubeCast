@@ -337,6 +337,15 @@ Status: complete.
 - Skipped candidate matchups when WCA Odds cannot return a probability, avoiding mixed probability systems.
 - Added conservative request spacing and longer retry/backoff for WCA Odds rate limits.
 
+### Phase 19: Admin Market Selection Publishing
+
+Status: complete.
+
+- Replaced one-click per-market publishing with a grouped market selection flow.
+- Added an admin selected-market counter and review step before publishing.
+- Published selected markets in one server-validated batch.
+- Kept generated draft markets separated by competition for easier review.
+
 ## Implementation Notes
 
 - Do not implement XP.

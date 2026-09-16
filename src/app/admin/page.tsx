@@ -2,12 +2,12 @@ import Link from "next/link";
 import { UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { AdminMarketPublisher } from "@/components/admin-market-publisher";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import {
   generateWeeklyRecommendedContest,
-  publishV1Market,
   refreshContestLifecycle,
   refreshWCACompetitionResults,
   settleV1Market,
@@ -679,49 +679,23 @@ export default async function AdminPage({
       {manageableSlate && manageableSlate.markets.length > 0 && (
         <section>
           <div className="section-heading">
-            <h2>Market Review</h2>
-            <span>{manageableSlate.markets.length.toLocaleString()} markets</span>
+            <h2>Select Markets</h2>
+            <span>{manageableSlate.markets.length.toLocaleString()} generated</span>
           </div>
-          <div className="market-board">
-            <div className="market-board-header v1-market-review-header">
-              <span>Market</span>
-              <span>Options</span>
-              <span>Status</span>
-              <span>Action</span>
-            </div>
-            {manageableSlate.markets.map((market) => (
-              <article
-                className="market-board-row v1-market-review-row"
-                key={market.id}
-              >
-                <div>
-                  <strong>{market.question}</strong>
-                  <span>
-                    {market.competition.name} · {market.eventName ?? market.eventId}
-                  </span>
-                </div>
-                <span>
-                  {market.options
-                    .map((option) => `${option.label} ${option.probability}%`)
-                    .join(" / ")}
-                </span>
-                <span>{market.status}</span>
-                {market.status === "DRAFT" ? (
-                  <form action={publishV1Market}>
-                    <input name="marketId" type="hidden" value={market.id} />
-                    <PendingSubmitButton
-                      className="secondary-button"
-                      pendingLabel="Publishing..."
-                    >
-                      Publish
-                    </PendingSubmitButton>
-                  </form>
-                ) : (
-                  <span>Published</span>
-                )}
-              </article>
-            ))}
-          </div>
+          <AdminMarketPublisher
+            markets={manageableSlate.markets.map((market) => ({
+              competitionName: market.competition.name,
+              eventName: market.eventName ?? market.eventId ?? "Event",
+              id: market.id,
+              options: market.options.map((option) => ({
+                id: option.id,
+                label: option.label,
+                probability: option.probability
+              })),
+              question: market.question,
+              status: market.status
+            }))}
+          />
         </section>
       )}
     </div>

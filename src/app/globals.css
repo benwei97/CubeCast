@@ -1157,6 +1157,158 @@ footer {
   padding: 8px 10px;
 }
 
+.admin-publish-flow {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-publish-toolbar {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 14px 16px;
+  position: sticky;
+  top: 76px;
+  z-index: 2;
+}
+
+.admin-publish-toolbar div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-publish-toolbar strong {
+  font-size: 18px;
+}
+
+.admin-publish-toolbar span,
+.admin-publish-empty span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-publish-toolbar-actions,
+.admin-market-group-heading {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.admin-publish-toolbar-actions button {
+  min-width: 132px;
+}
+
+.admin-market-groups,
+.admin-publish-review-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-market-group,
+.admin-publish-review,
+.admin-publish-empty {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.admin-publish-empty {
+  padding: 18px;
+}
+
+.admin-market-group-heading {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.admin-market-group-heading span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-market-selection-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-market-select-row {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 90px 1fr;
+  height: auto;
+  justify-items: stretch;
+  padding: 12px;
+  text-align: left;
+}
+
+.admin-market-select-row:hover {
+  border-color: #b9c3d4;
+}
+
+.admin-market-select-row.is-selected {
+  background: #ecfdf3;
+  border-color: #73c49a;
+}
+
+.admin-market-select-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.54;
+}
+
+.admin-market-select-control {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.admin-market-select-row.is-selected .admin-market-select-control {
+  background: var(--yes);
+  border-color: var(--yes);
+  color: white;
+}
+
+.admin-market-summary {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-market-summary > span {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.admin-market-summary strong {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.admin-publish-review {
+  border-color: #b9c3d4;
+}
+
 .competition-preview-list {
   display: grid;
   gap: 12px;
@@ -1364,6 +1516,7 @@ dd {
   .v1-leaderboard-row,
   .v1-market-review-header,
   .v1-market-review-row,
+  .admin-market-select-row,
   .review-actions,
   .market-board-header,
   .market-board-row,
@@ -1385,6 +1538,21 @@ dd {
 
   .pick-status-panel {
     position: static;
+  }
+
+  .admin-publish-toolbar,
+  .admin-publish-toolbar-actions,
+  .admin-market-group-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-publish-toolbar {
+    position: static;
+  }
+
+  .admin-publish-toolbar-actions button {
+    width: 100%;
   }
 
   .competition-card-header {

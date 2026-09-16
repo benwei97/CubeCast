@@ -59,6 +59,10 @@ const publishV1MarketSchema = z.object({
   marketId: z.string().min(1)
 });
 
+const publishSelectedV1MarketsSchema = z.object({
+  marketIds: z.array(z.string().min(1)).min(1).max(50)
+});
+
 const settleV1MarketSchema = z.object({
   marketId: z.string().min(1),
   sourceEvidence: z.string().max(5000).optional(),
@@ -337,6 +341,73 @@ export async function publishV1Market(formData: FormData) {
         },
         slateId: market.slateId
       }
+    });
+  });
+
+  revalidateV1Paths();
+  redirect("/admin?v1Market=published");
+}
+
+export async function publishSelectedV1Markets(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = publishSelectedV1MarketsSchema.safeParse({
+    marketIds: formData.getAll("marketIds")
+  });
+
+  if (!parsed.success) {
+    redirect("/admin?v1Market=invalid");
+  }
+
+  const marketIds = [...new Set(parsed.data.marketIds)];
+
+  await prisma.$transaction(async (tx) => {
+    const markets = await tx.market.findMany({
+      where: { id: { in: marketIds } },
+      select: {
+        id: true,
+        options: { select: { id: true } },
+        slateId: true,
+        status: true
+      }
+    });
+
+    if (markets.length !== marketIds.length) {
+      throw new Error("Every selected market must exist before publishing.");
+    }
+
+    const slateIds = new Set(markets.map((market) => market.slateId));
+
+    if (slateIds.size !== 1 || slateIds.has(null)) {
+      throw new Error("Selected markets must belong to one contest.");
+    }
+
+    for (const market of markets) {
+      if (market.status !== MarketStatus.DRAFT || market.options.length !== 2) {
+        throw new Error("Only complete draft markets can be published.");
+      }
+    }
+
+    const publishedAt = new Date();
+
+    await tx.market.updateMany({
+      where: { id: { in: marketIds } },
+      data: {
+        publishedAt,
+        status: MarketStatus.OPEN
+      }
+    });
+
+    await tx.adminAction.createMany({
+      data: markets.map((market) => ({
+        actionType: "MARKET_PUBLISH",
+        adminUserId: admin.id,
+        marketId: market.id,
+        metadata: {
+          publishedFromDraft: true,
+          publishBatchSize: markets.length
+        },
+        slateId: market.slateId
+      }))
     });
   });
 

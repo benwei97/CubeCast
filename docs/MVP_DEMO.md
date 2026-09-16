@@ -26,7 +26,7 @@ Use WCA sign-in for local testing. After the first sign-in, promote your user to
 
 - As admin, open `/admin` and generate a recommended weekly contest from the largest upcoming WCA competitions.
 - Review each included competition's accepted registrations, competitor limit, and top ranked cubers.
-- Review the generated draft markets with WCA Odds-style simulation probabilities and publish the markets you want in the contest.
+- Review generated draft markets by competition, select the markets for the public contest, review the selected set, and publish them together.
 - Open the active contest on `/`.
 - Scan fixed-probability markets across real WCA competitions.
 - See `X / 10 Picks` in the contest entry panel.
