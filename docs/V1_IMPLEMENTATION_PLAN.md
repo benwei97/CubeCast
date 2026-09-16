@@ -271,9 +271,9 @@ Status: complete.
 
 Status: complete.
 
-- Added an admin action that fetches upcoming U.S. WCA competitions for the next 7 days.
+- Added an admin action that fetches upcoming WCA competitions for the next 7 days.
 - Ranked competitions by accepted competitor count from public WCIF data, with competitor limit as fallback.
-- Generated a draft weekly contest from the top 3 U.S. competitions.
+- Generated a draft weekly contest from the top 3 competitions.
 - Generated up to 10 draft head-to-head markets per recommended competition.
 - Kept all generated markets unpublished so admins manually choose what to release.
 
@@ -294,13 +294,29 @@ Status: complete.
 - Removed manual admin forms/actions for creating competitions, contests, attaching competitions, importing one-off competitions, and hand-creating markets.
 - Kept real-data recommendation generation, draft market review/publishing, result snapshot refresh, settlement, lifecycle maintenance, diversity caps, and finalized contest review.
 
-### Phase 16: U.S.-Only Competition Scope
+### Phase 16: Country-Scoped Competition Experiment
 
-Status: complete.
+Status: superseded.
 
 - Scoped the recommendation pipeline to WCA competitions with `country_iso2 = US`.
 - Generated markets now only come from the selected U.S. competitions.
 - Updated admin copy and docs so the MVP scope is clearly U.S.-only.
+
+### Phase 16.1: Global Competition Scope
+
+Status: complete.
+
+- Expanded the recommendation pipeline to all non-canceled WCA competitions globally.
+- Generated markets now come from the largest competitions worldwide by accepted competing registrants.
+- Updated admin copy and docs so the MVP scope is global.
+
+### Phase 16.2: WCA Rate-Limit Handling
+
+Status: complete.
+
+- Added retry/backoff handling for WCA `429` responses.
+- Replaced parallel WCIF lookups with spaced sequential recommendation enrichment.
+- Reduced the chance that global recommendation generation overwhelms WCA API limits.
 
 ### Phase 17: Competition Preview Metadata
 

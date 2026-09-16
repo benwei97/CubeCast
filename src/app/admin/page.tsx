@@ -324,8 +324,8 @@ export default async function AdminPage({
         )}
         {params.wca === "no-recommendations" && (
           <p className="form-error">
-            CubeCast could not find upcoming U.S. WCA competitions with usable
-            public registration data for the next week.
+            CubeCast could not find upcoming WCA competitions with usable public
+            registration data for the next week.
           </p>
         )}
         {params.wca === "recommendations-generated" && (
@@ -338,9 +338,9 @@ export default async function AdminPage({
           <form action={generateWeeklyRecommendedContest} className="admin-form">
             <h3>Recommend Weekly Contest</h3>
             <p>
-              Find the largest upcoming U.S. WCA competitions in the next 7
-              days, create a draft contest, and generate 10 draft head-to-head
-              markets per competition.
+              Find the largest upcoming WCA competitions in the next 7 days,
+              create a draft contest, and generate 10 draft head-to-head markets
+              per competition.
             </p>
             <PendingSubmitButton pendingLabel="Generating recommendations...">
               Generate recommendations

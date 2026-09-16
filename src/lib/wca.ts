@@ -1,4 +1,6 @@
 const WCA_BASE_URL = getWCABaseUrl();
+const WCA_MAX_RETRIES = 3;
+const WCA_RETRY_BASE_DELAY_MS = 1500;
 
 export type WCACompetitionPayload = {
   city?: string;
@@ -102,7 +104,7 @@ export function getWCACompetitionUrl(wcaCompetitionId: string) {
   return `${WCA_BASE_URL}/competitions/${encodeURIComponent(wcaCompetitionId)}`;
 }
 
-async function fetchWCAJson<T>(path: string): Promise<T> {
+async function fetchWCAJson<T>(path: string, attempt = 0): Promise<T> {
   const response = await fetch(`${WCA_BASE_URL}${path}`, {
     headers: {
       Accept: "application/json",
@@ -113,11 +115,32 @@ async function fetchWCAJson<T>(path: string): Promise<T> {
     }
   });
 
+  if (response.status === 429 && attempt < WCA_MAX_RETRIES) {
+    await sleep(getRetryDelayMs(response, attempt));
+
+    return fetchWCAJson<T>(path, attempt + 1);
+  }
+
   if (!response.ok) {
     throw new Error(`WCA request failed with ${response.status} for ${path}.`);
   }
 
   return (await response.json()) as T;
+}
+
+function getRetryDelayMs(response: Response, attempt: number) {
+  const retryAfter = response.headers.get("retry-after");
+  const retryAfterSeconds = retryAfter ? Number.parseInt(retryAfter, 10) : null;
+
+  if (retryAfterSeconds && Number.isFinite(retryAfterSeconds)) {
+    return retryAfterSeconds * 1000;
+  }
+
+  return WCA_RETRY_BASE_DELAY_MS * (attempt + 1);
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getWCABaseUrl() {
