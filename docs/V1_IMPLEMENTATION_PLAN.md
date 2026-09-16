@@ -294,6 +294,14 @@ Status: complete.
 - Generated markets now only come from the selected U.S. competitions.
 - Updated admin copy and docs so the MVP scope is clearly U.S.-only.
 
+### Phase 17: Competition Preview Metadata
+
+Status: complete.
+
+- Stored accepted competitor count, competitor limit, and top ranked registered cubers in generated competition metadata.
+- Added an admin preview for each included competition before publishing markets.
+- Top ranked cubers are derived from public WCIF personal-best average world rankings for registered events.
+
 ## Implementation Notes
 
 - Do not implement XP.

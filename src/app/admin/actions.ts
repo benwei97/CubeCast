@@ -525,6 +525,57 @@ function getWCIFEventNames(wcif: WCIFPublicPayload | null) {
   return new Map((wcif?.events ?? []).map((event) => [event.id, event.name ?? event.id]));
 }
 
+function getTopRankedCompetitors({
+  competitors,
+  eventNames
+}: {
+  competitors: AcceptedWCIFCompetitor[];
+  eventNames: Map<string, string>;
+}) {
+  return competitors
+    .map((competitor) => {
+      const registeredEventIds = new Set(competitor.registration.eventIds ?? []);
+      const bestRanking = competitor.personalBests
+        ?.filter(
+          (personalBest) =>
+            personalBest.type === "average" &&
+            personalBest.worldRanking != null &&
+            registeredEventIds.has(personalBest.eventId)
+        )
+        .sort((left, right) => {
+          const leftRanking = left.worldRanking ?? Number.POSITIVE_INFINITY;
+          const rightRanking = right.worldRanking ?? Number.POSITIVE_INFINITY;
+
+          return leftRanking - rightRanking;
+        })[0];
+
+      if (!bestRanking?.worldRanking) {
+        return null;
+      }
+
+      return {
+        eventId: bestRanking.eventId,
+        eventName: eventNames.get(bestRanking.eventId) ?? getEventName(bestRanking.eventId),
+        name: competitor.name,
+        wcaId: competitor.wcaId,
+        worldRanking: bestRanking.worldRanking
+      };
+    })
+    .filter(
+      (
+        competitor
+      ): competitor is {
+        eventId: string;
+        eventName: string;
+        name: string;
+        wcaId: string;
+        worldRanking: number;
+      } => Boolean(competitor)
+    )
+    .sort((left, right) => left.worldRanking - right.worldRanking)
+    .slice(0, 5);
+}
+
 async function upsertWCACompetitionFromRecommendation(
   tx: Prisma.TransactionClient,
   recommendation: WCARecommendation
@@ -538,6 +589,10 @@ async function upsertWCACompetitionFromRecommendation(
     recommendationCountry: RECOMMENDATION_COUNTRY_ISO2,
     recommendationSource: "weekly-wca-recommendation",
     source: "wca-api-v0",
+    topRankedCompetitors: getTopRankedCompetitors({
+      competitors: recommendation.acceptedCompetitors,
+      eventNames: getWCIFEventNames(recommendation.wcif)
+    }),
     wcaCompetition: recommendation.competition
   };
   const existing = await tx.competition.findUnique({

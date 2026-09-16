@@ -414,10 +414,51 @@ export default async function AdminPage({
           <div className="admin-slate-grid">
             <div className="admin-form">
               <h3>Included Competitions</h3>
-              <div className="attached-competition-list">
-                {manageableSlate.competitions.map(({ competition }) => (
-                  <span key={competition.id}>{competition.name}</span>
-                ))}
+              <div className="competition-preview-list">
+                {manageableSlate.competitions.map(({ competition }) => {
+                  const preview = getCompetitionPreview(competition.sourceMetadata);
+
+                  return (
+                    <article className="competition-preview-card" key={competition.id}>
+                      <div className="competition-preview-heading">
+                        <div>
+                          <strong>{competition.name}</strong>
+                          <small>
+                            {competition.location} · {competition.country}
+                          </small>
+                        </div>
+                        <span>{competition.wcaCompetitionId ?? "WCA"}</span>
+                      </div>
+
+                      <div className="competition-preview-stats">
+                        <span>
+                          <strong>{formatNullableCount(preview.acceptedCompetitors)}</strong>
+                          accepted
+                        </span>
+                        <span>
+                          <strong>{formatNullableCount(preview.competitorLimit)}</strong>
+                          competitor limit
+                        </span>
+                      </div>
+
+                      <div className="ranked-cuber-preview">
+                        <span>Top ranked cubers</span>
+                        {preview.topRankedCompetitors.length > 0 ? (
+                          <div>
+                            {preview.topRankedCompetitors.map((competitor) => (
+                              <small key={`${competitor.wcaId}-${competitor.eventId}`}>
+                                #{competitor.worldRanking.toLocaleString()}{" "}
+                                {competitor.eventName}: {competitor.name}
+                              </small>
+                            ))}
+                          </div>
+                        ) : (
+                          <small>No public ranking preview available.</small>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </div>
 
@@ -684,6 +725,49 @@ export default async function AdminPage({
       )}
     </div>
   );
+}
+
+function getCompetitionPreview(sourceMetadata: unknown) {
+  const metadata = isRecord(sourceMetadata) ? sourceMetadata : null;
+  const topRankedCompetitors = Array.isArray(metadata?.topRankedCompetitors)
+    ? metadata.topRankedCompetitors
+        .map((competitor) => {
+          if (!isRecord(competitor)) {
+            return null;
+          }
+
+          const eventId = getString(competitor.eventId);
+          const eventName = getString(competitor.eventName);
+          const name = getString(competitor.name);
+          const wcaId = getString(competitor.wcaId);
+          const worldRanking = getNumber(competitor.worldRanking);
+
+          if (!eventId || !eventName || !name || !wcaId || !worldRanking) {
+            return null;
+          }
+
+          return {
+            eventId,
+            eventName,
+            name,
+            wcaId,
+            worldRanking
+          };
+        })
+        .filter((competitor): competitor is NonNullable<typeof competitor> =>
+          Boolean(competitor)
+        )
+    : [];
+
+  return {
+    acceptedCompetitors: getNumber(metadata?.acceptedCompetitorCount),
+    competitorLimit: getNumber(metadata?.competitorLimit),
+    topRankedCompetitors
+  };
+}
+
+function formatNullableCount(value: number | null) {
+  return value === null ? "-" : value.toLocaleString();
 }
 
 function getDiversityConfig(value: unknown) {

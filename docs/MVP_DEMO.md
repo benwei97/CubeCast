@@ -25,6 +25,7 @@ Use WCA sign-in for local testing. After the first sign-in, promote your user to
 ## Contest Flow Available Now
 
 - As admin, open `/admin` and generate a recommended weekly contest from the largest upcoming U.S. WCA competitions.
+- Review each included competition's accepted registrations, competitor limit, and top ranked cubers.
 - Review the generated draft markets and publish the markets you want in the contest.
 - Open the active contest on `/`.
 - Scan fixed-probability markets across real U.S. WCA competitions.

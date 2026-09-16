@@ -1157,6 +1157,77 @@ footer {
   padding: 8px 10px;
 }
 
+.competition-preview-list {
+  display: grid;
+  gap: 12px;
+}
+
+.competition-preview-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.competition-preview-heading {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.competition-preview-heading div,
+.ranked-cuber-preview,
+.ranked-cuber-preview div {
+  display: grid;
+  gap: 4px;
+}
+
+.competition-preview-heading small,
+.ranked-cuber-preview small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.competition-preview-heading > span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.competition-preview-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.competition-preview-stats span {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  gap: 2px;
+  padding: 10px;
+}
+
+.competition-preview-stats strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.ranked-cuber-preview > span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .outcome-admin-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
