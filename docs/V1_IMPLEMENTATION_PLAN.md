@@ -271,9 +271,9 @@ Status: complete.
 
 Status: complete.
 
-- Added an admin action that fetches upcoming WCA competitions for the next 7 days.
+- Added an admin action that fetches upcoming U.S. WCA competitions for the next 7 days.
 - Ranked competitions by accepted competitor count from public WCIF data, with competitor limit as fallback.
-- Generated a draft weekly contest from the top 3 competitions.
+- Generated a draft weekly contest from the top 3 U.S. competitions.
 - Generated up to 10 draft head-to-head markets per recommended competition.
 - Kept all generated markets unpublished so admins manually choose what to release.
 
@@ -285,6 +285,14 @@ Status: complete.
 - Removed the seed script and package entry point.
 - Removed manual admin forms/actions for creating competitions, contests, attaching competitions, importing one-off competitions, and hand-creating markets.
 - Kept real-data recommendation generation, draft market review/publishing, result snapshot refresh, settlement, lifecycle maintenance, diversity caps, and finalized contest review.
+
+### Phase 16: U.S.-Only Competition Scope
+
+Status: complete.
+
+- Scoped the recommendation pipeline to WCA competitions with `country_iso2 = US`.
+- Generated markets now only come from the selected U.S. competitions.
+- Updated admin copy and docs so the MVP scope is clearly U.S.-only.
 
 ## Implementation Notes
 

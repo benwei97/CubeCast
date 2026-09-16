@@ -48,7 +48,7 @@ These pieces are useful as infrastructure and UI reference, but the trading doma
 V1 should support:
 
 - WCA-authenticated users
-- contests that include one or more WCA competitions
+- contests that include one or more U.S. WCA competitions
 - one global contest lock time
 - approximately 20-30 fixed-probability markets per contest
 - exactly 10 user predictions for a valid entry
@@ -183,7 +183,7 @@ Status: complete.
 Completed:
 
 - Create/edit contests from the admin UI.
-- Attach WCA competitions to contests from the admin UI.
+- Generate contests from U.S. WCA competitions in the admin UI.
 - Create/publish V1 markets and outcomes with immutable probabilities.
 - Configure diversity limits.
 - Added basic V1 market review with draft publish action.
@@ -316,9 +316,9 @@ Status: complete.
 
 Completed:
 
-- Added WCA upcoming competition lookup for the next 7 days.
+- Added U.S. WCA upcoming competition lookup for the next 7 days.
 - Added public WCIF ingestion for accepted competitor counts, registered events, and personal-best data.
-- Added admin generation of a draft weekly contest from the top 3 recommended competitions.
+- Added admin generation of a draft weekly contest from the top 3 recommended U.S. competitions.
 - Added generated draft H2H markets using simple personal-best probability heuristics.
 - Kept generated markets unpublished so admins manually choose what to release.
 
@@ -331,8 +331,18 @@ Completed:
 - Removed fake local contest and market seed data.
 - Removed the seed script and npm seed entry point.
 - Removed manual admin creation paths for competitions, contests, contest attachments, one-off competition imports, and hand-created markets.
-- Kept the real-data WCA recommendation flow as the source of new contests and markets.
+- Kept the real-data U.S. WCA recommendation flow as the source of new contests and markets.
 - Kept admin review/publishing, diversity caps, WCA result snapshots, settlement, lifecycle maintenance, and finalized contest review.
+
+### Phase 16: U.S.-Only Competition Scope
+
+Status: complete.
+
+Completed:
+
+- Scoped recommendation generation to WCA competitions with `country_iso2 = US`.
+- Ensured generated markets only come from selected U.S. competitions.
+- Updated admin copy and docs so the MVP scope is clearly U.S.-only.
 
 Next MVP gap:
 

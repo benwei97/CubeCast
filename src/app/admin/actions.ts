@@ -31,6 +31,9 @@ import {
   voidV1Market
 } from "@/lib/v1-settlement";
 
+const RECOMMENDATION_COUNTRY_ISO2 = "US";
+const RECOMMENDATION_COUNTRY_LABEL = "U.S.";
+
 const refreshWCAResultsSchema = z.object({
   competitionId: z.string().min(1)
 });
@@ -89,7 +92,11 @@ export async function generateWeeklyRecommendedContest() {
   const recommendations = (
     await Promise.all(
       wcaCompetitions
-        .filter((competition) => !competition.cancelled_at)
+        .filter(
+          (competition) =>
+            !competition.cancelled_at &&
+            competition.country_iso2 === RECOMMENDATION_COUNTRY_ISO2
+        )
         .slice(0, 25)
         .map(async (competition) => {
           const wcif = await fetchWCIFSafely(competition.id);
@@ -135,7 +142,7 @@ export async function generateWeeklyRecommendedContest() {
     const contest = await tx.contestSlate.create({
       data: {
         description:
-          "Generated from the largest upcoming WCA competitions. Review and publish selected markets.",
+          `Generated from the largest upcoming ${RECOMMENDATION_COUNTRY_LABEL} WCA competitions. Review and publish selected markets.`,
         diversityConfig: getDefaultDiversityConfig(),
         endsAt,
         lockAt,
@@ -528,6 +535,7 @@ async function upsertWCACompetitionFromRecommendation(
     acceptedCompetitorCount: recommendation.acceptedCompetitors.length,
     competitorLimit: recommendation.competition.competitor_limit ?? null,
     generatedAt: new Date().toISOString(),
+    recommendationCountry: RECOMMENDATION_COUNTRY_ISO2,
     recommendationSource: "weekly-wca-recommendation",
     source: "wca-api-v0",
     wcaCompetition: recommendation.competition
@@ -539,7 +547,7 @@ async function upsertWCACompetitionFromRecommendation(
 
   const data = {
     country: recommendation.competition.country_iso2 ?? "XX",
-    description: `Recommended from upcoming WCA competitions with ${recommendation.competitorCount.toLocaleString()} registered or available competitor slots.`,
+    description: `Recommended from upcoming ${RECOMMENDATION_COUNTRY_LABEL} WCA competitions with ${recommendation.competitorCount.toLocaleString()} registered or available competitor slots.`,
     endDate,
     location: getWCALocation(recommendation.competition),
     name: recommendation.competition.name,

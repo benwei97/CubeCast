@@ -24,10 +24,10 @@ Use WCA sign-in for local testing. After the first sign-in, promote your user to
 
 ## Contest Flow Available Now
 
-- As admin, open `/admin` and generate a recommended weekly contest from the largest upcoming WCA competitions.
+- As admin, open `/admin` and generate a recommended weekly contest from the largest upcoming U.S. WCA competitions.
 - Review the generated draft markets and publish the markets you want in the contest.
 - Open the active contest on `/`.
-- Scan fixed-probability markets across real WCA competitions.
+- Scan fixed-probability markets across real U.S. WCA competitions.
 - See `X / 10 Picks` in the contest entry panel.
 - Click a market outcome to open the pick review modal.
 - Sign in and add, change, or remove picks before lock.

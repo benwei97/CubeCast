@@ -8,11 +8,11 @@ web
 
 ## Users
 
-CubeCast serves speedcubing fans, competitors, and spectators who want a free weekly forecasting game around official World Cube Association competition results.
+CubeCast serves speedcubing fans, competitors, and spectators who want a free weekly forecasting game around official United States World Cube Association competition results.
 
 The primary user signs in with WCA, reviews a curated contest, chooses exactly 10 predictions from roughly 20-30 available markets, and competes on a contest leaderboard.
 
-Secondary users are administrators who generate recommended contests from real WCA competitions, review generated markets, publish probabilities, settle outcomes from official WCA results, inspect evidence, void markets, and finalize contests.
+Secondary users are administrators who generate recommended contests from real U.S. WCA competitions, review generated markets, publish probabilities, settle outcomes from official WCA results, inspect evidence, void markets, and finalize contests.
 
 ## Product Purpose
 
@@ -30,12 +30,12 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 Users browse active contests, inspect markets, add/remove/change picks before the contest lock time, and review a persistent `X / 10 Picks` state. Once the contest locks, entries are immutable. Users with exactly 10 locked predictions receive a valid contest entry and appear on the official leaderboard.
 
-Administrators generate featured contests from upcoming WCA competitions, publish approximately 20-30 generated markets, configure diversity constraints, settle or void markets, preserve immutable settlement snapshots, and finalize contests after every market is resolved or void.
+Administrators generate featured contests from upcoming U.S. WCA competitions, publish approximately 20-30 generated markets, configure diversity constraints, settle or void markets, preserve immutable settlement snapshots, and finalize contests after every market is resolved or void.
 
 ## Capabilities and Constraints
 
 - WCA login is required for official gameplay.
-- A contest can include one or more WCA competitions and is not tied to Monday-Sunday calendar weeks.
+- A contest can include one or more U.S. WCA competitions and is not tied to Monday-Sunday calendar weeks.
 - Contest predictions lock one hour before the earliest included competition starts.
 - Users can select, remove, replace, or change predictions before lock.
 - A valid entry requires exactly 10 predictions at lock.

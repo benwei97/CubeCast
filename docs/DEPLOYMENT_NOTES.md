@@ -80,7 +80,7 @@ For production, run Prisma migrations against the production database before ser
 npx prisma migrate deploy
 ```
 
-CubeCast no longer ships fake seeded contests or markets. Production and local contest data should come from WCA sign-in, WCA competition recommendations, generated markets, picks, result snapshots, and settlement records.
+CubeCast no longer ships fake seeded contests or markets. Production and local contest data should come from WCA sign-in, U.S. WCA competition recommendations, generated markets, picks, result snapshots, and settlement records.
 
 ## Real-Money Boundary
 

@@ -49,7 +49,7 @@ Phase 12 finalized contest review is complete: admins can review the latest fina
 
 Phase 13 settlement ergonomics is complete: the admin settlement queue now shows clearer action feedback, evidence-match counts, manual-evidence guidance, and explicit evidence selection labels.
 
-Phase 14 WCA recommendation pipeline is complete: admins can generate a draft weekly contest from the largest upcoming WCA competitions and review 10 generated draft markets per competition before publishing.
+Phase 14 WCA recommendation pipeline is complete: admins can generate a draft weekly contest from the largest upcoming U.S. WCA competitions and review 10 generated draft markets per competition before publishing.
 
 Current planning docs:
 
@@ -86,7 +86,7 @@ Current planning docs:
    npm run dev
    ```
 
-6. Sign in with WCA, promote your user to admin in the database, then use `/admin` to generate a contest from real upcoming WCA competitions.
+6. Sign in with WCA, promote your user to admin in the database, then use `/admin` to generate a contest from real upcoming U.S. WCA competitions.
 
 ## Useful Checks
 
