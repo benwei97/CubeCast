@@ -241,6 +241,15 @@ Status: complete.
 - Marked exactly-10 entries as locked and incomplete entries as invalid.
 - Kept settlement and finalization in the existing settlement path.
 
+### Phase 11: Admin Lifecycle Visibility
+
+Status: complete.
+
+- Added an admin lifecycle panel.
+- Show active contest status, lock time, entry counts, market counts, and next operational action.
+- Added a manual lifecycle refresh action that runs server-side lock maintenance and revalidates contest pages.
+- Kept the maintenance action admin-only.
+
 ## Implementation Notes
 
 - Do not implement XP.

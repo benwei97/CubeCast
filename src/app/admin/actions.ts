@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import { slugify, withTimestampSuffix } from "@/lib/slug";
 import {
@@ -152,6 +153,13 @@ export async function createCompetition(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/competitions");
   redirect(`/competitions/${slug}`);
+}
+
+export async function refreshContestLifecycle() {
+  await requireAdmin();
+  await maintainContestLockState();
+  revalidateV1Paths();
+  redirect("/admin?lifecycle=refreshed");
 }
 
 export async function importWCACompetition(formData: FormData) {

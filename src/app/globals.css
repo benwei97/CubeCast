@@ -705,6 +705,17 @@ footer {
   margin: 0;
 }
 
+.form-success {
+  color: var(--yes);
+  font-weight: 700;
+  margin: 0;
+}
+
+.inline-form {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .success-text {
   color: var(--yes);
   font-weight: 700;

@@ -272,7 +272,20 @@ Completed:
 
 Next MVP gap:
 
-- Add a small admin-facing maintenance/status panel for contest lifecycle visibility and manual refresh.
+### Phase 11: Admin Lifecycle Visibility
+
+Status: complete.
+
+Completed:
+
+- Added an admin contest lifecycle panel.
+- Show active contest status, lock time, entry counts, market counts, and next operational action.
+- Added an admin-only manual lifecycle refresh action.
+- Revalidate player/admin pages after manual lifecycle refresh.
+
+Next MVP gap:
+
+- Tighten the admin operational flow for market settlement and contest finalization, including clearer finalized-state review.
 
 ## Useful Commands
 

@@ -16,6 +16,7 @@ import {
   createV1SlateMarket,
   importWCACompetition,
   publishV1Market,
+  refreshContestLifecycle,
   refreshWCACompetitionResults,
   settleV1Market,
   settleV1MarketAsTie,
@@ -30,6 +31,7 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{
     competition?: string;
+    lifecycle?: string;
     market?: string;
     v1Market?: string;
     v1Settlement?: string;
@@ -82,6 +84,11 @@ export default async function AdminPage({
         },
         orderBy: { lockAt: "asc" },
         include: {
+          entries: {
+            select: {
+              status: true
+            }
+          },
           markets: {
             where: {
               status: { in: ["OPEN", "LOCKED", "PENDING_RESULT"] }
@@ -153,6 +160,7 @@ export default async function AdminPage({
   const wcaCompetitions = competitions.filter(
     (competition) => competition.wcaCompetitionId
   );
+  const lifecycleStats = getLifecycleStats(activeSlate);
 
   return (
     <div className="page-stack">
@@ -162,6 +170,56 @@ export default async function AdminPage({
         <p>
           Manage contests, markets, WCA evidence, and settlement.
         </p>
+      </section>
+
+      <section className="admin-form-panel">
+        <div className="section-heading">
+          <h2>Contest Lifecycle</h2>
+          <span>
+            {activeSlate
+              ? `${activeSlate.status} · Locks ${activeSlate.lockAt.toLocaleString()}`
+              : "No active contest"}
+          </span>
+        </div>
+        {params.lifecycle === "refreshed" && (
+          <p className="form-success">Contest lifecycle status refreshed.</p>
+        )}
+        <div className="summary-grid">
+          <article className="summary-card">
+            <span>Contest</span>
+            <strong>{activeSlate?.status ?? "None"}</strong>
+            <small>{activeSlate?.title ?? "Create or open a contest"}</small>
+          </article>
+          <article className="summary-card">
+            <span>Entries</span>
+            <strong>{lifecycleStats.totalEntries.toLocaleString()}</strong>
+            <small>
+              {lifecycleStats.lockedEntries.toLocaleString()} locked ·{" "}
+              {lifecycleStats.invalidEntries.toLocaleString()} invalid
+            </small>
+          </article>
+          <article className="summary-card">
+            <span>Markets</span>
+            <strong>{lifecycleStats.totalMarkets.toLocaleString()}</strong>
+            <small>
+              {lifecycleStats.lockedMarkets.toLocaleString()} locked ·{" "}
+              {lifecycleStats.pendingMarkets.toLocaleString()} pending
+            </small>
+          </article>
+          <article className="summary-card">
+            <span>Next action</span>
+            <strong>{lifecycleStats.nextAction}</strong>
+            <small>{lifecycleStats.nextActionDetail}</small>
+          </article>
+        </div>
+        <form action={refreshContestLifecycle} className="inline-form">
+          <PendingSubmitButton
+            className="secondary-button"
+            pendingLabel="Refreshing..."
+          >
+            Refresh lifecycle status
+          </PendingSubmitButton>
+        </form>
       </section>
 
       <section className="admin-form-panel">
@@ -919,4 +977,78 @@ function getString(value: unknown) {
 
 function getNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function getLifecycleStats(
+  contest: {
+    entries: { status: string }[];
+    lockAt: Date;
+    markets: { status: string }[];
+    status: string;
+  } | null
+) {
+  if (!contest) {
+    return {
+      invalidEntries: 0,
+      lockedEntries: 0,
+      lockedMarkets: 0,
+      nextAction: "Create contest",
+      nextActionDetail: "Open a contest before collecting picks",
+      pendingMarkets: 0,
+      totalEntries: 0,
+      totalMarkets: 0
+    };
+  }
+
+  const now = new Date();
+  const lockedEntries = contest.entries.filter(
+    (entry) => entry.status === "LOCKED" || entry.status === "FINALIZED"
+  ).length;
+  const invalidEntries = contest.entries.filter(
+    (entry) => entry.status === "INVALID"
+  ).length;
+  const lockedMarkets = contest.markets.filter(
+    (market) => market.status === "LOCKED"
+  ).length;
+  const pendingMarkets = contest.markets.filter(
+    (market) => market.status === "PENDING_RESULT"
+  ).length;
+  const baseStats = {
+    invalidEntries,
+    lockedEntries,
+    lockedMarkets,
+    pendingMarkets,
+    totalEntries: contest.entries.length,
+    totalMarkets: contest.markets.length
+  };
+
+  if (contest.status === "OPEN" && contest.lockAt > now) {
+    return {
+      ...baseStats,
+      nextAction: "Collect picks",
+      nextActionDetail: `Locks ${contest.lockAt.toLocaleString()}`
+    };
+  }
+
+  if (contest.status === "LOCKED") {
+    return {
+      ...baseStats,
+      nextAction: "Settle markets",
+      nextActionDetail: "Refresh WCA evidence and resolve results"
+    };
+  }
+
+  if (contest.status === "SETTLING") {
+    return {
+      ...baseStats,
+      nextAction: "Finish settlement",
+      nextActionDetail: "Resolve or void every remaining market"
+    };
+  }
+
+  return {
+    ...baseStats,
+    nextAction: "Review",
+    nextActionDetail: "Lifecycle status is up to date"
+  };
 }

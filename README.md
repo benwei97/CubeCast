@@ -43,6 +43,8 @@ Phase 9 prize-ready disabled layer is complete: prize configuration is feature-f
 
 Phase 10 contest lock maintenance is complete: server reads and pick actions now persist due contests as locked, lock open markets, and mark entries as locked or invalid based on the exactly-10 rule.
 
+Phase 11 admin lifecycle visibility is complete: admins can review contest lifecycle counts and manually refresh status maintenance from `/admin`.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)
