@@ -25,6 +25,7 @@ AUTH_WCA_ID=""
 AUTH_WCA_SECRET=""
 WCA_BASE_URL="https://www.worldcubeassociation.org"
 PRIZES_ENABLED="false"
+PRIZE_PAYOUTS_JSON=""
 ```
 
 `DATABASE_URL` points to the PostgreSQL database where all app data is stored:
@@ -98,3 +99,11 @@ V1 is intentionally free-to-play. It does not have:
 - compliance, KYC, AML, or state-by-state permissions
 
 Prize functionality must remain disabled unless explicitly enabled and reviewed. Future real-money or prize-related support should be treated as a separate legal/compliance workstream, not a simple switch inside gameplay.
+
+`PRIZE_PAYOUTS_JSON` is reserved for future prize configuration, for example:
+
+```json
+[{"rank":1,"amountCents":10000},{"rank":2,"amountCents":5000}]
+```
+
+It is ignored by gameplay while `PRIZES_ENABLED` is false.

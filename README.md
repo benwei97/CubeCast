@@ -39,6 +39,8 @@ Phase 7 legacy trading UI removal is complete: the old market-detail trading rou
 
 Phase 8 legacy database cleanup is complete: purchase, position, ledger, balance, liquidity, and old settlement schema have been removed in migration `20260915230000_phase8_legacy_db_cleanup`, and the seed is V1-only.
 
+Phase 9 prize-ready disabled layer is complete: prize configuration is feature-flagged off by default, eligibility hooks are tested, and tied-rank award planning is deterministic without exposing prizes in gameplay.
+
 Current planning docs:
 
 - [PRODUCT.md](PRODUCT.md)

@@ -245,9 +245,21 @@ Completed:
 - Simplified onboarding so it only assigns a unique internal username.
 - Removed legacy trading seed data; local seed data is now V1-only.
 
-### Phase 9+: Prize Shell
+### Phase 9: Prize-Ready Disabled Layer
 
-Status: planned in `docs/V1_IMPLEMENTATION_PLAN.md`.
+Status: complete.
+
+Completed:
+
+- Added disabled-by-default prize config parsing.
+- Added `PRIZES_ENABLED` and `PRIZE_PAYOUTS_JSON` environment documentation.
+- Added prize eligibility hooks for finalized valid entries, WCA identity, contest/global prize flags, and participant restrictions.
+- Added deterministic tied-rank award planning that pools tied positions and splits cents predictably.
+- Added V1 tests for disabled prize behavior, eligibility, and prize award planning.
+
+Next MVP gap:
+
+- Add an automatic contest lock/finalization maintenance path so entries transition from editable to locked without relying only on request-time checks.
 
 ## Useful Commands
 

@@ -14,6 +14,11 @@ import {
   settlePlacementMarket,
   V1_BASE_SCORE
 } from "../src/lib/v1-game";
+import {
+  getPrizeConfig,
+  getPrizeEligibility,
+  planPrizeAwards
+} from "../src/lib/prizes";
 
 function testScoring() {
   assert.equal(
@@ -231,6 +236,109 @@ function testLeaderboardRanking() {
   );
 }
 
+function testPrizeDisabledLayer() {
+  assert.deepEqual(getPrizeConfig({ PRIZES_ENABLED: "false" }).payouts, []);
+  assert.equal(getPrizeConfig({ PRIZES_ENABLED: "false" }).enabled, false);
+  assert.deepEqual(
+    getPrizeConfig({
+      PRIZES_ENABLED: "true",
+      PRIZE_PAYOUTS_JSON:
+        '[{"rank":1,"amountCents":10000},{"rank":2,"amountCents":5000}]'
+    }),
+    {
+      enabled: true,
+      payouts: [
+        { amountCents: 10000, currency: "USD", rank: 1 },
+        { amountCents: 5000, currency: "USD", rank: 2 }
+      ]
+    }
+  );
+
+  assert.deepEqual(
+    getPrizeEligibility({
+      contestPrizeEnabled: false,
+      entryStatus: "FINALIZED",
+      globalPrizesEnabled: false,
+      hasWcaIdentity: true,
+      pickCount: 10,
+      requiredPicks: 10
+    }),
+    {
+      eligible: false,
+      reasons: ["PRIZES_DISABLED", "CONTEST_PRIZES_DISABLED"]
+    }
+  );
+
+  assert.deepEqual(
+    getPrizeEligibility({
+      contestPrizeEnabled: true,
+      entryStatus: "FINALIZED",
+      globalPrizesEnabled: true,
+      hasWcaIdentity: true,
+      pickCount: 10,
+      requiredPicks: 10
+    }),
+    {
+      eligible: true,
+      reasons: []
+    }
+  );
+
+  assert.deepEqual(
+    getPrizeEligibility({
+      contestPrizeEnabled: true,
+      entryStatus: "FINALIZED",
+      globalPrizesEnabled: true,
+      hasWcaIdentity: true,
+      isParticipantRestricted: true,
+      pickCount: 10,
+      requiredPicks: 10
+    }),
+    {
+      eligible: false,
+      reasons: ["PARTICIPANT_RESTRICTED"]
+    }
+  );
+
+  assert.deepEqual(
+    planPrizeAwards({
+      leaderboardEntries: [
+        { entryId: "entry-b", isSharedRank: true, rank: 1, userId: "user-b" },
+        { entryId: "entry-a", isSharedRank: true, rank: 1, userId: "user-a" },
+        { entryId: "entry-c", isSharedRank: false, rank: 3, userId: "user-c" }
+      ],
+      payouts: [
+        { amountCents: 10000, rank: 1 },
+        { amountCents: 5000, rank: 2 },
+        { amountCents: 2500, rank: 3 }
+      ]
+    }),
+    [
+      {
+        amountCents: 7500,
+        currency: "USD",
+        entryId: "entry-a",
+        rank: 1,
+        userId: "user-a"
+      },
+      {
+        amountCents: 7500,
+        currency: "USD",
+        entryId: "entry-b",
+        rank: 1,
+        userId: "user-b"
+      },
+      {
+        amountCents: 2500,
+        currency: "USD",
+        entryId: "entry-c",
+        rank: 3,
+        userId: "user-c"
+      }
+    ]
+  );
+}
+
 function main() {
   testScoring();
   testEntryRules();
@@ -239,6 +347,7 @@ function main() {
   testPlacementSettlement();
   testPerformanceSettlement();
   testLeaderboardRanking();
+  testPrizeDisabledLayer();
   console.log("V1 game rule tests passed.");
 }
 

@@ -223,9 +223,13 @@ Status: complete.
 
 ### Phase 9: Prize-Ready Disabled Layer
 
-- Add prize config and payout records behind `PRIZES_ENABLED=false`.
-- Add eligibility hooks.
-- Do not expose prizes in gameplay until explicitly enabled.
+Status: complete.
+
+- Added `PRIZES_ENABLED=false` and optional `PRIZE_PAYOUTS_JSON` documentation.
+- Added prize configuration parsing.
+- Added eligibility hooks for global flag, contest flag, finalized entry state, valid 10-pick entry, WCA identity, and participant restriction.
+- Added deterministic tied-rank award planning with pooled prize positions.
+- Kept prize behavior out of gameplay while disabled.
 
 ## Implementation Notes
 
@@ -252,3 +256,4 @@ Add deterministic tests before relying on each rule:
 - placement final-round semantics
 - performance threshold semantics
 - WCA later correction does not alter an already-settled snapshot
+- prize disabled state, eligibility reasons, and tied-rank award planning
