@@ -34,11 +34,11 @@ Use WCA sign-in for local testing. After the first sign-in, promote your user to
 - Sign in and add, change, or remove picks before lock.
 - Open `/picks` to review selected markets, probabilities, and score swing.
 - Configure WCA OAuth and sign in with WCA for production-like identity.
-- As admin, open `/admin` to configure diversity caps and publish generated markets.
-- As admin, use the Contest Lifecycle panel to refresh lock status and review entry/market counts.
+- As admin, open `/admin` to choose competitions, generate markets, review 25 selections, and publish the contest.
+- Active contests show entry counts and settlement progress; pick deadlines are enforced server-side.
 - WCA result evidence is fetched automatically every 15 minutes for started competitions with unsettled public contest markets.
 - As admin, open `/admin` and use the Settlement Queue to review evidence counts, attach a WCA result row or manual source note, and resolve, void, or mark an exact tie.
-- As admin, review finalized contest totals and top official entries in the Finalized Contest Review panel.
+- Complete contests show final scores and settlement evidence; historical contests remain accessible below.
 - Open `/leaderboard` to see valid 10-pick entries ranked by contest score.
 
 The server enforces sign-in, contest status, lock time, market membership, option membership, and the max-10-picks rule.
@@ -57,6 +57,20 @@ Settlement stores snapshot evidence and admin audit records. A background monito
 8. Confirm `/leaderboard` updates after valid 10-pick entries have settled predictions.
 
 ## Local MVP Target
+
+## Admin Contest Workflow Check
+
+1. Open /admin. The header shows contest dates and Draft, Active, or Complete status.
+2. In a Draft, generate competition suggestions, select three, and generate markets. Existing drafts retain their previously selected competitions and markets.
+3. Select exactly 25 markets spanning all three competitions, review dates and lock time, and publish the contest.
+4. Confirm the contest becomes Active and Home, My Picks, and Leaderboard follow it.
+5. Active contests show complete entries, settled market progress, selection open/locked status, and competition progress.
+6. Prepare next contest creates a separate private draft for the following window. It cannot be published before the previous picks lock or with overlapping competition windows.
+7. Once published, the next contest becomes current. The previous contest remains in history for delayed result settlement; user entries remain accessible through Other contest entries on My Picks.
+8. Resolve or void every public market after lock to reach Complete. Unselected candidates do not block finalization.
+9. Expand historical contests to inspect featured competition progress, results, and leaderboards. Completed contests expose immutable settlement evidence.
+
+## Player Test Target
 
 Local data should come from WCA login, WCA competition recommendations, generated markets, user picks, settlement snapshots, and leaderboard results. The app no longer ships fake seeded contests or fake seeded markets.
 

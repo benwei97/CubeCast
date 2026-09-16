@@ -16,6 +16,7 @@ import {
   rankLeaderboardEntries,
   type PredictionScoreResult
 } from "@/lib/v1-game";
+import { lockContestIfDue } from "@/lib/contest-maintenance";
 
 type TransactionClient = Omit<
   PrismaClient,
@@ -116,7 +117,9 @@ async function settleV1Market({
         predictions: true,
         slate: {
           select: {
-            id: true
+            id: true,
+            lockAt: true,
+            status: true
           }
         }
       }
@@ -125,6 +128,17 @@ async function settleV1Market({
     if (!market?.slateId || !market.slate) {
       throw new Error("Only contest markets can be settled here.");
     }
+
+    if (
+      market.slate.lockAt > new Date() ||
+      !["OPEN", "LOCKED", "SETTLING"].includes(market.slate.status)
+    ) {
+      throw new Error("Only locked active contests can be settled.");
+    }
+    if (["DRAFT", "CANCELED"].includes(market.status)) {
+      throw new Error("Only published markets can be settled.");
+    }
+    await lockContestIfDue(tx, market.slateId);
 
     if (
       market.status === MarketStatus.RESOLVED ||
@@ -146,7 +160,9 @@ async function settleV1Market({
     }
 
     const nextMarketStatus = isVoid ? MarketStatus.VOID : MarketStatus.RESOLVED;
-    const settlementStatus = isVoid ? SettlementStatus.VOID : SettlementStatus.RESOLVED;
+    const settlementStatus = isVoid
+      ? SettlementStatus.VOID
+      : SettlementStatus.RESOLVED;
     const settledAt = new Date();
     const observedPublicationAt =
       getObservedPublicationAt(sourceEvidence) ?? settledAt;
@@ -156,7 +172,7 @@ async function settleV1Market({
       data: {
         resolvedAt: settledAt,
         status: nextMarketStatus,
-        voidReason: isVoid ? sourceNote ?? "Voided by admin." : null
+        voidReason: isVoid ? (sourceNote ?? "Voided by admin.") : null
       }
     });
 
@@ -176,7 +192,8 @@ async function settleV1Market({
           winningMarketOptionId: winningOption?.id ?? null,
           winningMarketOptionLabel: winningOption?.label ?? null
         },
-        sourceCompetitionId: sourceEvidence?.wcaCompetitionId ?? market.competitionId,
+        sourceCompetitionId:
+          sourceEvidence?.wcaCompetitionId ?? market.competitionId,
         sourceEventId: sourceEvidence?.eventId ?? market.eventId,
         sourcePersonId: sourceEvidence?.personId ?? null,
         sourceRoundId: sourceEvidence?.roundId ?? null,
@@ -287,6 +304,7 @@ export async function refreshV1SlateScores(
         }
       },
       markets: {
+        where: { publishedAt: { not: null } },
         select: {
           id: true,
           status: true
@@ -344,7 +362,9 @@ export async function refreshV1SlateScores(
     const hardestCorrectProbability =
       correctPredictions.length > 0
         ? Math.min(
-            ...correctPredictions.map((prediction) => prediction.selectedProbability)
+            ...correctPredictions.map(
+              (prediction) => prediction.selectedProbability
+            )
           )
         : null;
     const nextEntryStatus = isSlateTerminal

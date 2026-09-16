@@ -1,45 +1,75 @@
 import Link from "next/link";
-import { UserRole } from "@prisma/client";
-
+import { Prisma, UserRole } from "@prisma/client";
 import { auth } from "@/auth";
+import { AdminCompetitionSelector } from "@/components/admin-competition-selector";
 import { AdminMarketPublisher } from "@/components/admin-market-publisher";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
+import {
+  CURRENT_CONTEST_ORDER,
+  PUBLIC_CONTEST_WHERE,
+  getContestDisplayStatus
+} from "@/lib/contest-workflow";
+import { asMetadata } from "@/lib/wca-result-snapshot";
 import { prisma } from "@/lib/prisma";
 import {
   generateWeeklyRecommendedContest,
-  refreshContestLifecycle,
+  prepareNextContest,
   settleV1Market,
   settleV1MarketAsTie,
-  updateSlateDiversityConfig,
   voidV1MarketAction
 } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+const contestInclude = {
+  competitions: {
+    include: { competition: true },
+    orderBy: { createdAt: "asc" as const }
+  },
+  entries: {
+    select: { status: true, _count: { select: { predictions: true } } }
+  },
+  markets: {
+    include: {
+      competition: {
+        select: { name: true, sourceMetadata: true, wcaCompetitionId: true }
+      },
+      options: { orderBy: { displayOrder: "asc" as const } },
+      _count: { select: { predictions: true } },
+      settlementSnapshots: true
+    },
+    orderBy: { createdAt: "asc" as const }
+  },
+  leaderboardEntries: {
+    include: {
+      user: {
+        select: { username: true, wcaIdentity: { select: { name: true } } }
+      }
+    },
+    orderBy: { rank: "asc" as const },
+    take: 10
+  }
+} satisfies Prisma.ContestSlateInclude;
+
 export default async function AdminPage({
   searchParams
 }: {
   searchParams: Promise<{
-    competition?: string;
-    lifecycle?: string;
-    market?: string;
+    contest?: string;
+    wca?: string;
     v1Market?: string;
     v1Settlement?: string;
-    v1Slate?: string;
-    wca?: string;
+    publishError?: string;
   }>;
 }) {
   const session = await auth();
   const params = await searchParams;
-
   if (!session?.user || session.user.role !== UserRole.ADMIN) {
     return (
       <div className="auth-page">
         <section className="auth-panel">
-          <p className="eyebrow">Admin</p>
-          <h1>Sign in</h1>
-          <p>Admin access is required to create competitions and markets.</p>
+          <h1>Admin sign in</h1>
           <Link className="button-link" href="/sign-in">
             Sign in
           </Link>
@@ -47,567 +77,675 @@ export default async function AdminPage({
       </div>
     );
   }
-
   await maintainContestLockState();
-
-  const [
-    activeSlate,
-    manageableSlate,
-    slates,
-    finalizedSlate
-  ] =
-    await Promise.all([
-      prisma.contestSlate.findFirst({
-        where: {
-          status: { in: ["OPEN", "LOCKED", "SETTLING"] }
-        },
-        orderBy: { lockAt: "asc" },
-        include: {
-          entries: {
-            select: {
-              status: true
-            }
-          },
-          markets: {
-            where: {
-              status: { in: ["OPEN", "LOCKED", "PENDING_RESULT"] }
-            },
-            include: {
-              competition: {
-                select: {
-                  name: true,
-                  sourceMetadata: true,
-                  wcaCompetitionId: true
-                }
-              },
-              options: {
-                orderBy: { displayOrder: "asc" }
-              },
-              _count: {
-                select: { predictions: true }
-              }
-            },
-            orderBy: [{ competition: { startDate: "asc" } }, { createdAt: "asc" }]
-          }
-        }
-      }),
+  const [current, draft, history] = await Promise.all([
     prisma.contestSlate.findFirst({
+      where: PUBLIC_CONTEST_WHERE,
+      orderBy: CURRENT_CONTEST_ORDER,
+      select: { id: true, endsAt: true }
+    }),
+    prisma.contestSlate.findFirst({
+      where: { status: "DRAFT" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, startsAt: true }
+    }),
+    prisma.contestSlate.findMany({
+      where: PUBLIC_CONTEST_WHERE,
+      orderBy: CURRENT_CONTEST_ORDER,
+      take: 16,
+      include: {
+        competitions: { include: { competition: true } },
+        markets: {
+          where: { publishedAt: { not: null } },
+          select: { competitionId: true, status: true }
+        }
+      }
+    })
+  ]);
+  const selectedId = params.contest ?? current?.id ?? draft?.id;
+  const contest = selectedId
+    ? await prisma.contestSlate.findUnique({
+        where: { id: selectedId },
+        include: contestInclude
+      })
+    : null;
+  const isDraft = contest?.status === "DRAFT";
+  const isComplete = contest?.status === "FINALIZED";
+  const now = new Date();
+  const preparation = asMetadata(contest?.preparation);
+  const candidateIds = Array.isArray(preparation.candidateIds)
+    ? preparation.candidateIds.filter(
+        (id): id is string => typeof id === "string"
+      )
+    : [];
+  const candidates = isDraft
+    ? await prisma.competition.findMany({
         where: {
-          status: { in: ["DRAFT", "OPEN"] }
-        },
-        orderBy: [{ status: "asc" }, { lockAt: "asc" }, { createdAt: "desc" }],
-        include: {
-          competitions: {
-            include: {
-              competition: true
-            },
-            orderBy: { createdAt: "asc" }
-          },
-          markets: {
-            include: {
-              competition: {
-                select: { name: true }
-              },
-              options: {
-                orderBy: { displayOrder: "asc" }
-              }
-            },
-            orderBy: [{ status: "asc" }, { createdAt: "desc" }]
-          }
-        }
-      }),
-      prisma.contestSlate.findMany({
-        orderBy: [{ lockAt: "desc" }],
-        take: 8,
-        include: {
-          _count: {
-            select: {
-              competitions: true,
-              markets: true
-            }
-          }
-        }
-      }),
-      prisma.contestSlate.findFirst({
-        where: { status: "FINALIZED" },
-        orderBy: [{ finalizedAt: "desc" }, { lockAt: "desc" }],
-        include: {
-          leaderboardEntries: {
-            include: {
-              user: {
-                select: {
-                  username: true,
-                  wcaIdentity: {
-                    select: {
-                      name: true,
-                      wcaId: true
-                    }
-                  }
-                }
-              }
-            },
-            orderBy: [{ rank: "asc" }, { finalScore: "desc" }],
-            take: 5
-          },
-          markets: {
-            select: {
-              status: true
-            }
+          id: {
+            in: candidateIds.length
+              ? candidateIds
+              : contest.competitions.map((row) => row.competitionId)
           }
         }
       })
-    ]);
-  const diversityConfig = getDiversityConfig(manageableSlate?.diversityConfig);
-  const lifecycleStats = getLifecycleStats(activeSlate);
-  const finalizedStats = getFinalizedStats(finalizedSlate);
+    : [];
+  candidates.sort(
+    (a, b) => candidateIds.indexOf(a.id) - candidateIds.indexOf(b.id)
+  );
+  const publicMarkets =
+    contest?.markets.filter((market) => market.publishedAt !== null) ?? [];
+  const pendingMarkets = publicMarkets.filter(
+    (market) => !["RESOLVED", "VOID", "CANCELED"].includes(market.status)
+  );
+  const windowStart =
+    contest &&
+    isDraft &&
+    !contest.competitions.length &&
+    typeof preparation.windowStart === "string"
+      ? new Date(preparation.windowStart)
+      : contest?.startsAt;
+  const windowEnd =
+    contest &&
+    isDraft &&
+    !contest.competitions.length &&
+    typeof preparation.windowEnd === "string"
+      ? new Date(preparation.windowEnd)
+      : contest?.endsAt;
+  const windowLabel =
+    windowStart && windowEnd
+      ? `${formatWindowDate(windowStart)} – ${formatWindowDate(windowEnd)}`
+      : "Upcoming contest";
+  const preview = (competition: (typeof candidates)[number]) => ({
+    id: competition.id,
+    name: competition.name,
+    location: `${competition.location} · ${competition.country}`,
+    startDate: formatWindowDate(competition.startDate),
+    endDate: formatWindowDate(competition.endDate),
+    wcaCompetitionId: competition.wcaCompetitionId,
+    ...getCompetitionPreview(competition.sourceMetadata)
+  });
+  const hasMarkets = Boolean(contest?.markets.length);
+  const hasPreviouslyPublished = Boolean(
+    isDraft && contest?.markets.some((market) => market.publishedAt !== null)
+  );
+  const completeEntries =
+    contest?.entries.filter(
+      (entry) =>
+        entry.status !== "INVALID" &&
+        entry._count.predictions === contest.maxPicks
+    ).length ?? 0;
+  const pastContests = history.filter((item) => item.id !== current?.id);
 
   return (
-    <div className="page-stack">
+    <div className="page-stack admin-workspace">
       <section className="admin-contest-heading">
         <div>
-          <h1>Contest Manager</h1>
-          <p>{manageableSlate?.title ?? "Upcoming contest"}</p>
-          {manageableSlate && (
-            <small>{manageableSlate.status === "DRAFT" ? "Draft" : "Open"} · Picks lock {manageableSlate.lockAt.toLocaleString()}</small>
+          <h1>{windowLabel}</h1>
+          <p>{contest?.title ?? "Contest Manager"}</p>
+          {contest && (
+            <div className="admin-contest-state">
+              <span
+                className={`admin-status admin-status-${getContestDisplayStatus(contest.status).toLowerCase()}`}
+              >
+                {getContestDisplayStatus(contest.status)}
+              </span>
+              <small>
+                {isDraft
+                  ? "Not public"
+                  : isComplete
+                    ? "Final results"
+                    : now < contest.lockAt
+                      ? "Selections open"
+                      : "Selections locked"}
+              </small>
+            </div>
+          )}
+          {contest && (contest.competitions.length > 0 || !isDraft) && (
+            <small>Picks lock {contest.lockAt.toLocaleString()}</small>
           )}
         </div>
-        <form action={generateWeeklyRecommendedContest}>
-          <PendingSubmitButton className={manageableSlate ? "secondary-button" : undefined} pendingLabel="Generating...">
-            {manageableSlate ? "Regenerate recommendations" : "Generate contest"}
-          </PendingSubmitButton>
-        </form>
-      </section>
-        {params.wca?.startsWith("invalid") && (
-          <p className="form-error">Check the WCA fields.</p>
-        )}
-        {params.wca === "missing-dates" && (
-          <p className="form-error">
-            WCA did not return usable start and end dates for that competition.
-          </p>
-        )}
-        {params.wca === "missing-wca-id" && (
-          <p className="form-error">
-            Choose a competition that has a WCA competition ID.
-          </p>
-        )}
-        {params.wca === "no-recommendations" && (
-          <p className="form-error">
-            CubeCast could not find upcoming WCA competitions with usable public
-            registration data for the next week.
-          </p>
-        )}
-        {params.wca === "recommendations-generated" && (
-          <p className="form-success">
-            Generated a draft contest with recommended competitions and draft
-            markets. Review the markets before publishing.
-          </p>
-        )}
-
-      {params.v1Market === "published" && (
-        <p className="form-success" role="status">Selected markets are now public.</p>
-      )}
-      {!manageableSlate && (
-        <p className="empty-state">No contest is ready for market selection.</p>
-      )}
-      {manageableSlate && (
-        <section>
-          <div className="section-heading">
-            <h2>Select Markets</h2>
-          </div>
-          <AdminMarketPublisher
-            competitions={manageableSlate.competitions.map(({ competition }) => ({
-              name: competition.name,
-              location: `${competition.location} · ${competition.country}`,
-              startDate: competition.startDate.toLocaleDateString(),
-              endDate: competition.endDate.toLocaleDateString(),
-              wcaCompetitionId: competition.wcaCompetitionId,
-              ...getCompetitionPreview(competition.sourceMetadata)
-            }))}
-            markets={manageableSlate.markets.map((market) => ({
-              competitionName: market.competition.name,
-              eventName: market.eventName ?? market.eventId ?? "Event",
-              id: market.id,
-              options: market.options.map((option) => ({
-                id: option.id,
-                label: option.label,
-                probability: option.probability
-              })),
-              question: market.question,
-              status: market.status
-            }))}
-          />
-        </section>
-      )}
-      <div className="admin-operations">
-      <details className="admin-secondary" open={Boolean(params.v1Settlement)}>
-        <summary>Results & settlement</summary>
-      <section>
-        <div className="section-heading">
-          <h2>Settlement Queue</h2>
-          <span>
-            {activeSlate
-              ? `${activeSlate.markets.length.toLocaleString()} open markets`
-              : "No active contest"}
-          </span>
-        </div>
-        {params.v1Settlement === "invalid" && (
-          <p className="form-error">Check the settlement fields.</p>
-        )}
-        {params.v1Settlement === "resolved" && (
-          <p className="form-success">
-            Market resolved. Scores, snapshots, and leaderboard cache were updated.
-          </p>
-        )}
-        {params.v1Settlement === "tie" && (
-          <p className="form-success">
-            Exact tie recorded. Both sides received the half-win score change.
-          </p>
-        )}
-        {params.v1Settlement === "void" && (
-          <p className="form-success">
-            Market voided. Selected predictions on that market now score 0.
-          </p>
-        )}
-        {activeSlate && activeSlate.markets.length > 0 ? (
-          <div className="v1-settlement-list">
-            {activeSlate.markets.map((market) => {
-              const evidenceRows = getMarketWCAEvidenceRows(market);
-              const evidenceSummary =
-                evidenceRows.length > 0
-                  ? `${evidenceRows.length.toLocaleString()} matching WCA rows`
-                  : "Manual evidence needed";
-
-              return (
-                <article className="v1-settlement-row" key={market.id}>
-                  <div className="v1-settlement-main">
-                    <span>
-                      {market.competition.name} ·{" "}
-                      {market.eventName ?? market.eventId}
-                    </span>
-                    <strong>{market.question}</strong>
-                    <small>
-                      {market.category} · {market._count.predictions} picks ·{" "}
-                      {market.status}
-                    </small>
-                    <div className="settlement-status-row">
-                      <span>{evidenceSummary}</span>
-                      <span>
-                        {market.status === "PENDING_RESULT"
-                          ? "Awaiting result"
-                          : "Ready to review"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="wca-evidence-panel">
-                    <strong>WCA evidence</strong>
-                    {evidenceRows.length > 0 ? (
-                      <>
-                        <small>
-                          Choose the official result row that supports the selected
-                          outcome.
-                        </small>
-                        <div className="wca-evidence-list">
-                          {evidenceRows.slice(0, 6).map((row) => (
-                            <span key={row.id}>{row.label}</span>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <small>
-                        No matching imported WCA result rows. Results are checked automatically. Enter a WCA result URL and note
-                        before settling manually.
-                      </small>
-                    )}
-                  </div>
-
-                  <form action={settleV1Market} className="resolution-choice-form">
-                    <input name="marketId" type="hidden" value={market.id} />
-                    <select
-                      aria-label={`Winning outcome for ${market.question}`}
-                      name="winningMarketOptionId"
-                      required
-                    >
-                      {market.options.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label} ({option.probability}%)
-                        </option>
-                      ))}
-                    </select>
-                    <select aria-label="WCA evidence row" name="sourceEvidence">
-                      <option value="">Manual evidence or no matched row</option>
-                      {evidenceRows.map((row) => (
-                        <option key={row.id} value={row.value}>
-                          Store evidence: {row.label}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      aria-label="Source URL"
-                      name="sourceUrl"
-                      placeholder="WCA result URL"
-                      type="url"
-                    />
-                    <input
-                      aria-label="Settlement note"
-                      name="sourceNote"
-                      placeholder="Result note"
-                    />
-                    <PendingSubmitButton pendingLabel="Resolving...">
-                      Resolve
-                    </PendingSubmitButton>
-                  </form>
-
-                  <div className="resolution-actions">
-                    <form action={settleV1MarketAsTie}>
-                      <input name="marketId" type="hidden" value={market.id} />
-                      <input
-                        name="reason"
-                        type="hidden"
-                        value="Exact official tie."
-                      />
-                      <PendingSubmitButton
-                        className="secondary-button"
-                        pendingLabel="Settling..."
-                      >
-                        Exact tie
-                      </PendingSubmitButton>
-                    </form>
-                    <form action={voidV1MarketAction}>
-                      <input name="marketId" type="hidden" value={market.id} />
-                      <input
-                        name="reason"
-                        type="hidden"
-                        value="Competitor did not participate or market cannot be settled from official result."
-                      />
-                      <PendingSubmitButton
-                        className="secondary-button"
-                        pendingLabel="Voiding..."
-                      >
-                        Void
-                      </PendingSubmitButton>
-                    </form>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="empty-state">No markets currently need settlement.</p>
-        )}
-      </section>
-
-
-      </details>
-
-      <details className="admin-secondary" open={Boolean(params.lifecycle)}>
-        <summary>Contest status</summary>
-      <section className="admin-form-panel">
-        <div className="section-heading">
-          <h2>Contest Lifecycle</h2>
-          <span>
-            {activeSlate
-              ? `${activeSlate.status} · Locks ${activeSlate.lockAt.toLocaleString()}`
-              : "No active contest"}
-          </span>
-        </div>
-        {params.lifecycle === "refreshed" && (
-          <p className="form-success">Contest lifecycle status refreshed.</p>
-        )}
-        <div className="summary-grid">
-          <article className="summary-card">
-            <span>Contest</span>
-            <strong>{activeSlate?.status ?? "None"}</strong>
-            <small>{activeSlate?.title ?? "Create or open a contest"}</small>
-          </article>
-          <article className="summary-card">
-            <span>Entries</span>
-            <strong>{lifecycleStats.totalEntries.toLocaleString()}</strong>
-            <small>
-              {lifecycleStats.lockedEntries.toLocaleString()} locked ·{" "}
-              {lifecycleStats.invalidEntries.toLocaleString()} invalid
-            </small>
-          </article>
-          <article className="summary-card">
-            <span>Markets</span>
-            <strong>{lifecycleStats.totalMarkets.toLocaleString()}</strong>
-            <small>
-              {lifecycleStats.lockedMarkets.toLocaleString()} locked ·{" "}
-              {lifecycleStats.pendingMarkets.toLocaleString()} pending
-            </small>
-          </article>
-          <article className="summary-card">
-            <span>Next action</span>
-            <strong>{lifecycleStats.nextAction}</strong>
-            <small>{lifecycleStats.nextActionDetail}</small>
-          </article>
-        </div>
-        <form action={refreshContestLifecycle} className="inline-form">
-          <PendingSubmitButton
-            className="secondary-button"
-            pendingLabel="Refreshing..."
-          >
-            Refresh lifecycle status
-          </PendingSubmitButton>
-        </form>
-      </section>
-
-
-      </details>
-
-      {manageableSlate && (
-      <details className="admin-secondary">
-        <summary>Generation settings</summary>
-            <form action={updateSlateDiversityConfig} className="admin-form">
-              <h3>Diversity Caps</h3>
-              <input name="slateId" type="hidden" value={manageableSlate.id} />
-              <div className="form-grid">
-                <div>
-                  <label htmlFor="maxPerCompetition">Per competition</label>
-                  <input
-                    id="maxPerCompetition"
-                    min="1"
-                    name="maxPerCompetition"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerCompetition}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="maxPerCompetitor">Per competitor</label>
-                  <input
-                    id="maxPerCompetitor"
-                    min="1"
-                    name="maxPerCompetitor"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerCompetitor}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="maxPerEvent">Per event</label>
-                  <input
-                    id="maxPerEvent"
-                    min="1"
-                    name="maxPerEvent"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerEvent}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="maxPerMarketType">Per market type</label>
-                  <input
-                    id="maxPerMarketType"
-                    min="1"
-                    name="maxPerMarketType"
-                    type="number"
-                    defaultValue={diversityConfig.maxPerMarketType}
-                  />
-                </div>
-              </div>
+        <div className="admin-contest-navigation">
+          {current && contest?.id !== current.id && (
+            <Link className="secondary-button button-link" href="/admin">
+              Current contest
+            </Link>
+          )}
+          {current && !isDraft && (
+            <form action={prepareNextContest}>
               <PendingSubmitButton
                 className="secondary-button"
-                pendingLabel="Saving caps..."
+                pendingLabel="Opening draft..."
               >
-                Save caps
+                {draft && draft.startsAt > current.endsAt
+                  ? "Continue next draft"
+                  : "Prepare next contest"}
               </PendingSubmitButton>
             </form>
-      </details>
-
-      )}
-      <details className="admin-secondary">
-        <summary>Past contests</summary>
-      <section className="admin-form-panel">
-        <div className="section-heading">
-          <h2>Contest Review</h2>
-          <span>{slates.length.toLocaleString()} recent contests</span>
-        </div>
-        <div className="admin-slate-list">
-          {slates.map((slate) => (
-            <article key={slate.id}>
-              <div>
-                <strong>{slate.title}</strong>
-                <span>
-                  {slate.status} · {slate._count.competitions} competitions ·{" "}
-                  {slate._count.markets} markets
-                </span>
-              </div>
-              <small>Locks {slate.lockAt.toLocaleString()}</small>
-            </article>
-          ))}
+          )}
         </div>
       </section>
 
-      <section className="admin-form-panel">
-        <div className="section-heading">
-          <h2>Finalized Contest Review</h2>
-          <span>
-            {finalizedSlate?.finalizedAt
-              ? `Finalized ${finalizedSlate.finalizedAt.toLocaleString()}`
-              : "No finalized contests"}
-          </span>
-        </div>
-        <div className="summary-grid">
-          <article className="summary-card">
-            <span>Contest</span>
-            <strong>{finalizedSlate ? "FINALIZED" : "None"}</strong>
-            <small>{finalizedSlate?.title ?? "Settle all markets to finalize"}</small>
-          </article>
-          <article className="summary-card">
-            <span>Official entries</span>
-            <strong>{finalizedSlate?.leaderboardEntries.length ?? 0}</strong>
-            <small>Leaderboard entries cached</small>
-          </article>
-          <article className="summary-card">
-            <span>Markets</span>
-            <strong>{finalizedStats.terminalMarkets.toLocaleString()}</strong>
-            <small>
-              {finalizedStats.resolvedMarkets.toLocaleString()} resolved ·{" "}
-              {finalizedStats.voidMarkets.toLocaleString()} void
-            </small>
-          </article>
-          <article className="summary-card">
-            <span>Winner</span>
-            <strong>{finalizedStats.winnerScore}</strong>
-            <small>{finalizedStats.winnerName}</small>
-          </article>
-        </div>
-        {finalizedSlate && finalizedSlate.leaderboardEntries.length > 0 ? (
-          <div className="leaderboard-table compact-admin-table">
-            <div className="leaderboard-header v1-leaderboard-header">
-              <span>Rank</span>
-              <span>User</span>
-              <span>Score</span>
-              <span>Correct</span>
-              <span>Hardest correct</span>
-              <span>Tie</span>
+      {params.publishError && (
+        <p className="form-error" role="alert">
+          {params.publishError}
+        </p>
+      )}
+      {params.v1Market === "published" && (
+        <p className="form-success" role="status">
+          Contest published. Players can now choose their picks.
+        </p>
+      )}
+      {params.wca === "unavailable" && (
+        <p className="form-error" role="alert">
+          Competition or probability data is temporarily unavailable. Your saved
+          draft is unchanged. Try again.
+        </p>
+      )}
+      {params.wca === "no-recommendations" && (
+        <p className="form-error" role="alert">
+          Fewer than three eligible upcoming competitions were found in this
+          window.
+        </p>
+      )}
+      {params.wca === "deadline-passed" && (
+        <p className="form-error" role="alert">
+          The selected competitions&apos; pick deadline has passed. Choose
+          upcoming competitions.
+        </p>
+      )}
+
+      {!contest && (
+        <form action={generateWeeklyRecommendedContest}>
+          <PendingSubmitButton pendingLabel="Finding competitions...">
+            Generate competitions
+          </PendingSubmitButton>
+        </form>
+      )}
+
+      {contest && isDraft && (
+        <>
+          <section className="admin-draft-step">
+            <div className="section-heading">
+              <h2>Choose competitions</h2>
+              {!hasPreviouslyPublished && (
+                <form action={generateWeeklyRecommendedContest}>
+                  <input name="contestId" type="hidden" value={contest.id} />
+                  <PendingSubmitButton
+                    className={
+                      candidates.length ? "secondary-button" : undefined
+                    }
+                    pendingLabel="Finding competitions..."
+                  >
+                    {candidates.length
+                      ? "Regenerate competitions"
+                      : "Generate competitions"}
+                  </PendingSubmitButton>
+                </form>
+              )}
             </div>
-            {finalizedSlate.leaderboardEntries.map((entry) => (
-              <article className="leaderboard-row v1-leaderboard-row" key={entry.id}>
-                <strong>#{entry.rank}</strong>
-                <span>{getAdminDisplayName(entry.user)}</span>
-                <strong>{entry.finalScore.toLocaleString()}</strong>
-                <span>{entry.correctCount.toLocaleString()}</span>
+            {hasPreviouslyPublished && (
+              <p>
+                Earlier published markets are retained in this release. Finish
+                selecting 25 markets to publish the contest.
+              </p>
+            )}
+            {!hasPreviouslyPublished && candidates.length > 0 && (
+              <details className="admin-step-details" open={!hasMarkets}>
+                <summary>
+                  {hasMarkets
+                    ? `${contest.competitions.length} competitions selected · Edit selection`
+                    : "Select three featured competitions"}
+                </summary>
+                <AdminCompetitionSelector
+                  key={contest.updatedAt.toISOString()}
+                  contestId={contest.id}
+                  competitions={candidates.map(preview)}
+                  selectedIds={contest.competitions.map(
+                    (row) => row.competitionId
+                  )}
+                  hasMarkets={hasMarkets}
+                />
+              </details>
+            )}
+          </section>
+          {hasMarkets && (
+            <section>
+              <h2>Choose markets</h2>
+              {contest.markets.length < 25 && (
+                <p className="form-error">
+                  Only {contest.markets.length} markets are available.
+                  Regenerate markets or choose different competitions to reach
+                  25.
+                </p>
+              )}
+              <AdminMarketPublisher
+                key={contest.updatedAt.toISOString()}
+                contestId={contest.id}
+                lockLabel={contest.lockAt.toLocaleString()}
+                windowLabel={windowLabel}
+                competitions={contest.competitions.map(({ competition }) =>
+                  preview(competition)
+                )}
+                markets={contest.markets.map((market) => ({
+                  competitionName: market.competition.name,
+                  eventName: market.eventName ?? market.eventId ?? "Event",
+                  id: market.id,
+                  question: market.question,
+                  status: market.status,
+                  options: market.options.map((option) => ({
+                    id: option.id,
+                    label: option.label,
+                    probability: option.probability
+                  }))
+                }))}
+              />
+            </section>
+          )}
+        </>
+      )}
+
+      {contest && !isDraft && (
+        <>
+          <section
+            className="admin-contest-stats"
+            aria-label="Contest statistics"
+          >
+            <div>
+              <span>Complete entries</span>
+              <strong>{completeEntries.toLocaleString()}</strong>
+            </div>
+            <div>
+              <span>Markets settled</span>
+              <strong>
+                {publicMarkets.length - pendingMarkets.length} /{" "}
+                {publicMarkets.length}
+              </strong>
+            </div>
+            <div>
+              <span>{isComplete ? "Winner" : "Pick status"}</span>
+              <strong>
+                {isComplete
+                  ? (contest.leaderboardEntries[0]?.user.wcaIdentity?.name ??
+                    contest.leaderboardEntries[0]?.user.username ??
+                    "No official entries")
+                  : now < contest.lockAt
+                    ? "Open"
+                    : "Locked"}
+              </strong>
+            </div>
+          </section>
+          <section>
+            <h2>Featured competitions</h2>
+            <div className="admin-competition-progress">
+              {contest.competitions.map(({ competition }) => {
+                const markets = publicMarkets.filter(
+                  (market) => market.competitionId === competition.id
+                );
+                const done =
+                  markets.length > 0 &&
+                  markets.every((market) =>
+                    ["RESOLVED", "VOID", "CANCELED"].includes(market.status)
+                  );
+                const metadata = asMetadata(competition.sourceMetadata);
+                const status = done
+                  ? "Done"
+                  : competition.startDate > now
+                    ? "Upcoming"
+                    : Number(metadata.resultCount) > 0
+                      ? "Results available"
+                      : "Awaiting WCA results";
+                return (
+                  <article key={competition.id}>
+                    <div>
+                      <strong>{competition.name}</strong>
+                      <small>
+                        {formatWindowDate(competition.startDate)} –{" "}
+                        {formatWindowDate(competition.endDate)}
+                      </small>
+                    </div>
+                    <span
+                      className={
+                        done
+                          ? "admin-status admin-status-complete"
+                          : "admin-progress-label"
+                      }
+                    >
+                      {status}
+                    </span>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+          <section>
+            <div className="section-heading">
+              <h2>Results & settlements</h2>
+              <Link href={`/leaderboard?contest=${contest.id}`}>
+                View leaderboard
+              </Link>
+            </div>
+            {isComplete ? (
+              <div className="admin-final-results">
+                {contest.leaderboardEntries.length ? (
+                  contest.leaderboardEntries.map((entry) => (
+                    <article key={entry.id}>
+                      <strong>
+                        #{entry.rank}{" "}
+                        {entry.user.wcaIdentity?.name ?? entry.user.username}
+                      </strong>
+                      <span>{entry.finalScore.toLocaleString()} points</span>
+                    </article>
+                  ))
+                ) : (
+                  <p className="empty-state">
+                    No official entries in this contest.
+                  </p>
+                )}
+                <details className="admin-secondary">
+                  <summary>Settled markets</summary>
+                  {publicMarkets.map((market) => (
+                    <details className="admin-settled-market" key={market.id}>
+                      <summary>
+                        {market.question} ·{" "}
+                        {market.status === "VOID" ? "Void" : "Resolved"}
+                      </summary>
+                      {market.settlementSnapshots.map((snapshot) => (
+                        <div key={snapshot.id}>
+                          <p>
+                            Rule {snapshot.ruleVersion} · Settled{" "}
+                            {snapshot.settledAt.toLocaleString()}
+                          </p>
+                          <p>
+                            Observed{" "}
+                            {snapshot.observedPublicationAt?.toLocaleString() ??
+                              "Not recorded"}
+                          </p>
+                          {snapshot.sourceUrl && (
+                            <a
+                              href={snapshot.sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              WCA source
+                            </a>
+                          )}
+                          <pre>
+                            {JSON.stringify(snapshot.snapshot, null, 2)}
+                          </pre>
+                        </div>
+                      ))}
+                    </details>
+                  ))}
+                </details>
+              </div>
+            ) : now < contest.lockAt ? (
+              <p className="empty-state">
+                Results will appear after competitions begin.
+              </p>
+            ) : (
+              <details
+                className="admin-secondary"
+                open={
+                  Boolean(params.v1Settlement) ||
+                  pendingMarkets.some(
+                    (market) => getMarketWCAEvidenceRows(market).length > 0
+                  )
+                }
+              >
+                <summary>
+                  Review unsettled markets ({pendingMarkets.length})
+                </summary>
+                <section>
+                  <div className="section-heading">
+                    <h2>Settlement Queue</h2>
+                    <span>
+                      {contest
+                        ? `${pendingMarkets.length} unsettled markets`
+                        : "No active contest"}
+                    </span>
+                  </div>
+                  {params.v1Settlement === "invalid" && (
+                    <p className="form-error">Check the settlement fields.</p>
+                  )}
+                  {params.v1Settlement === "resolved" && (
+                    <p className="form-success">
+                      Market resolved. Scores, snapshots, and leaderboard cache
+                      were updated.
+                    </p>
+                  )}
+                  {params.v1Settlement === "tie" && (
+                    <p className="form-success">
+                      Exact tie recorded. Both sides received the half-win score
+                      change.
+                    </p>
+                  )}
+                  {params.v1Settlement === "void" && (
+                    <p className="form-success">
+                      Market voided. Selected predictions on that market now
+                      score 0.
+                    </p>
+                  )}
+                  {pendingMarkets.length > 0 ? (
+                    <div className="v1-settlement-list">
+                      {pendingMarkets.map((market) => {
+                        const evidenceRows = getMarketWCAEvidenceRows(market);
+                        const evidenceSummary =
+                          evidenceRows.length > 0
+                            ? `${evidenceRows.length.toLocaleString()} matching WCA rows`
+                            : "Manual evidence needed";
+
+                        return (
+                          <article
+                            className="v1-settlement-row"
+                            key={market.id}
+                          >
+                            <div className="v1-settlement-main">
+                              <span>
+                                {market.competition.name} ·{" "}
+                                {market.eventName ?? market.eventId}
+                              </span>
+                              <strong>{market.question}</strong>
+                              <small>
+                                {market.category} · {market._count.predictions}{" "}
+                                picks · {market.status}
+                              </small>
+                              <div className="settlement-status-row">
+                                <span>{evidenceSummary}</span>
+                                <span>
+                                  {market.status === "PENDING_RESULT"
+                                    ? "Awaiting result"
+                                    : "Ready to review"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="wca-evidence-panel">
+                              <strong>WCA evidence</strong>
+                              {evidenceRows.length > 0 ? (
+                                <>
+                                  <small>
+                                    Choose the official result row that supports
+                                    the selected outcome.
+                                  </small>
+                                  <div className="wca-evidence-list">
+                                    {evidenceRows.slice(0, 6).map((row) => (
+                                      <span key={row.id}>{row.label}</span>
+                                    ))}
+                                  </div>
+                                </>
+                              ) : (
+                                <small>
+                                  No matching imported WCA result rows. Results
+                                  are checked automatically. Enter a WCA result
+                                  URL and note before settling manually.
+                                </small>
+                              )}
+                            </div>
+
+                            <form
+                              action={settleV1Market}
+                              className="resolution-choice-form"
+                            >
+                              <input
+                                name="marketId"
+                                type="hidden"
+                                value={market.id}
+                              />
+                              <select
+                                aria-label={`Winning outcome for ${market.question}`}
+                                name="winningMarketOptionId"
+                                required
+                              >
+                                {market.options.map((option) => (
+                                  <option key={option.id} value={option.id}>
+                                    {option.label} ({option.probability}%)
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                aria-label="WCA evidence row"
+                                name="sourceEvidence"
+                              >
+                                <option value="">
+                                  Manual evidence or no matched row
+                                </option>
+                                {evidenceRows.map((row) => (
+                                  <option key={row.id} value={row.value}>
+                                    Store evidence: {row.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                aria-label="Source URL"
+                                name="sourceUrl"
+                                placeholder="WCA result URL"
+                                type="url"
+                              />
+                              <input
+                                aria-label="Settlement note"
+                                name="sourceNote"
+                                placeholder="Result note"
+                              />
+                              <PendingSubmitButton pendingLabel="Resolving...">
+                                Resolve
+                              </PendingSubmitButton>
+                            </form>
+
+                            <div className="resolution-actions">
+                              <form action={settleV1MarketAsTie}>
+                                <input
+                                  name="marketId"
+                                  type="hidden"
+                                  value={market.id}
+                                />
+                                <input
+                                  name="reason"
+                                  type="hidden"
+                                  value="Exact official tie."
+                                />
+                                <PendingSubmitButton
+                                  className="secondary-button"
+                                  pendingLabel="Settling..."
+                                >
+                                  Exact tie
+                                </PendingSubmitButton>
+                              </form>
+                              <form action={voidV1MarketAction}>
+                                <input
+                                  name="marketId"
+                                  type="hidden"
+                                  value={market.id}
+                                />
+                                <input
+                                  name="reason"
+                                  type="hidden"
+                                  value="Competitor did not participate or market cannot be settled from official result."
+                                />
+                                <PendingSubmitButton
+                                  className="secondary-button"
+                                  pendingLabel="Voiding..."
+                                >
+                                  Void
+                                </PendingSubmitButton>
+                              </form>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="empty-state">
+                      No markets currently need settlement.
+                    </p>
+                  )}
+                </section>
+              </details>
+            )}
+          </section>
+        </>
+      )}
+
+      <section className="admin-history">
+        <h2>Past contests</h2>
+        {pastContests.length ? (
+          pastContests.map((item) => (
+            <details className="admin-secondary" key={item.id}>
+              <summary>
                 <span>
-                  {entry.hardestCorrectProbability === null
-                    ? "-"
-                    : `${entry.hardestCorrectProbability}%`}
+                  {formatWindowDate(item.startsAt)} –{" "}
+                  {formatWindowDate(item.endsAt)}
                 </span>
-                <span>{entry.isSharedRank ? "Shared" : "-"}</span>
-              </article>
-            ))}
-          </div>
+                <span
+                  className={`admin-status admin-status-${getContestDisplayStatus(item.status).toLowerCase()}`}
+                >
+                  {getContestDisplayStatus(item.status)}
+                </span>
+              </summary>
+              <div className="admin-competition-progress">
+                {item.competitions.map(({ competition }) => {
+                  const markets = item.markets.filter(
+                    (market) => market.competitionId === competition.id
+                  );
+                  const done =
+                    markets.length > 0 &&
+                    markets.every((market) =>
+                      ["RESOLVED", "VOID", "CANCELED"].includes(market.status)
+                    );
+                  return (
+                    <article key={competition.id}>
+                      <strong>{competition.name}</strong>
+                      <span>
+                        {done ? "Done" : "Awaiting results / settlement"}
+                      </span>
+                    </article>
+                  );
+                })}
+              </div>
+              <div className="admin-history-actions">
+                <Link href={`/admin?contest=${item.id}`}>
+                  View results & settlements
+                </Link>
+                <Link href={`/leaderboard?contest=${item.id}`}>
+                  Leaderboard
+                </Link>
+              </div>
+            </details>
+          ))
         ) : (
-          <p className="empty-state">
-            Finalized contests with official 10-pick entries will appear here.
-          </p>
+          <p className="empty-state">No past contests yet.</p>
         )}
       </section>
-
-
-      </details>
-
-      </div>
     </div>
   );
+}
+
+function formatWindowDate(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC"
+  });
 }
 
 function getCompetitionPreview(sourceMetadata: unknown) {
@@ -647,30 +785,6 @@ function getCompetitionPreview(sourceMetadata: unknown) {
     competitorLimit: getNumber(metadata?.competitorLimit),
     topRankedCompetitors
   };
-}
-
-function getDiversityConfig(value: unknown) {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    const config = value as Record<string, unknown>;
-
-    return {
-      maxPerCompetition: getConfigNumber(config.maxPerCompetition, 16),
-      maxPerCompetitor: getConfigNumber(config.maxPerCompetitor, 6),
-      maxPerEvent: getConfigNumber(config.maxPerEvent, 12),
-      maxPerMarketType: getConfigNumber(config.maxPerMarketType, 8)
-    };
-  }
-
-  return {
-    maxPerCompetition: 16,
-    maxPerCompetitor: 6,
-    maxPerEvent: 12,
-    maxPerMarketType: 8
-  };
-}
-
-function getConfigNumber(value: unknown, fallback: number) {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 type WCAEvidenceMarket = {
@@ -719,7 +833,8 @@ function getMarketWCAEvidenceRows(market: WCAEvidenceMarket) {
     )
     .filter((row): row is NonNullable<typeof row> => Boolean(row))
     .filter((row) => {
-      const eventMatches = !market.eventId || row.evidence.eventId === market.eventId;
+      const eventMatches =
+        !market.eventId || row.evidence.eventId === market.eventId;
       const competitorMatches =
         competitorIds.size === 0 ||
         (row.evidence.wcaId ? competitorIds.has(row.evidence.wcaId) : false);
@@ -800,133 +915,4 @@ function getString(value: unknown) {
 
 function getNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function getLifecycleStats(
-  contest: {
-    entries: { status: string }[];
-    lockAt: Date;
-    markets: { status: string }[];
-    status: string;
-  } | null
-) {
-  if (!contest) {
-    return {
-      invalidEntries: 0,
-      lockedEntries: 0,
-      lockedMarkets: 0,
-      nextAction: "Create contest",
-      nextActionDetail: "Open a contest before collecting picks",
-      pendingMarkets: 0,
-      totalEntries: 0,
-      totalMarkets: 0
-    };
-  }
-
-  const now = new Date();
-  const lockedEntries = contest.entries.filter(
-    (entry) => entry.status === "LOCKED" || entry.status === "FINALIZED"
-  ).length;
-  const invalidEntries = contest.entries.filter(
-    (entry) => entry.status === "INVALID"
-  ).length;
-  const lockedMarkets = contest.markets.filter(
-    (market) => market.status === "LOCKED"
-  ).length;
-  const pendingMarkets = contest.markets.filter(
-    (market) => market.status === "PENDING_RESULT"
-  ).length;
-  const baseStats = {
-    invalidEntries,
-    lockedEntries,
-    lockedMarkets,
-    pendingMarkets,
-    totalEntries: contest.entries.length,
-    totalMarkets: contest.markets.length
-  };
-
-  if (contest.status === "OPEN" && contest.lockAt > now) {
-    return {
-      ...baseStats,
-      nextAction: "Collect picks",
-      nextActionDetail: `Locks ${contest.lockAt.toLocaleString()}`
-    };
-  }
-
-  if (contest.status === "LOCKED") {
-    return {
-      ...baseStats,
-      nextAction: "Settle markets",
-      nextActionDetail: "Refresh WCA evidence and resolve results"
-    };
-  }
-
-  if (contest.status === "SETTLING") {
-    return {
-      ...baseStats,
-      nextAction: "Finish settlement",
-      nextActionDetail: "Resolve or void every remaining market"
-    };
-  }
-
-  return {
-    ...baseStats,
-    nextAction: "Review",
-    nextActionDetail: "Lifecycle status is up to date"
-  };
-}
-
-function getFinalizedStats(
-  contest: {
-    leaderboardEntries: {
-      finalScore: number;
-      user: {
-        username: string;
-        wcaIdentity: {
-          name: string;
-          wcaId: string | null;
-        } | null;
-      };
-    }[];
-    markets: { status: string }[];
-  } | null
-) {
-  if (!contest) {
-    return {
-      resolvedMarkets: 0,
-      terminalMarkets: 0,
-      voidMarkets: 0,
-      winnerName: "No finalized leaderboard",
-      winnerScore: "-"
-    };
-  }
-
-  const winner = contest.leaderboardEntries[0] ?? null;
-
-  return {
-    resolvedMarkets: contest.markets.filter((market) => market.status === "RESOLVED")
-      .length,
-    terminalMarkets: contest.markets.filter((market) =>
-      ["RESOLVED", "VOID", "CANCELED"].includes(market.status)
-    ).length,
-    voidMarkets: contest.markets.filter((market) => market.status === "VOID").length,
-    winnerName: winner ? getAdminDisplayName(winner.user) : "No official entries",
-    winnerScore: winner ? winner.finalScore.toLocaleString() : "-"
-  };
-}
-
-function getAdminDisplayName(user: {
-  username: string;
-  wcaIdentity: {
-    name: string;
-    wcaId: string | null;
-  } | null;
-}) {
-  if (user.wcaIdentity?.name) {
-    return user.wcaIdentity.wcaId
-      ? `${user.wcaIdentity.name} (${user.wcaIdentity.wcaId})`
-      : user.wcaIdentity.name;
-  }
-
-  return user.username;
 }

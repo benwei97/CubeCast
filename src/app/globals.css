@@ -1171,6 +1171,55 @@ footer {
 }
 
 .admin-contest-heading h1 { font-size: 28px; margin: 0 0 8px; }
+.admin-contest-state,
+.admin-contest-navigation,
+.admin-history-actions,
+.admin-selection-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.admin-contest-state { margin: 8px 0; }
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-status-draft { color: #a32030; background: #fff0f1; }
+.admin-status-active { color: #17623c; background: #e9f7ef; }
+.admin-status-complete,
+.admin-status-cancelled { color: #454b57; background: #edf0f4; }
+.admin-draft-step { border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+.admin-step-details > summary { cursor: pointer; padding: 12px 0; min-height: 44px; }
+.admin-step-details > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.admin-competition-selector { display: grid; gap: 20px; padding-top: 12px; }
+.admin-selection-heading { justify-content: space-between; }
+.admin-competition-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; }
+.admin-competition-option { padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); min-width: 0; }
+.admin-competition-option.is-selected { border-color: #73c49a; }
+.admin-competition-check { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; font-weight: 600; cursor: pointer; }
+.admin-competition-check input { width: 18px; height: 18px; margin: 2px 0 0; flex: 0 0 18px; accent-color: var(--yes); }
+.admin-contest-stats { display: flex; gap: 32px; flex-wrap: wrap; border-block: 1px solid var(--line); padding: 20px 0; }
+.admin-contest-stats > div { display: grid; gap: 6px; }
+.admin-contest-stats span { color: var(--muted); font-size: 13px; }
+.admin-contest-stats strong { font-size: 18px; }
+.admin-competition-progress article,
+.admin-final-results > article { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.admin-competition-progress article > div { display: grid; gap: 4px; }
+.admin-competition-progress small,
+.admin-progress-label { color: var(--muted); font-size: 13px; }
+.admin-history { border-top: 1px solid var(--line); padding-top: 24px; }
+.admin-history summary > span:first-child { margin-right: 12px; }
+.admin-history-actions { margin: 16px 0; }
+.admin-settled-market { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.admin-settled-market summary { cursor: pointer; overflow-wrap: anywhere; }
+.admin-settled-market pre { overflow: auto; max-width: 100%; font-size: 12px; background: var(--surface); padding: 12px; }
+.admin-workspace h2 { font-size: 20px; }
+.admin-workspace .section-heading { flex-wrap: wrap; gap: 12px; }
 .admin-contest-heading p { margin: 0 0 4px; }
 
 .admin-contest-heading small,

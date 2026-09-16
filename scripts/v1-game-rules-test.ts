@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { mergeFirstObservedResults } from "../src/lib/wca-result-snapshot";
+import { getContestDisplayStatus, getContestPublishError } from "../src/lib/contest-workflow";
 
 import {
   calculateEntryScore,
@@ -344,6 +345,25 @@ function testPrizeDisabledLayer() {
 }
 
 function main() {
+  assert.equal(getContestDisplayStatus("DRAFT"), "Draft");
+  assert.equal(getContestDisplayStatus("OPEN"), "Active");
+  assert.equal(getContestDisplayStatus("LOCKED"), "Active");
+  assert.equal(getContestDisplayStatus("SETTLING"), "Active");
+  assert.equal(getContestDisplayStatus("FINALIZED"), "Complete");
+  const publish = {
+    status: "DRAFT", startsAt: new Date("2026-09-25T00:00:00Z"),
+    lockAt: new Date("2026-09-24T23:00:00Z"), now: new Date("2026-09-20T00:00:00Z"),
+    marketCount: 30, selectedCount: 25, competitionCount: 3, representedCompetitions: 3,
+    previous: { lockAt: new Date("2026-09-18T23:00:00Z"), endsAt: new Date("2026-09-21T00:00:00Z") }
+  };
+  assert.equal(getContestPublishError(publish), null);
+  assert.ok(getContestPublishError({ ...publish, selectedCount: 24 }));
+  assert.ok(getContestPublishError({ ...publish, marketCount: 24 }));
+  assert.ok(getContestPublishError({ ...publish, representedCompetitions: 2 }));
+  assert.ok(getContestPublishError({ ...publish, status: "OPEN" }));
+  assert.ok(getContestPublishError({ ...publish, now: publish.lockAt }));
+  assert.ok(getContestPublishError({ ...publish, startsAt: publish.previous.endsAt }));
+  assert.ok(getContestPublishError({ ...publish, previous: { ...publish.previous, lockAt: new Date("2026-09-20T23:00:00Z") } }));
   const firstAt = "2026-09-16T12:00:00.000Z";
   const laterAt = "2026-09-16T13:00:00.000Z";
   const row = { event_id: "333", round_type_id: "1", person_id: "2020TEST01", average: 800, pos: 2 };

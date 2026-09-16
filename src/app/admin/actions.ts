@@ -2,10 +2,9 @@
 
 import {
   CompetitionStatus,
-  ContestSlateStatus,
   MarketCategory,
   MarketStatus,
-  type Prisma,
+  Prisma,
   UserRole
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -15,6 +14,11 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
+import {
+  CURRENT_CONTEST_ORDER,
+  PUBLIC_CONTEST_WHERE,
+  getContestPublishError
+} from "@/lib/contest-workflow";
 import { asMetadata } from "@/lib/wca-result-snapshot";
 import { slugify, withTimestampSuffix } from "@/lib/slug";
 import {
@@ -49,10 +53,6 @@ const updateDiversityConfigSchema = z.object({
   maxPerEvent: z.coerce.number().int().min(1).max(30),
   maxPerMarketType: z.coerce.number().int().min(1).max(30),
   slateId: z.string().min(1)
-});
-
-const publishV1MarketSchema = z.object({
-  marketId: z.string().min(1)
 });
 
 const publishSelectedV1MarketsSchema = z.object({
@@ -90,85 +90,237 @@ export async function refreshContestLifecycle() {
   redirect("/admin?lifecycle=refreshed");
 }
 
-export async function generateWeeklyRecommendedContest() {
-  const admin = await requireAdmin();
-  const now = new Date();
-  const rangeEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const wcaCompetitions = await fetchAllWCACompetitions({
-    end: formatWCADate(rangeEnd),
-    start: formatWCADate(now)
-  });
-  const recommendations = (await buildWCARecommendations(wcaCompetitions))
-    .filter(({ competition }) => parseWCADate(competition.start_date))
-    .sort((left, right) => right.competitorCount - left.competitorCount)
-    .slice(0, 3);
-
-  if (recommendations.length === 0) {
-    redirect("/admin?wca=no-recommendations");
-  }
-
-  const startsAt = new Date(
-    Math.min(
-      ...recommendations.map(({ competition }) =>
-        parseWCADate(competition.start_date)?.getTime() ?? now.getTime()
-      )
-    )
-  );
-  const endsAt = new Date(
-    Math.max(
-      ...recommendations.map(({ competition }) =>
-        parseWCADate(competition.end_date)?.getTime() ?? startsAt.getTime()
-      )
-    )
-  );
-  const lockAt = new Date(startsAt.getTime() - 60 * 60 * 1000);
-  const title = `Weekly WCA Contest - ${formatContestDate(startsAt)}`;
-  const recommendedMarketsByCompetition = new Map<string, RecommendedMarket[]>();
-
-  for (const recommendation of recommendations) {
-    recommendedMarketsByCompetition.set(
-      recommendation.competition.id,
-      await buildRecommendedMarkets({
-        competitors: recommendation.marketEligibleCompetitors,
-        competitionName: recommendation.competition.name,
-        eventNames: getWCIFEventNames(recommendation.wcif),
-        lockAt
-      })
-    );
-  }
-
-  await prisma.$transaction(async (tx) => {
-    const contest = await tx.contestSlate.create({
-      data: {
-        description:
-          "Generated from the largest upcoming WCA competitions. Review and publish selected markets.",
-        diversityConfig: getDefaultDiversityConfig(),
-        endsAt,
-        lockAt,
-        slug: withTimestampSuffix(slugify(title)),
-        startsAt,
-        status: ContestSlateStatus.DRAFT,
-        title
-      }
+async function getOrCreateDraft(contestId: string | null, adminUserId: string) {
+  if (contestId) {
+    const draft = await prisma.contestSlate.findUniqueOrThrow({
+      where: { id: contestId }
     });
+    if (draft.status !== "DRAFT")
+      throw new Error("Published contests cannot be regenerated.");
+    return draft;
+  }
+  const previous = await prisma.contestSlate.findFirst({
+    where: PUBLIC_CONTEST_WHERE,
+    orderBy: CURRENT_CONTEST_ORDER
+  });
+  const now = new Date();
+  const startsAt = previous
+    ? new Date(
+        Math.max(now.getTime(), previous.endsAt.getTime() + 24 * 60 * 60 * 1000)
+      )
+    : now;
+  const endsAt = new Date(startsAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const title = `WCA Contest - ${formatContestDate(startsAt)}`;
+  return prisma.contestSlate.create({
+    data: {
+      title,
+      slug: withTimestampSuffix(slugify(title)),
+      description:
+        "Forecast the outcomes at this contest's featured WCA competitions.",
+      startsAt,
+      endsAt,
+      lockAt: new Date(startsAt.getTime() - 60 * 60 * 1000),
+      preparation: {
+        windowStart: startsAt.toISOString(),
+        windowEnd: endsAt.toISOString(),
+        candidateIds: []
+      },
+      diversityConfig: getDefaultDiversityConfig(),
+      adminActions: { create: { actionType: "SLATE_CREATE", adminUserId } }
+    }
+  });
+}
 
+export async function prepareNextContest() {
+  const admin = await requireAdmin();
+  const current = await prisma.contestSlate.findFirst({
+    where: PUBLIC_CONTEST_WHERE,
+    orderBy: CURRENT_CONTEST_ORDER
+  });
+  const existing = await prisma.contestSlate.findFirst({
+    where: {
+      status: "DRAFT",
+      ...(current ? { startsAt: { gt: current.endsAt } } : {})
+    },
+    orderBy: { createdAt: "desc" }
+  });
+  const draft = existing ?? (await getOrCreateDraft(null, admin.id));
+  redirect(`/admin?contest=${draft.id}`);
+}
+
+async function claimDraft(
+  tx: Prisma.TransactionClient,
+  draft: { id: string; updatedAt: Date }
+) {
+  const claim = await tx.contestSlate.updateMany({
+    where: { id: draft.id, status: "DRAFT", updatedAt: draft.updatedAt },
+    data: { updatedAt: new Date() }
+  });
+  if (!claim.count)
+    throw new Error(
+      "This draft changed while generating. Reload and try again."
+    );
+  if (
+    await tx.market.count({
+      where: { slateId: draft.id, status: { not: "DRAFT" } }
+    })
+  ) {
+    throw new Error("A contest with public markets cannot be regenerated.");
+  }
+}
+
+export async function generateWeeklyRecommendedContest(formData: FormData) {
+  const admin = await requireAdmin();
+  const draft = await getOrCreateDraft(
+    formData.get("contestId")?.toString() ?? null,
+    admin.id
+  );
+  const preparation = asMetadata(draft.preparation);
+  const start =
+    typeof preparation.windowStart === "string"
+      ? new Date(preparation.windowStart)
+      : draft.startsAt;
+  const end =
+    typeof preparation.windowEnd === "string"
+      ? new Date(preparation.windowEnd)
+      : new Date(start.getTime() + 7 * 86400000);
+  const now = new Date();
+  let recommendations: WCARecommendation[];
+  try {
+    const competitions = await fetchAllWCACompetitions({
+      start: formatWCADate(start),
+      end: formatWCADate(end)
+    });
+    recommendations = (await buildWCARecommendations(competitions))
+      .filter(
+        ({ competition }) =>
+          (parseWCADate(competition.start_date)?.getTime() ?? 0) >
+          now.getTime() + 3600000
+      )
+      .sort(
+        (a, b) => b.acceptedCompetitors.length - a.acceptedCompetitors.length
+      )
+      .slice(0, 9);
+  } catch {
+    redirect(`/admin?contest=${draft.id}&wca=unavailable`);
+  }
+  if (recommendations.length < 3)
+    redirect(`/admin?contest=${draft.id}&wca=no-recommendations`);
+  await prisma.$transaction(async (tx) => {
+    await claimDraft(tx, draft);
+    const candidateIds: string[] = [];
     for (const recommendation of recommendations) {
       const competition = await upsertWCACompetitionFromRecommendation(
         tx,
         recommendation
       );
-
-      await tx.contestCompetition.create({
-        data: {
-          competitionId: competition.id,
-          slateId: contest.id
+      candidateIds.push(competition.id);
+    }
+    await tx.market.deleteMany({ where: { slateId: draft.id } });
+    await tx.contestCompetition.deleteMany({ where: { slateId: draft.id } });
+    await tx.contestSlate.update({
+      where: { id: draft.id },
+      data: {
+        preparation: {
+          windowStart: start.toISOString(),
+          windowEnd: end.toISOString(),
+          candidateIds
+        },
+        adminActions: {
+          create: {
+            actionType: "SLATE_UPDATE",
+            adminUserId: admin.id,
+            metadata: { operation: "GENERATE_COMPETITIONS", candidateIds }
+          }
         }
-      });
+      }
+    });
+  });
+  revalidateV1Paths();
+  redirect(`/admin?contest=${draft.id}&wca=competitions-generated`);
+}
 
-      const markets =
-        recommendedMarketsByCompetition.get(recommendation.competition.id) ?? [];
-
-      for (const market of markets) {
+export async function generateSelectedCompetitionMarkets(formData: FormData) {
+  const admin = await requireAdmin();
+  const contestId = formData.get("contestId")?.toString();
+  const competitionIds = [
+    ...new Set(formData.getAll("competitionIds").map(String))
+  ];
+  if (!contestId || competitionIds.length !== 3)
+    redirect("/admin?wca=invalid-competitions");
+  const draft = await getOrCreateDraft(contestId, admin.id);
+  const preparation = asMetadata(draft.preparation);
+  const allowed = Array.isArray(preparation.candidateIds)
+    ? preparation.candidateIds
+    : (
+        await prisma.contestCompetition.findMany({
+          where: { slateId: contestId }
+        })
+      ).map((row) => row.competitionId);
+  if (competitionIds.some((id) => !allowed.includes(id)))
+    throw new Error("Choose only suggested competitions for this contest.");
+  const competitions = await prisma.competition.findMany({
+    where: { id: { in: competitionIds } }
+  });
+  if (competitions.length !== 3)
+    throw new Error("Selected competitions are no longer available.");
+  const startsAt = new Date(
+    Math.min(
+      ...competitions.map((competition) => competition.startDate.getTime())
+    )
+  );
+  const endsAt = new Date(
+    Math.max(
+      ...competitions.map((competition) => competition.endDate.getTime())
+    )
+  );
+  const lockAt = new Date(startsAt.getTime() - 3600000);
+  if (lockAt <= new Date())
+    redirect(`/admin?contest=${contestId}&wca=deadline-passed`);
+  const marketsByCompetition = new Map<string, RecommendedMarket[]>();
+  try {
+    for (const competition of competitions) {
+      if (!competition.wcaCompetitionId)
+        throw new Error("A WCA competition ID is required.");
+      const wcif = await fetchWCAPublicWCIF(competition.wcaCompetitionId);
+      marketsByCompetition.set(
+        competition.id,
+        await buildRecommendedMarkets({
+          competitors: getMarketEligibleCompetitors(wcif),
+          competitionName: competition.name,
+          eventNames: getWCIFEventNames(wcif),
+          lockAt
+        })
+      );
+    }
+  } catch {
+    redirect(`/admin?contest=${contestId}&wca=unavailable`);
+  }
+  await prisma.$transaction(async (tx) => {
+    await claimDraft(tx, draft);
+    await tx.market.deleteMany({ where: { slateId: contestId } });
+    await tx.contestCompetition.deleteMany({ where: { slateId: contestId } });
+    await tx.contestSlate.update({
+      where: { id: contestId },
+      data: {
+        startsAt,
+        endsAt,
+        lockAt,
+        title: `WCA Contest - ${formatContestDate(startsAt)}`,
+        competitions: {
+          create: competitionIds.map((competitionId) => ({ competitionId }))
+        },
+        adminActions: {
+          create: {
+            actionType: "SLATE_UPDATE",
+            adminUserId: admin.id,
+            metadata: { operation: "GENERATE_MARKETS", competitionIds }
+          }
+        }
+      }
+    });
+    for (const competition of competitions) {
+      for (const market of marketsByCompetition.get(competition.id) ?? []) {
         await tx.market.create({
           data: {
             category: MarketCategory.HEAD_TO_HEAD,
@@ -176,19 +328,16 @@ export async function generateWeeklyRecommendedContest() {
             competitionId: competition.id,
             createdByUserId: admin.id,
             description:
-              "Generated head-to-head market using accepted WCA registrations and WCA Odds simulation probabilities. Review before publishing.",
+              "Head-to-head forecast based on accepted WCA registrations and WCA Odds probabilities.",
             eventId: market.eventId,
             eventName: market.eventName,
             lockAt,
-            options: {
-              create: market.options
-            },
-            publishedAt: null,
+            options: { create: market.options },
             question: market.question,
             resolutionRules: market.resolutionRules,
             resolutionSource: "Official WCA competition results",
             settlementRuleVersion: "v1",
-            slateId: contest.id,
+            slateId: contestId,
             slug: withTimestampSuffix(slugify(market.question)),
             status: MarketStatus.DRAFT
           }
@@ -196,10 +345,8 @@ export async function generateWeeklyRecommendedContest() {
       }
     }
   });
-
   revalidateV1Paths();
-  revalidatePath("/competitions");
-  redirect("/admin?wca=recommendations-generated");
+  redirect(`/admin?contest=${contestId}&wca=markets-generated`);
 }
 
 export async function updateSlateDiversityConfig(formData: FormData) {
@@ -246,125 +393,120 @@ export async function updateSlateDiversityConfig(formData: FormData) {
   redirect("/admin?v1Slate=diversity-updated");
 }
 
-export async function publishV1Market(formData: FormData) {
-  const admin = await requireAdmin();
-  const parsed = publishV1MarketSchema.safeParse({
-    marketId: formData.get("marketId")
-  });
-
-  if (!parsed.success) {
-    redirect("/admin?v1Market=invalid");
-  }
-
-  await prisma.$transaction(async (tx) => {
-    const market = await tx.market.findUnique({
-      where: { id: parsed.data.marketId },
-      select: {
-        id: true,
-        options: { select: { id: true } },
-        slateId: true,
-        status: true
-      }
-    });
-
-    if (!market?.slateId || market.status !== MarketStatus.DRAFT) {
-      throw new Error("Only draft markets can be published.");
-    }
-
-    if (market.options.length !== 2) {
-      throw new Error("Markets must have two outcomes before publishing.");
-    }
-
-    await tx.market.update({
-      where: { id: market.id },
-      data: {
-        publishedAt: new Date(),
-        status: MarketStatus.OPEN
-      }
-    });
-
-    await tx.adminAction.create({
-      data: {
-        actionType: "MARKET_PUBLISH",
-        adminUserId: admin.id,
-        marketId: market.id,
-        metadata: {
-          publishedFromDraft: true
-        },
-        slateId: market.slateId
-      }
-    });
-  });
-
-  revalidateV1Paths();
-  redirect("/admin?v1Market=published");
-}
-
 export async function publishSelectedV1Markets(formData: FormData) {
   const admin = await requireAdmin();
   const parsed = publishSelectedV1MarketsSchema.safeParse({
     marketIds: formData.getAll("marketIds")
   });
-
-  if (!parsed.success) {
-    redirect("/admin?v1Market=invalid");
-  }
-
+  if (!parsed.success) redirect("/admin?v1Market=invalid");
   const marketIds = [...new Set(parsed.data.marketIds)];
-
-  await prisma.$transaction(async (tx) => {
-    const markets = await tx.market.findMany({
-      where: { id: { in: marketIds } },
-      select: {
-        id: true,
-        options: { select: { id: true } },
-        slateId: true,
-        status: true
-      }
-    });
-
-    if (markets.length !== marketIds.length) {
-      throw new Error("Every selected market must exist before publishing.");
-    }
-
-    const slateIds = new Set(markets.map((market) => market.slateId));
-
-    if (slateIds.size !== 1 || slateIds.has(null)) {
-      throw new Error("Selected markets must belong to one contest.");
-    }
-
-    for (const market of markets) {
-      if (market.status !== MarketStatus.DRAFT || market.options.length !== 2) {
-        throw new Error("Only complete draft markets can be published.");
-      }
-    }
-
-    const publishedAt = new Date();
-
-    await tx.market.updateMany({
-      where: { id: { in: marketIds } },
-      data: {
-        publishedAt,
-        status: MarketStatus.OPEN
-      }
-    });
-
-    await tx.adminAction.createMany({
-      data: markets.map((market) => ({
-        actionType: "MARKET_PUBLISH",
-        adminUserId: admin.id,
-        marketId: market.id,
-        metadata: {
-          publishedFromDraft: true,
-          publishBatchSize: markets.length
+  const contestId = formData.get("contestId")?.toString();
+  if (!contestId) redirect("/admin?v1Market=invalid");
+  let error: string | null = null;
+  await prisma.$transaction(
+    async (tx) => {
+      const contest = await tx.contestSlate.findUniqueOrThrow({
+        where: { id: contestId },
+        include: {
+          markets: { include: { options: true } },
+          competitions: true
+        }
+      });
+      const selected = contest.markets.filter((market) =>
+        marketIds.includes(market.id)
+      );
+      const previous = await tx.contestSlate.findFirst({
+        where: PUBLIC_CONTEST_WHERE,
+        orderBy: CURRENT_CONTEST_ORDER
+      });
+      const now = new Date();
+      error = getContestPublishError({
+        status: contest.status,
+        lockAt: contest.lockAt,
+        startsAt: contest.startsAt,
+        marketCount: contest.markets.length,
+        selectedCount: selected.length,
+        competitionCount: contest.competitions.length,
+        representedCompetitions: new Set(
+          selected.map((market) => market.competitionId)
+        ).size,
+        previous,
+        now
+      });
+      if (error) return;
+      const featured = new Set(
+        contest.competitions.map((row) => row.competitionId)
+      );
+      if (
+        selected.length !== marketIds.length ||
+        contest.markets.some(
+          (market) =>
+            market.publishedAt !== null && !marketIds.includes(market.id)
+        ) ||
+        selected.some(
+          (market) =>
+            !["DRAFT", "OPEN"].includes(market.status) ||
+            market.options.length !== 2 ||
+            !featured.has(market.competitionId) ||
+            market.options.reduce(
+              (sum, option) => sum + option.probability,
+              0
+            ) !== 100 ||
+            market.options.some(
+              (option) => option.probability < 35 || option.probability > 65
+            )
+        )
+      )
+        throw new Error(
+          "Selected markets must be complete draft markets belonging to the featured competitions."
+        );
+      await tx.market.updateMany({
+        where: { id: { in: marketIds }, status: "DRAFT" },
+        data: { publishedAt: now, status: "OPEN" }
+      });
+      await tx.market.updateMany({
+        where: {
+          slateId: contestId,
+          id: { notIn: marketIds },
+          status: "DRAFT"
         },
-        slateId: market.slateId
-      }))
-    });
-  });
-
+        data: { status: "CANCELED" }
+      });
+      await tx.contestSlate.update({
+        where: { id: contestId },
+        data: {
+          status: "OPEN",
+          publishedAt: now,
+          adminActions: {
+            create: {
+              actionType: "SLATE_UPDATE",
+              adminUserId: admin.id,
+              metadata: {
+                operation: "PUBLISH_CONTEST",
+                marketCount: selected.length
+              }
+            }
+          }
+        }
+      });
+      await tx.adminAction.createMany({
+        data: selected.map((market) => ({
+          actionType: "MARKET_PUBLISH",
+          adminUserId: admin.id,
+          marketId: market.id,
+          slateId: contestId,
+          metadata: { publishBatchSize: selected.length }
+        }))
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+  );
+  if (error)
+    redirect(
+      `/admin?contest=${contestId}&publishError=${encodeURIComponent(error)}`
+    );
   revalidateV1Paths();
-  redirect("/admin?v1Market=published");
+  redirect(`/admin?contest=${contestId}&v1Market=published`);
 }
 
 export async function settleV1Market(formData: FormData) {
@@ -381,7 +523,7 @@ export async function settleV1Market(formData: FormData) {
     redirect("/admin?v1Settlement=invalid");
   }
 
-  await resolveV1Market({
+  const result = await resolveV1Market({
     adminUserId: admin.id,
     marketId: parsed.data.marketId,
     sourceEvidence: parseSettlementSourceEvidence(parsed.data.sourceEvidence),
@@ -391,7 +533,7 @@ export async function settleV1Market(formData: FormData) {
   });
 
   revalidateV1Paths();
-  redirect("/admin?v1Settlement=resolved");
+  redirect(`/admin?contest=${result.slateId}&v1Settlement=resolved`);
 }
 
 export async function settleV1MarketAsTie(formData: FormData) {
@@ -406,7 +548,7 @@ export async function settleV1MarketAsTie(formData: FormData) {
     redirect("/admin?v1Settlement=invalid");
   }
 
-  await tieV1Market({
+  const result = await tieV1Market({
     adminUserId: admin.id,
     marketId: parsed.data.marketId,
     sourceNote: parsed.data.reason,
@@ -414,7 +556,7 @@ export async function settleV1MarketAsTie(formData: FormData) {
   });
 
   revalidateV1Paths();
-  redirect("/admin?v1Settlement=tie");
+  redirect(`/admin?contest=${result.slateId}&v1Settlement=tie`);
 }
 
 export async function voidV1MarketAction(formData: FormData) {
@@ -429,7 +571,7 @@ export async function voidV1MarketAction(formData: FormData) {
     redirect("/admin?v1Settlement=invalid");
   }
 
-  await voidV1Market({
+  const result = await voidV1Market({
     adminUserId: admin.id,
     marketId: parsed.data.marketId,
     reason: parsed.data.reason,
@@ -437,7 +579,7 @@ export async function voidV1MarketAction(formData: FormData) {
   });
 
   revalidateV1Paths();
-  redirect("/admin?v1Settlement=void");
+  redirect(`/admin?contest=${result.slateId}&v1Settlement=void`);
 }
 
 function revalidateV1Paths() {
@@ -490,10 +632,15 @@ function getWCALocation(competition: {
   country_iso2?: string;
   venue_address?: string;
 }) {
-  return [competition.city, competition.country_iso2].filter(Boolean).join(", ");
+  return [competition.city, competition.country_iso2]
+    .filter(Boolean)
+    .join(", ");
 }
 
-function getCompetitionStatus(startDate: Date, endDate: Date): CompetitionStatus {
+function getCompetitionStatus(
+  startDate: Date,
+  endDate: Date
+): CompetitionStatus {
   const now = new Date();
 
   if (endDate < now) {
@@ -508,7 +655,9 @@ function getCompetitionStatus(startDate: Date, endDate: Date): CompetitionStatus
 }
 
 type AcceptedWCIFPerson = NonNullable<WCIFPublicPayload["persons"]>[number] & {
-  registration: NonNullable<NonNullable<WCIFPublicPayload["persons"]>[number]["registration"]>;
+  registration: NonNullable<
+    NonNullable<WCIFPublicPayload["persons"]>[number]["registration"]
+  >;
 };
 
 type AcceptedWCIFCompetitor = AcceptedWCIFPerson & {
@@ -613,7 +762,9 @@ function getMarketEligibleCompetitors(wcif: WCIFPublicPayload | null) {
 }
 
 function getWCIFEventNames(wcif: WCIFPublicPayload | null) {
-  return new Map((wcif?.events ?? []).map((event) => [event.id, event.name ?? event.id]));
+  return new Map(
+    (wcif?.events ?? []).map((event) => [event.id, event.name ?? event.id])
+  );
 }
 
 function getTopRankedCompetitors({
@@ -625,7 +776,9 @@ function getTopRankedCompetitors({
 }) {
   return competitors
     .map((competitor) => {
-      const registeredEventIds = new Set(competitor.registration.eventIds ?? []);
+      const registeredEventIds = new Set(
+        competitor.registration.eventIds ?? []
+      );
       const bestRanking = competitor.personalBests
         ?.filter(
           (personalBest) =>
@@ -646,7 +799,9 @@ function getTopRankedCompetitors({
 
       return {
         eventId: bestRanking.eventId,
-        eventName: eventNames.get(bestRanking.eventId) ?? getEventName(bestRanking.eventId),
+        eventName:
+          eventNames.get(bestRanking.eventId) ??
+          getEventName(bestRanking.eventId),
         name: competitor.name,
         wcaId: competitor.wcaId,
         worldRanking: bestRanking.worldRanking
@@ -671,8 +826,10 @@ async function upsertWCACompetitionFromRecommendation(
   tx: Prisma.TransactionClient,
   recommendation: WCARecommendation
 ) {
-  const startDate = parseWCADate(recommendation.competition.start_date) ?? new Date();
-  const endDate = parseWCADate(recommendation.competition.end_date) ?? startDate;
+  const startDate =
+    parseWCADate(recommendation.competition.start_date) ?? new Date();
+  const endDate =
+    parseWCADate(recommendation.competition.end_date) ?? startDate;
   const metadata = {
     acceptedCompetitorCount: recommendation.acceptedCompetitors.length,
     competitorLimit: recommendation.competition.competitor_limit ?? null,
@@ -701,7 +858,10 @@ async function upsertWCACompetitionFromRecommendation(
       getWCACompetitionUrl(recommendation.competition.id),
     scheduledEndAt: endDate,
     scheduledStartAt: startDate,
-    sourceMetadata: { ...asMetadata(existing?.sourceMetadata), ...metadata } as Prisma.InputJsonObject,
+    sourceMetadata: {
+      ...asMetadata(existing?.sourceMetadata),
+      ...metadata
+    } as Prisma.InputJsonObject,
     startDate,
     status: getCompetitionStatus(startDate, endDate),
     wcaCompetitionId: recommendation.competition.id
@@ -739,7 +899,8 @@ async function buildRecommendedMarkets({
   const eventIds = getRecommendedEventIds(competitors);
   const modelEndDate = new Date();
   const modelStartDate = new Date(
-    modelEndDate.getTime() - WCA_ODDS_DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000
+    modelEndDate.getTime() -
+      WCA_ODDS_DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000
   );
 
   for (const eventId of eventIds) {
@@ -749,7 +910,12 @@ async function buildRecommendedMarkets({
         personalBest: getAveragePersonalBest(competitor, eventId)
       }))
       .filter(
-        (entry): entry is { competitor: AcceptedWCIFCompetitor; personalBest: number } =>
+        (
+          entry
+        ): entry is {
+          competitor: AcceptedWCIFCompetitor;
+          personalBest: number;
+        } =>
           entry.personalBest !== null &&
           entry.competitor.registration.eventIds?.includes(eventId) === true
       )
@@ -821,12 +987,17 @@ function getRecommendedEventIds(competitors: AcceptedWCIFCompetitor[]) {
   }
 
   return [...eventCounts.entries()]
-    .filter(([eventId]) => ["222", "333", "333oh", "444", "555"].includes(eventId))
+    .filter(([eventId]) =>
+      ["222", "333", "333oh", "444", "555"].includes(eventId)
+    )
     .sort((left, right) => right[1] - left[1])
     .map(([eventId]) => eventId);
 }
 
-function getAveragePersonalBest(competitor: AcceptedWCIFCompetitor, eventId: string) {
+function getAveragePersonalBest(
+  competitor: AcceptedWCIFCompetitor,
+  eventId: string
+) {
   const personalBest = competitor.personalBests?.find(
     (best) => best.eventId === eventId && best.type === "average"
   );

@@ -5,12 +5,21 @@ import { auth } from "@/auth";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
+import {
+  CURRENT_CONTEST_ORDER,
+  PUBLIC_CONTEST_WHERE
+} from "@/lib/contest-workflow";
 import { getPickCounterLabel } from "@/lib/v1-game";
 import { removePrediction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function PicksPage() {
+export default async function PicksPage({
+  searchParams
+}: {
+  searchParams: Promise<{ contest?: string }>;
+}) {
+  const params = await searchParams;
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -20,8 +29,11 @@ export default async function PicksPage() {
   await maintainContestLockState();
 
   const activeSlate = await prisma.contestSlate.findFirst({
-    where: { status: { in: ["OPEN", "LOCKED", "SETTLING", "FINALIZED"] } },
-    orderBy: { lockAt: "asc" },
+    where: {
+      ...PUBLIC_CONTEST_WHERE,
+      ...(params.contest ? { id: params.contest } : {})
+    },
+    orderBy: CURRENT_CONTEST_ORDER,
     include: {
       entries: {
         where: { userId: session.user.id },
@@ -57,8 +69,19 @@ export default async function PicksPage() {
   }
 
   const entry = activeSlate.entries[0] ?? null;
+  const pastEntries = await prisma.contestSlate.findMany({
+    where: {
+      ...PUBLIC_CONTEST_WHERE,
+      id: { not: activeSlate.id },
+      entries: { some: { userId: session.user.id } }
+    },
+    orderBy: CURRENT_CONTEST_ORDER,
+    take: 12,
+    select: { id: true, title: true }
+  });
   const predictions = entry?.predictions ?? [];
-  const isLocked = new Date() >= activeSlate.lockAt || activeSlate.status !== "OPEN";
+  const isLocked =
+    new Date() >= activeSlate.lockAt || activeSlate.status !== "OPEN";
   const runningScore =
     entry?.finalScore ??
     activeSlate.baseScore +
@@ -79,7 +102,8 @@ export default async function PicksPage() {
           <h1>My Picks</h1>
           <p>
             Review your selected markets before lock. Your entry becomes
-            official only if exactly 10 picks are selected when the contest locks.
+            official only if exactly 10 picks are selected when the contest
+            locks.
           </p>
         </div>
         <aside className="pick-status-panel">
@@ -106,7 +130,9 @@ export default async function PicksPage() {
               <div className="my-pick-main">
                 <span>
                   {prediction.market.competition.name} ·{" "}
-                  {prediction.market.eventName ?? prediction.market.eventId ?? "Event"}
+                  {prediction.market.eventName ??
+                    prediction.market.eventId ??
+                    "Event"}
                 </span>
                 <strong>{prediction.market.question}</strong>
                 <small>
@@ -147,6 +173,18 @@ export default async function PicksPage() {
           <Link className="button-link" href="/">
             Browse markets
           </Link>
+        </section>
+      )}
+      {pastEntries.length > 0 && (
+        <section>
+          <h2>Other contest entries</h2>
+          <div className="admin-history-actions">
+            {pastEntries.map((contest) => (
+              <Link key={contest.id} href={`/picks?contest=${contest.id}`}>
+                {contest.title}
+              </Link>
+            ))}
+          </div>
         </section>
       )}
     </div>

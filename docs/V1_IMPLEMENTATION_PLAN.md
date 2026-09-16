@@ -2,6 +2,15 @@
 
 Last updated: 2026-09-16
 
+## Admin Contest Workflow
+
+- Separate competition suggestions, three-competition selection, market generation, and 25-market review/publication.
+- Show Draft, Active, and Complete views with timeframe-first headers.
+- Publish the contest and selected markets atomically, preserve fixed probabilities, and retire unselected candidates.
+- Select the latest published contest consistently across player views; prevent overlapping selection windows.
+- Keep delayed-result contests accessible through history and preserve historical picks/leaderboards.
+- Apply the additive preparation-metadata migration; retain existing drafts and generated markets.
+
 This document records the migration plan from the current CubeCoin trading MVP to CubeCast V1: a free WCA-based weekly contest prediction game.
 
 ## Current Architecture Summary

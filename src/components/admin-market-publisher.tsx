@@ -22,7 +22,7 @@ export type AdminPublishMarket = {
   status: string;
 };
 
-type CompetitionPreview = {
+export type CompetitionPreview = {
   name: string;
   location: string;
   startDate: string;
@@ -30,29 +30,50 @@ type CompetitionPreview = {
   wcaCompetitionId: string | null;
   acceptedCompetitors: number | null;
   competitorLimit: number | null;
-  topRankedCompetitors: { wcaId: string; eventId: string; name: string; eventName: string; worldRanking: number }[];
+  topRankedCompetitors: {
+    wcaId: string;
+    eventId: string;
+    name: string;
+    eventName: string;
+    worldRanking: number;
+  }[];
 };
 
 export function AdminMarketPublisher({
   markets,
-  competitions
+  competitions,
+  contestId,
+  lockLabel,
+  windowLabel
 }: {
   markets: AdminPublishMarket[];
   competitions: CompetitionPreview[];
+  contestId: string;
+  lockLabel: string;
+  windowLabel: string;
 }) {
   const draftMarkets = useMemo(
-    () => markets.filter((market) => market.status === "DRAFT"),
+    () =>
+      markets.filter(
+        (market) => market.status === "DRAFT" || market.status === "OPEN"
+      ),
     [markets]
   );
   const publishedMarkets = markets.length - draftMarkets.length;
-  const publishTarget = Math.min(DEFAULT_MARKET_PUBLISH_TARGET, draftMarkets.length);
-  const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>([]);
+  const publishTarget = DEFAULT_MARKET_PUBLISH_TARGET;
+  const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>(() =>
+    markets
+      .filter((market) => market.status === "OPEN")
+      .map((market) => market.id)
+  );
   const [isReviewing, setIsReviewing] = useState(false);
 
   const selectedMarkets = useMemo(
     () =>
       selectedMarketIds
-        .map((marketId) => draftMarkets.find((market) => market.id === marketId))
+        .map((marketId) =>
+          draftMarkets.find((market) => market.id === marketId)
+        )
         .filter((market): market is AdminPublishMarket => Boolean(market)),
     [draftMarkets, selectedMarketIds]
   );
@@ -65,9 +86,17 @@ export function AdminMarketPublisher({
     () => groupMarketsByCompetition(selectedMarkets),
     [selectedMarkets]
   );
-  const isComplete = publishTarget > 0 && selectedMarketIds.length === publishTarget;
+  const isComplete =
+    selectedMarketIds.length === publishTarget &&
+    selectedGroupedMarkets.length === 3;
 
   function toggleMarket(marketId: string) {
+    if (
+      markets.some(
+        (market) => market.id === marketId && market.status === "OPEN"
+      )
+    )
+      return;
     setIsReviewing(false);
     setSelectedMarketIds((current) => {
       if (current.includes(marketId)) {
@@ -84,17 +113,26 @@ export function AdminMarketPublisher({
 
   function clearSelections() {
     setIsReviewing(false);
-    setSelectedMarketIds([]);
+    setSelectedMarketIds(
+      markets
+        .filter((market) => market.status === "OPEN")
+        .map((market) => market.id)
+    );
   }
 
   if (draftMarkets.length === 0) {
     return (
       <div className="admin-publish-flow">
         <div className="admin-publish-empty">
-        <strong>{publishedMarkets > 0 ? "All generated markets have been published." : "No markets available for selection."}</strong>
-        <span>
-          {publishedMarkets.toLocaleString()} markets are available to players.
-        </span>
+          <strong>
+            {publishedMarkets > 0
+              ? "All generated markets have been published."
+              : "No markets available for selection."}
+          </strong>
+          <span>
+            {publishedMarkets.toLocaleString()} markets are available to
+            players.
+          </span>
         </div>
         {competitions.map((competition) => (
           <section className="admin-market-group" key={competition.name}>
@@ -113,25 +151,34 @@ export function AdminMarketPublisher({
             {selectedMarketIds.length} / {publishTarget} markets selected
           </strong>
           <span>
-            {isReviewing ? "Ready to publish" : "Contest selection"}
+            {isReviewing
+              ? "Ready to publish"
+              : selectedMarketIds.length === publishTarget &&
+                  selectedGroupedMarkets.length < 3
+                ? "Include markets from all three competitions"
+                : "Contest selection"}
           </span>
         </div>
         <div className="admin-publish-toolbar-actions">
-          {!isReviewing && <button
-            className="secondary-button"
-            disabled={selectedMarketIds.length === 0}
-            onClick={clearSelections}
-            type="button"
-          >
-            Clear
-          </button>}
-          {!isReviewing && <button
-            disabled={!isComplete}
-            onClick={() => setIsReviewing(true)}
-            type="button"
-          >
-            Review selected
-          </button>}
+          {!isReviewing && (
+            <button
+              className="secondary-button"
+              disabled={selectedMarketIds.length === 0}
+              onClick={clearSelections}
+              type="button"
+            >
+              Clear
+            </button>
+          )}
+          {!isReviewing && (
+            <button
+              disabled={!isComplete}
+              onClick={() => setIsReviewing(true)}
+              type="button"
+            >
+              Review selected
+            </button>
+          )}
         </div>
       </div>
 
@@ -141,6 +188,9 @@ export function AdminMarketPublisher({
             <h3>Review public markets</h3>
             <span>{selectedMarketIds.length.toLocaleString()} selected</span>
           </div>
+          <p>
+            {windowLabel} · Picks lock {lockLabel}
+          </p>
           <div className="admin-publish-review-list">
             {selectedGroupedMarkets.map((group) => (
               <div className="admin-market-group" key={group.competitionName}>
@@ -155,8 +205,14 @@ export function AdminMarketPublisher({
             ))}
           </div>
           <form action={publishSelectedV1Markets} className="review-actions">
+            <input name="contestId" type="hidden" value={contestId} />
             {selectedMarketIds.map((marketId) => (
-              <input key={marketId} name="marketIds" type="hidden" value={marketId} />
+              <input
+                key={marketId}
+                name="marketIds"
+                type="hidden"
+                value={marketId}
+              />
             ))}
             <button
               className="secondary-button"
@@ -166,79 +222,133 @@ export function AdminMarketPublisher({
               Keep editing
             </button>
             <PendingSubmitButton pendingLabel="Publishing...">
-              Publish selected markets
+              Publish contest
             </PendingSubmitButton>
           </form>
         </section>
       )}
 
-      {!isReviewing && <div className="admin-market-groups">
-        {competitions.filter((competition) => !groupedMarkets.some((group) => group.competitionName === competition.name)).map((competition) => (
-          <section className="admin-market-group" key={competition.name}>
-            <CompetitionHeading competition={competition} />
-            <p className="empty-state">No draft markets available for this competition.</p>
-          </section>
-        ))}
-        {groupedMarkets.map((group) => {
-          const competition = competitions.find((item) => item.name === group.competitionName);
-          return (
-          <section className="admin-market-group" key={group.competitionName}>
-            {competition && <CompetitionHeading competition={competition} />}
-            <div className="admin-market-group-heading">
-              <strong>{competition ? "Markets" : group.competitionName}</strong>
-              <span>{group.markets.filter((market) => selectedMarketIds.includes(market.id)).length} / {group.markets.length} selected</span>
-            </div>
-            <div className="admin-market-selection-list">
-              {group.markets.map((market) => {
-                const isSelected = selectedMarketIds.includes(market.id);
-                const isDisabled = !isSelected && selectedMarketIds.length >= publishTarget;
+      {!isReviewing && (
+        <div className="admin-market-groups">
+          {competitions
+            .filter(
+              (competition) =>
+                !groupedMarkets.some(
+                  (group) => group.competitionName === competition.name
+                )
+            )
+            .map((competition) => (
+              <section className="admin-market-group" key={competition.name}>
+                <CompetitionHeading competition={competition} />
+                <p className="empty-state">
+                  No draft markets available for this competition.
+                </p>
+              </section>
+            ))}
+          {groupedMarkets.map((group) => {
+            const competition = competitions.find(
+              (item) => item.name === group.competitionName
+            );
+            return (
+              <section
+                className="admin-market-group"
+                key={group.competitionName}
+              >
+                {competition && (
+                  <CompetitionHeading competition={competition} />
+                )}
+                <div className="admin-market-group-heading">
+                  <strong>
+                    {competition ? "Markets" : group.competitionName}
+                  </strong>
+                  <span>
+                    {
+                      group.markets.filter((market) =>
+                        selectedMarketIds.includes(market.id)
+                      ).length
+                    }{" "}
+                    / {group.markets.length} selected
+                  </span>
+                </div>
+                <div className="admin-market-selection-list">
+                  {group.markets.map((market) => {
+                    const isSelected = selectedMarketIds.includes(market.id);
+                    const isDisabled =
+                      !isSelected && selectedMarketIds.length >= publishTarget;
 
-                return (
-                  <button
-                    className={`admin-market-select-row${
-                      isSelected ? " is-selected" : ""
-                    }`}
-                    disabled={isDisabled}
-                    aria-pressed={isSelected}
-                    key={market.id}
-                    onClick={() => toggleMarket(market.id)}
-                    type="button"
-                  >
-                    <span className="admin-market-select-control">
-                      {isSelected ? "Selected" : "Select"}
-                    </span>
-                    <MarketSummary market={market} />
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        );})}
-      </div>}
+                    return (
+                      <button
+                        className={`admin-market-select-row${
+                          isSelected ? " is-selected" : ""
+                        }`}
+                        disabled={isDisabled || market.status === "OPEN"}
+                        aria-pressed={isSelected}
+                        key={market.id}
+                        onClick={() => toggleMarket(market.id)}
+                        type="button"
+                      >
+                        <span className="admin-market-select-control">
+                      {market.status === "OPEN" ? "Published" : isSelected ? "Selected" : "Select"}
+                        </span>
+                        <MarketSummary market={market} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
-function CompetitionHeading({ competition }: { competition: CompetitionPreview }) {
+export function CompetitionHeading({
+  competition,
+  showName = true
+}: {
+  competition: CompetitionPreview;
+  showName?: boolean;
+}) {
   return (
     <div className="admin-competition-preview">
-      <h3>{competition.name}</h3>
+      {showName && <h3>{competition.name}</h3>}
       <div className="admin-competition-meta">
-        <span>{competition.location} · {competition.startDate}{competition.endDate !== competition.startDate ? ` – ${competition.endDate}` : ""}</span>
+        <span>
+          {competition.location} · {competition.startDate}
+          {competition.endDate !== competition.startDate
+            ? ` – ${competition.endDate}`
+            : ""}
+        </span>
         {competition.wcaCompetitionId && (
-          <a href={`https://www.worldcubeassociation.org/competitions/${competition.wcaCompetitionId}`} target="_blank" rel="noreferrer">WCA details</a>
+          <a
+            href={`https://www.worldcubeassociation.org/competitions/${competition.wcaCompetitionId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            WCA details
+          </a>
         )}
       </div>
       <p>
-        {competition.acceptedCompetitors === null ? "Accepted count unavailable" : `${competition.acceptedCompetitors.toLocaleString()} accepted`}
-        {competition.competitorLimit !== null && ` · ${competition.competitorLimit.toLocaleString()} competitor limit`}
+        {competition.acceptedCompetitors === null
+          ? "Accepted count unavailable"
+          : `${competition.acceptedCompetitors.toLocaleString()} accepted`}
+        {competition.competitorLimit !== null &&
+          ` · ${competition.competitorLimit.toLocaleString()} competitor limit`}
       </p>
       {competition.topRankedCompetitors.length > 0 && (
         <details className="admin-entrants">
           <summary>Top ranked cubers</summary>
-          <ul>{competition.topRankedCompetitors.map((competitor) => (
-            <li key={`${competitor.wcaId}-${competitor.eventId}`}>{competitor.name} · {competitor.eventName} #{competitor.worldRanking.toLocaleString()}</li>
-          ))}</ul>
+          <ul>
+            {competition.topRankedCompetitors.map((competitor) => (
+              <li key={`${competitor.wcaId}-${competitor.eventId}`}>
+                {competitor.name} · {competitor.eventName} #
+                {competitor.worldRanking.toLocaleString()}
+              </li>
+            ))}
+          </ul>
         </details>
       )}
     </div>

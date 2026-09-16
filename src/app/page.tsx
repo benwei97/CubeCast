@@ -4,6 +4,10 @@ import { auth } from "@/auth";
 import { V1ContestBoard } from "@/components/v1-slate-board";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
+import {
+  CURRENT_CONTEST_ORDER,
+  PUBLIC_CONTEST_WHERE
+} from "@/lib/contest-workflow";
 import { getPickCounterLabel } from "@/lib/v1-game";
 
 export const dynamic = "force-dynamic";
@@ -14,8 +18,8 @@ export default async function HomePage() {
   const now = new Date();
 
   const activeSlate = await prisma.contestSlate.findFirst({
-    where: { status: { in: ["OPEN", "LOCKED", "SETTLING", "FINALIZED"] } },
-    orderBy: { lockAt: "asc" },
+    where: PUBLIC_CONTEST_WHERE,
+    orderBy: CURRENT_CONTEST_ORDER,
     include: {
       competitions: {
         include: { competition: true },
@@ -129,7 +133,8 @@ export default async function HomePage() {
             <span>{competition.location}</span>
             <strong>{competition.name}</strong>
             <small>
-              {formatDate(competition.startDate)} - {formatDate(competition.endDate)}
+              {formatDate(competition.startDate)} -{" "}
+              {formatDate(competition.endDate)}
             </small>
           </article>
         ))}

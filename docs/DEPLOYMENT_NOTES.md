@@ -76,6 +76,8 @@ Checks preserve first-observed person/event/round result rows and their observat
 
 ## Database Setup
 
+The admin contest workflow adds nullable ContestSlate.preparation metadata in migration 20260916200000_admin_contest_preparation. Deploy this migration and regenerate Prisma Client before running the updated app. This is additive and does not delete existing contests, markets, or picks.
+
 For local development:
 
 ```bash

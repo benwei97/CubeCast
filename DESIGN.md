@@ -180,6 +180,11 @@ Controls and surfaces use modest radii. Standard cards and rows use `8px`; contr
 
 ### Admin
 
+- **Contest states:** Date range leads the page. Draft uses red with "Not public"; Active uses green and distinguishes selections open/locked; Complete uses a neutral treatment and final results.
+- **Draft preparation:** Choose three suggested competitions, generate markets, choose 25 across all featured competitions, and review before publishing. Completed competition selection collapses into an editable summary.
+- **Monitoring:** Active contests show complete entries, settled-market progress, pick status, and featured competition progress. Complete contests show the final leaderboard and expandable settlement evidence.
+- **Continuity:** Prepare next contest opens a private draft. Publication makes that contest current after the previous pick deadline; previous contests stay accessible through expandable history with competition-level progress.
+
 - **Primary workflow:** Current contest first, competition-grouped market selection, a persistent selection counter, and a dedicated review state before publishing.
 - **Progressive disclosure:** Ranked entrants, generation settings, lifecycle status, history, and settlement tools expand on demand. Accepted counts and competitor limits stay visible with each competition.
 

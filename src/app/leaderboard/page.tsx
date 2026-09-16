@@ -3,14 +3,27 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
+import {
+  CURRENT_CONTEST_ORDER,
+  PUBLIC_CONTEST_WHERE
+} from "@/lib/contest-workflow";
 
 export const dynamic = "force-dynamic";
 
-export default async function LeaderboardPage() {
+export default async function LeaderboardPage({
+  searchParams
+}: {
+  searchParams: Promise<{ contest?: string }>;
+}) {
+  const params = await searchParams;
   const session = await auth();
   await maintainContestLockState();
   const slate = await prisma.contestSlate.findFirst({
-    orderBy: [{ finalizedAt: "desc" }, { lockAt: "desc" }],
+    where: {
+      ...PUBLIC_CONTEST_WHERE,
+      ...(params.contest ? { id: params.contest } : {})
+    },
+    orderBy: CURRENT_CONTEST_ORDER,
     include: {
       leaderboardEntries: {
         include: {
@@ -30,6 +43,7 @@ export default async function LeaderboardPage() {
         orderBy: [{ rank: "asc" }, { finalScore: "desc" }]
       },
       markets: {
+        where: { publishedAt: { not: null } },
         select: {
           status: true
         }
@@ -49,9 +63,8 @@ export default async function LeaderboardPage() {
   }
 
   const currentUserRank = session?.user?.id
-    ? slate.leaderboardEntries.find(
-        (entry) => entry.userId === session.user.id
-      )?.rank
+    ? slate.leaderboardEntries.find((entry) => entry.userId === session.user.id)
+        ?.rank
     : null;
   const terminalMarkets = slate.markets.filter((market) =>
     ["RESOLVED", "VOID", "CANCELED"].includes(market.status)
@@ -77,13 +90,19 @@ export default async function LeaderboardPage() {
         </article>
         <article className="summary-card">
           <span>Top score</span>
-          <strong>{topEntry ? topEntry.finalScore.toLocaleString() : "0"}</strong>
-          <small>{topEntry ? getDisplayName(topEntry.user) : "No entries yet"}</small>
+          <strong>
+            {topEntry ? topEntry.finalScore.toLocaleString() : "0"}
+          </strong>
+          <small>
+            {topEntry ? getDisplayName(topEntry.user) : "No entries yet"}
+          </small>
         </article>
         <article className="summary-card">
           <span>Your rank</span>
           <strong>{currentUserRank ? `#${currentUserRank}` : "-"}</strong>
-          <small>{session?.user ? "Valid entries only" : "Sign in to rank"}</small>
+          <small>
+            {session?.user ? "Valid entries only" : "Sign in to rank"}
+          </small>
         </article>
         <article className="summary-card">
           <span>Markets settled</span>
