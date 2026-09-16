@@ -357,7 +357,11 @@ function main() {
     previous: { lockAt: new Date("2026-09-18T23:00:00Z"), endsAt: new Date("2026-09-21T00:00:00Z") }
   };
   assert.equal(getContestPublishError(publish), null);
-  assert.ok(getContestPublishError({ ...publish, selectedCount: 24 }));
+  assert.equal(getContestPublishError({ ...publish, selectedCount: 24 }), null);
+  assert.equal(getContestPublishError({ ...publish, selectedCount: 30 }), null);
+  assert.equal(getContestPublishError({ ...publish, selectedCount: 10 }), null);
+  assert.ok(getContestPublishError({ ...publish, selectedCount: 9 }));
+  assert.ok(getContestPublishError({ ...publish, selectedCount: 31 }));
   assert.ok(getContestPublishError({ ...publish, marketCount: 24 }));
   assert.ok(getContestPublishError({ ...publish, representedCompetitions: 2 }));
   assert.ok(getContestPublishError({ ...publish, status: "OPEN" }));

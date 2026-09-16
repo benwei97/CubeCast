@@ -302,16 +302,17 @@ export default async function AdminPage({
           {hasMarkets && (
             <section>
               <h2>Choose markets</h2>
-              {contest.markets.length < 25 && (
+              {contest.markets.length < contest.maxPicks && (
                 <p className="form-error">
                   Only {contest.markets.length} markets are available.
                   Regenerate markets or choose different competitions to reach
-                  25.
+                  {contest.maxPicks}.
                 </p>
               )}
               <AdminMarketPublisher
                 key={contest.updatedAt.toISOString()}
                 contestId={contest.id}
+                requiredPicks={contest.maxPicks}
                 lockLabel={contest.lockAt.toLocaleString()}
                 windowLabel={windowLabel}
                 competitions={contest.competitions.map(({ competition }) =>

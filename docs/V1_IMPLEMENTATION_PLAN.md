@@ -4,7 +4,7 @@ Last updated: 2026-09-16
 
 ## Admin Contest Workflow
 
-- Separate competition suggestions, three-competition selection, market generation, and 25-market review/publication.
+- Separate competition suggestions, three-competition selection, market generation, and review/publication of a variable-sized release with all generated markets preselected.
 - Show Draft, Active, and Complete views with timeframe-first headers.
 - Publish the contest and selected markets atomically, preserve fixed probabilities, and retire unselected candidates.
 - Select the latest published contest consistently across player views; prevent overlapping selection windows.

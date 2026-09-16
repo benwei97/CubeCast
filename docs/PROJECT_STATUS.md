@@ -6,7 +6,7 @@ Last updated: 2026-09-16
 
 - Admin header leads with the contest date range and Draft/Active/Complete status.
 - Competition generation suggests up to nine global competitions ranked by accepted count, independently of market generation. Admin chooses three, then generates markets.
-- Exactly 25 markets across all three competitions are reviewed and published atomically with the contest. Unselected candidates are cancelled and excluded from scoring/finalization counts.
+- All generated markets are preselected for release. Admins deselect unwanted markets and publish a variable-sized group atomically with the contest. Publication requires at least 10 markets and representation from all three featured competitions. Excluded candidates are cancelled and omitted from scoring/finalization counts.
 - Active contests show entry and settlement progress. Complete contests show final results and immutable evidence.
 - Prepare-next creates/reuses an upcoming draft without replacing the public contest. Publication switches the public current contest, but is blocked until the previous picks lock and for overlapping competition windows.
 - Historical contests remain available for settlement, leaderboard review, and previous user entries. Automatic result monitoring continues for unsettled older contests.

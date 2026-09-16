@@ -5,8 +5,6 @@ import { useMemo, useState } from "react";
 import { publishSelectedV1Markets } from "@/app/admin/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 
-const DEFAULT_MARKET_PUBLISH_TARGET = 25;
-
 type AdminMarketOption = {
   id: string;
   label: string;
@@ -44,20 +42,23 @@ export function AdminMarketPublisher({
   competitions,
   contestId,
   lockLabel,
-  windowLabel
+  windowLabel,
+  requiredPicks
 }: {
   markets: AdminPublishMarket[];
   competitions: CompetitionPreview[];
   contestId: string;
   lockLabel: string;
   windowLabel: string;
+  requiredPicks: number;
 }) {
   const draftMarkets = useMemo(
     () => markets.filter((market) => market.status === "DRAFT"),
     [markets]
   );
-  const publishTarget = DEFAULT_MARKET_PUBLISH_TARGET;
-  const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>([]);
+  const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>(() =>
+    draftMarkets.map((market) => market.id)
+  );
   const [isReviewing, setIsReviewing] = useState(false);
 
   const selectedMarkets = useMemo(
@@ -79,7 +80,7 @@ export function AdminMarketPublisher({
     [selectedMarkets]
   );
   const isComplete =
-    selectedMarketIds.length === publishTarget &&
+    selectedMarketIds.length >= requiredPicks &&
     selectedGroupedMarkets.length === 3;
 
   function toggleMarket(marketId: string) {
@@ -87,10 +88,6 @@ export function AdminMarketPublisher({
     setSelectedMarketIds((current) => {
       if (current.includes(marketId)) {
         return current.filter((selectedId) => selectedId !== marketId);
-      }
-
-      if (current.length >= publishTarget) {
-        return current;
       }
 
       return [...current, marketId];
@@ -122,19 +119,30 @@ export function AdminMarketPublisher({
     <div className="admin-publish-flow">
       <div className="admin-publish-toolbar">
         <div>
-          <strong>
-            {selectedMarketIds.length} / {publishTarget} markets selected
-          </strong>
+          <strong>{selectedMarketIds.length} markets included</strong>
           <span>
             {isReviewing
               ? "Ready to publish"
-              : selectedMarketIds.length === publishTarget &&
-                  selectedGroupedMarkets.length < 3
-                ? "Include markets from all three competitions"
-                : "Contest selection"}
+              : selectedMarketIds.length < requiredPicks
+                ? `Include at least ${requiredPicks} markets`
+                : selectedGroupedMarkets.length < 3
+                  ? "Include markets from all three competitions"
+                  : `${draftMarkets.length - selectedMarketIds.length} excluded`}
           </span>
         </div>
         <div className="admin-publish-toolbar-actions">
+          {!isReviewing && (
+            <button
+              className="secondary-button"
+              disabled={selectedMarketIds.length === draftMarkets.length}
+              onClick={() =>
+                setSelectedMarketIds(draftMarkets.map((market) => market.id))
+              }
+              type="button"
+            >
+              Select all
+            </button>
+          )}
           {!isReviewing && (
             <button
               className="secondary-button"
@@ -142,7 +150,7 @@ export function AdminMarketPublisher({
               onClick={clearSelections}
               type="button"
             >
-              Clear
+              Deselect all
             </button>
           )}
           {!isReviewing && (
@@ -248,15 +256,12 @@ export function AdminMarketPublisher({
                 <div className="admin-market-selection-list">
                   {group.markets.map((market) => {
                     const isSelected = selectedMarketIds.includes(market.id);
-                    const isDisabled =
-                      !isSelected && selectedMarketIds.length >= publishTarget;
 
                     return (
                       <button
                         className={`admin-market-select-row${
                           isSelected ? " is-selected" : ""
                         }`}
-                        disabled={isDisabled}
                         aria-pressed={isSelected}
                         key={market.id}
                         onClick={() => toggleMarket(market.id)}

@@ -34,7 +34,7 @@ Use WCA sign-in for local testing. After the first sign-in, promote your user to
 - Sign in and add, change, or remove picks before lock.
 - Open `/picks` to review selected markets, probabilities, and score swing.
 - Configure WCA OAuth and sign in with WCA for production-like identity.
-- As admin, open `/admin` to choose competitions, generate markets, review 25 selections, and publish the contest.
+- As admin, open `/admin` to choose competitions, generate markets, exclude unwanted candidates, review the included markets, and publish the contest.
 - Active contests show entry counts and settlement progress; pick deadlines are enforced server-side.
 - WCA result evidence is fetched automatically every 15 minutes for started competitions with unsettled public contest markets.
 - As admin, open `/admin` and use the Settlement Queue to review evidence counts, attach a WCA result row or manual source note, and resolve, void, or mark an exact tie.
@@ -60,11 +60,11 @@ Settlement stores snapshot evidence and admin audit records. A background monito
 
 ## Admin Contest Workflow Check
 
-Draft market selection starts at 0 / 25. Every candidate can be selected or deselected; no individual Published badge or mandatory previously published pick remains. Only Publish contest releases the selected group.
+All generated draft markets start included. The toolbar shows the actual included count, with Select all and Deselect all controls. Every candidate can be toggled. Only Publish contest releases the selected group; there is no fixed 25-market target.
 
 1. Open /admin. The header shows contest dates and Draft, Active, or Complete status.
 2. In a Draft, generate competition suggestions, select three, and generate markets. Existing drafts retain their previously selected competitions and markets.
-3. Select exactly 25 markets spanning all three competitions, review dates and lock time, and publish the contest.
+3. Deselect any unwanted markets, retain at least 10 spanning all three competitions, review dates and lock time, and publish the contest.
 4. Confirm the contest becomes Active and Home, My Picks, and Leaderboard follow it.
 5. Active contests show complete entries, settled market progress, selection open/locked status, and competition progress.
 6. Prepare next contest creates a separate private draft for the following window. It cannot be published before the previous picks lock or with overlapping competition windows.

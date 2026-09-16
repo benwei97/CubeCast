@@ -56,7 +56,7 @@ const updateDiversityConfigSchema = z.object({
 });
 
 const publishSelectedV1MarketsSchema = z.object({
-  marketIds: z.array(z.string().min(1)).min(1).max(50)
+  marketIds: z.array(z.string().min(1)).min(1)
 });
 
 const settleV1MarketSchema = z.object({
@@ -426,6 +426,7 @@ export async function publishSelectedV1Markets(formData: FormData) {
         startsAt: contest.startsAt,
         marketCount: contest.markets.length,
         selectedCount: selected.length,
+        requiredPicks: contest.maxPicks,
         competitionCount: contest.competitions.length,
         representedCompetitions: new Set(
           selected.map((market) => market.competitionId)

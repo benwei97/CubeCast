@@ -33,6 +33,7 @@ export function getContestPublishError({
   startsAt,
   marketCount,
   selectedCount,
+  requiredPicks = 10,
   competitionCount,
   representedCompetitions,
   previous,
@@ -43,6 +44,7 @@ export function getContestPublishError({
   startsAt: Date;
   marketCount: number;
   selectedCount: number;
+  requiredPicks?: number;
   competitionCount: number;
   representedCompetitions: number;
   previous?: { lockAt: Date; endsAt: Date } | null;
@@ -57,7 +59,7 @@ export function getContestPublishError({
     return "The next contest must feature competitions after the current contest window.";
   if (competitionCount !== 3 || representedCompetitions !== 3)
     return "Select markets from all three featured competitions.";
-  if (marketCount < 25 || selectedCount !== 25)
-    return "Choose exactly 25 markets before publishing. Generate more markets if needed.";
+  if (selectedCount < requiredPicks || selectedCount > marketCount)
+    return `Include at least ${requiredPicks} generated markets so users can complete their entry.`;
   return null;
 }

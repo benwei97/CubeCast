@@ -28,7 +28,7 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 ## Operating Context
 
-The admin workspace shows the contest timeframe first and uses Draft (red), Active (green), and Complete states. Draft preparation separates competition generation, selection of three competitions, generation of WCA Odds markets, selection of exactly 25 markets across all three competitions, and review before publication.
+The admin workspace shows the contest timeframe first and uses Draft (red), Active (green), and Complete states. Draft preparation separates competition generation, selection of three competitions, generation of WCA Odds markets, review of preselected markets, and publication. All generated markets start included; admins can exclude any before review. Contest market counts vary, with at least 10 and representation from each featured competition required for publication. Users still choose exactly 10 picks.
 
 Publishing activates the contest and its selected markets together and makes it current on Home, My Picks, and Leaderboard. A next contest can be prepared privately while the current one runs, but cannot publish while the current contest still accepts picks or if competition windows overlap. Drafts never become public automatically. The previous contest remains accessible for delayed results and settlement, and automatic WCA monitoring continues. Complete means every published market has resolved or voided, not merely that WCA results are available.
 
