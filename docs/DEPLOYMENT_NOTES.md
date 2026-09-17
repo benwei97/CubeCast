@@ -1,10 +1,16 @@
 # Deployment Notes
 
-Last updated: 2026-09-15
+Last updated: 2026-09-17
 
 CubeCast currently uses a standard Next.js, Prisma, PostgreSQL, and Auth.js setup.
 
 CubeCast V1 is a free WCA speedcubing prediction contest game. The legacy trading UI, services, and database tables have been removed.
+
+## WCA Ingestion Limits
+
+Competition discovery, rosters, and official results share a two-second request queue within each Node process. HTTP 429 responses pause that process's queue for Retry-After or 30/60/120-second backoff. Successful non-result data is cached for 30 minutes; results remain fresh. WCA Odds uses separate controls.
+
+This is not a distributed limiter. Before deploying multiple instances, coordinate reads through a single ingestion worker or a shared limiter so traffic does not multiply. Cold contest generation plus service cooldowns can take minutes. Generation uses Next.js after to return the browser response promptly, but after still inherits the host's execution-duration limits and does not survive process termination. Use a durable background job runner before deploying long generation tasks on short-lived serverless functions. A stranded running job can be cancelled from the admin page and restarted. Do not promise zero 429s or assume the selected spacing is an official WCA quota.
 
 ## Required Services
 

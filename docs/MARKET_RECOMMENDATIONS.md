@@ -30,13 +30,23 @@ Select up to 30 candidates in ranking-tier order, then descending score, with co
 
 If strong candidates are scarce, show fewer rather than padding. At least ten included markets are required to publish a playable contest.
 
-Enough qualifying real-data markets cannot be guaranteed in every window. A short list offers an explicit Expand window by 7 days action, which searches again and updates the displayed discovery dates only on successful generation. It never silently extends the week or fabricates probabilities. Temporary WCA registration network errors, timeouts, HTTP 429 and 5xx errors retry up to three times, bypassing cached errors on retry; permanent errors such as 404 do not retry. Fresh settlement reads retain their existing fail-fast behavior. Persist failed competition names/reasons and search diagnostics in preparation metadata. No exact service quota is assumed.
+Enough qualifying real-data markets cannot be guaranteed in every window. A short list offers an explicit Expand window by 7 days action, which searches again and updates the displayed discovery dates only on successful generation. It never silently extends the week or fabricates probabilities. Temporary WCA registration network errors, timeouts, HTTP 429 and 5xx errors retry up to three times, bypassing cached errors on retry; permanent errors such as 404 do not retry. Persist failed competition names/reasons and search diagnostics in preparation metadata.
+
+## WCA Request Pacing
+
+All competition discovery, WCIF, and official result reads share one process-wide queue, including across development reloads. Start requests at least two seconds apart and allow only one fetch at a time. A 429 pauses the entire queue, not just the failed competition. Honor numeric/date Retry-After headers with a two-second floor; without a usable header, use 30/60/120-second cooldowns. Even a final failed attempt or a fresh-result 429 applies the cooldown to subsequent callers. Fresh settlement reads remain uncached and fail fast rather than retrying within a check.
+
+Reuse successful non-result payloads for 30 minutes, bound the in-memory cache to 128 entries, and deduplicate concurrent identical reads. Upstream fetches use no-store; only successfully parsed payloads enter this application cache. Never cache failed requests or substitute old results/probabilities for unavailable data. Generation can take longer on a cold cache or during cooldowns; repeatedly refreshing does not bypass the limiter.
+
+Two-second spacing is a conservative application policy, not a verified WCA quota or a guarantee against 429s. Other traffic sharing the public IP may still count. Multiple production processes/instances have separate queues; before scaling out, use a single ingestion worker or shared distributed limiter. WCA Odds is a separate service and retains its separate request controls.
 
 ## Admin Review and Publication
 
 Default to recommendation order, with an optional competition-grouped view. All recommendations are preselected. Show world ranks, fixed probabilities, event, competition, and a short reason.
 
 Refresh replaces unpublished candidates only after new results are ready. No-op/failed searches preserve the saved draft. Old competition-first drafts are labelled; they are not silently repriced.
+
+Generation claims a RUNNING job in preparation metadata and returns the contest ID immediately. Next.js after performs the work; the admin page polls every five seconds. Failed jobs preserve saved markets and expose errors. Cancelled or superseded jobs cannot replace markets; cancellation checkpoints precede discovery pages, registration reads, and simulations. Duplicate starts do not launch concurrent jobs for the same running draft. Publication is blocked while generation runs. Process restarts do not resume work automatically: cancel a stranded job and regenerate. This does not remove serverless execution limits or replace a durable production job runner.
 
 Publish included markets and activate the contest in one transaction. Derive featured competitions and timing from included markets, dropping competitions with no included markets. Set the global lock one hour before the earliest included scheduled start. The current WCA ingestion uses competition dates as start timestamps; precise schedule/timezone ingestion remains a separate limitation.
 

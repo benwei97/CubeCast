@@ -1,6 +1,24 @@
+import { getWCARateLimitDelay, WCARequestQueue } from "./wca-request-queue";
+
 const WCA_BASE_URL = getWCABaseUrl();
 const WCA_MAX_RETRIES = 3;
 const WCA_RETRY_BASE_DELAY_MS = 1500;
+const WCA_CACHE_TTL_MS = 30 * 60 * 1000;
+const WCA_CACHE_MAX_ENTRIES = 128;
+
+// Share pacing, in-flight reads, and successful cache entries across dev reloads.
+const worker = globalThis as typeof globalThis & {
+  wcaReadClient?: {
+    queue: WCARequestQueue;
+    cache: Map<string, { expiresAt: number; value: unknown }>;
+    pending: Map<string, Promise<unknown>>;
+  };
+};
+const client = worker.wcaReadClient ??= {
+  queue: new WCARequestQueue(),
+  cache: new Map(),
+  pending: new Map()
+};
 
 export type WCACompetitionPayload = {
   city?: string;
@@ -91,7 +109,6 @@ export async function fetchWCACompetitions({
 export async function fetchWCACompetitionResults(wcaCompetitionId: string) {
   return fetchWCAJson<WCACompetitionResultPayload[]>(
     `/api/v0/competitions/${encodeURIComponent(wcaCompetitionId)}/results`,
-    0,
     true
   );
 }
@@ -106,23 +123,53 @@ export function getWCACompetitionUrl(wcaCompetitionId: string) {
   return `${WCA_BASE_URL}/competitions/${encodeURIComponent(wcaCompetitionId)}`;
 }
 
-async function fetchWCAJson<T>(path: string, attempt = 0, fresh = false): Promise<T> {
+async function fetchWCAJson<T>(path: string, fresh = false): Promise<T> {
+  const key = `${WCA_BASE_URL}${path}:${fresh}`;
+  const cached = client.cache.get(key);
+  if (!fresh && cached && cached.expiresAt > Date.now()) return cached.value as T;
+  const pending = client.pending.get(key);
+  if (pending) return pending as Promise<T>;
+  const request = fetchWCAJsonAttempt<T>(path, 0, fresh).then((value) => {
+    if (!fresh) {
+      for (const [entryKey, entry] of client.cache) {
+        if (entry.expiresAt <= Date.now()) client.cache.delete(entryKey);
+      }
+      if (client.cache.size >= WCA_CACHE_MAX_ENTRIES) {
+        client.cache.delete(client.cache.keys().next().value!);
+      }
+      client.cache.set(key, { expiresAt: Date.now() + WCA_CACHE_TTL_MS, value });
+    }
+    return value;
+  });
+  client.pending.set(key, request);
+  try {
+    return await request;
+  } finally {
+    client.pending.delete(key);
+  }
+}
+
+async function fetchWCAJsonAttempt<T>(path: string, attempt: number, fresh: boolean): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${WCA_BASE_URL}${path}`, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "CubeCast MVP"
-      },
-      ...(fresh || attempt > 0
-        ? { cache: "no-store" as const }
-        : { next: { revalidate: 60 * 30 } }),
-      signal: AbortSignal.timeout(20_000)
+    response = await client.queue.run(async () => {
+      const result = await fetch(`${WCA_BASE_URL}${path}`, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "CubeCast MVP"
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(20_000)
+      });
+      if (result.status === 429) {
+        client.queue.defer(getWCARateLimitDelay(result, attempt));
+      }
+      return result;
     });
   } catch (error) {
     if (fresh || attempt >= WCA_MAX_RETRIES) throw error;
     await sleep(WCA_RETRY_BASE_DELAY_MS * (attempt + 1));
-    return fetchWCAJson<T>(path, attempt + 1, fresh);
+    return fetchWCAJsonAttempt<T>(path, attempt + 1, fresh);
   }
 
   if (
@@ -130,9 +177,9 @@ async function fetchWCAJson<T>(path: string, attempt = 0, fresh = false): Promis
     !fresh &&
     attempt < WCA_MAX_RETRIES
   ) {
-    await sleep(getRetryDelayMs(response, attempt));
+    if (response.status !== 429) await sleep(getRetryDelayMs(response, attempt));
 
-    return fetchWCAJson<T>(path, attempt + 1, fresh);
+    return fetchWCAJsonAttempt<T>(path, attempt + 1, fresh);
   }
 
   if (!response.ok) {

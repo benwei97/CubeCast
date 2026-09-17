@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Prisma, UserRole } from "@prisma/client";
 import { auth } from "@/auth";
 import { AdminMarketPublisher } from "@/components/admin-market-publisher";
+import { AdminRecommendationControls } from "@/components/admin-recommendation-controls";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import {
@@ -12,7 +13,6 @@ import {
 import { asMetadata } from "@/lib/wca-result-snapshot";
 import { prisma } from "@/lib/prisma";
 import {
-  generateWeeklyRecommendedContest,
   prepareNextContest,
   settleV1Market,
   settleV1MarketAsTie,
@@ -112,6 +112,8 @@ export default async function AdminPage({
   const isComplete = contest?.status === "FINALIZED";
   const now = new Date();
   const preparation = asMetadata(contest?.preparation);
+  const generationJob = asMetadata(preparation.generationJob);
+  const generating = generationJob.status === "RUNNING";
   const publicMarkets =
     contest?.markets.filter((market) => market.publishedAt !== null) ?? [];
   const pendingMarkets = publicMarkets.filter(
@@ -240,37 +242,31 @@ export default async function AdminPage({
       )}
 
       {!contest && (
-        <form action={generateWeeklyRecommendedContest}>
-          <PendingSubmitButton pendingLabel="Finding competitions...">
-            Generate recommended markets
-          </PendingSubmitButton>
-        </form>
+        <AdminRecommendationControls label="Generate recommended markets" />
       )}
 
       {contest && isDraft && (
         <section>
           <div className="section-heading">
             <h2>Recommended markets</h2>
-            <form action={generateWeeklyRecommendedContest}>
-              <input name="contestId" type="hidden" value={contest.id} />
-              <PendingSubmitButton
-                className={hasMarkets ? "secondary-button" : undefined}
-                pendingLabel="Finding matchups and calculating odds..."
-              >
-                {hasMarkets
-                  ? "Refresh recommendations"
-                  : "Generate recommended markets"}
-              </PendingSubmitButton>
-            </form>
+            <AdminRecommendationControls
+              contestId={contest.id}
+              running={generating}
+              className={hasMarkets ? "secondary-button" : undefined}
+              label={hasMarkets ? "Refresh recommendations" : "Generate recommended markets"}
+            />
           </div>
-          {hasMarkets && preparation.generationMethod !== "engagement-v1" && (
+          {generationJob.status === "FAILED" && (
+            <p className="form-error" role="alert">{String(generationJob.error ?? "Generation failed. Try again.")}</p>
+          )}
+          {!generating && hasMarkets && preparation.generationMethod !== "engagement-v1" && (
             <p>
               These markets were generated using the previous competition-first
               approach. Refresh recommendations to find highly ranked, close
               matchups across the window.
             </p>
           )}
-          {hasMarkets && Number(preparation.unavailableRegistrations) > 0 && (
+          {!generating && hasMarkets && Number(preparation.unavailableRegistrations) > 0 && (
             <div>
               <p className="form-error">
               Some competition registrations could not be loaded. These
@@ -289,19 +285,19 @@ export default async function AdminPage({
               )}
             </div>
           )}
-          {hasMarkets && Number(preparation.unavailable) > 0 && (
+          {!generating && hasMarkets && Number(preparation.unavailable) > 0 && (
             <p>
               Some WCA Odds simulations were unavailable. Only markets with
               successful WCA Odds probabilities are included.
             </p>
           )}
-          {hasMarkets && Number(preparation.rankTier) > 100 && (
+          {!generating && hasMarkets && Number(preparation.rankTier) > 100 && (
             <p>
               Top-100 matchups are prioritized. The search expanded to top-
               {Number(preparation.rankTier)} competitors to find more close markets.
             </p>
           )}
-          {(hasMarkets || params.wca === "no-recommendations") && contest.markets.length < contest.maxPicks && (
+          {!generating && (hasMarkets || params.wca === "no-recommendations" || generationJob.status === "FAILED") && contest.markets.length < contest.maxPicks && (
             <div>
               <p className="form-error">
                 Only {contest.markets.length} qualifying markets are available. At
@@ -309,16 +305,10 @@ export default async function AdminPage({
                 {" "}Try a wider contest window; probabilities are never substituted
                 to fill the list.
               </p>
-              <form action={generateWeeklyRecommendedContest}>
-                <input name="contestId" type="hidden" value={contest.id} />
-                <input name="expandWindow" type="hidden" value="true" />
-                <PendingSubmitButton className="secondary-button" pendingLabel="Searching a wider window...">
-                  Expand window by 7 days
-                </PendingSubmitButton>
-              </form>
+              <AdminRecommendationControls contestId={contest.id} expandWindow className="secondary-button" label="Expand window by 7 days" />
             </div>
           )}
-          {hasMarkets && (
+          {hasMarkets && !generating && (
             <AdminMarketPublisher
               key={contest.updatedAt.toISOString()}
               contestId={contest.id}

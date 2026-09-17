@@ -8,6 +8,10 @@ On a Draft contest in /admin, click Refresh recommendations. Top-100 pairs are s
 
 If fewer than 10 markets qualify, publication remains blocked. Expand window by 7 days explicitly searches a larger date range; the header updates after successful generation. No contest is published automatically, and no fallback probabilities are used.
 
+WCA discovery and registration requests now share pacing with automatic result checks. Cold generation starts requests at least two seconds apart; a rate limit pauses all reads for Retry-After or a 30/60/120-second cooldown. Let generation finish rather than repeatedly refreshing. Successful rosters are reused for 30 minutes, so immediate refreshes are usually faster but may not reflect registrations changed during that period. WCA Odds remains separately rate-controlled.
+
+Refresh recommendations now returns immediately and displays Finding competitions and calculating odds. The page checks status every five seconds; the work does not require keeping the original browser submission open. Existing markets are replaced only after successful completion. Cancel generation keeps existing markets and lets you start again, including after a server restart leaves a running status behind. Failed generation shows a saved error; connection failures show a recoverable inline message. Publication is unavailable while generation runs.
+
 CubeCast is a free WCA prediction contest game.
 
 The current runnable app opens on the V1 contest-picking flow. The old trading routes and services have been removed from the app surface.

@@ -9,6 +9,8 @@ import {
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { auth } from "@/auth";
@@ -49,7 +51,6 @@ import {
 
 const WCA_COMPETITION_PAGE_SIZE = 25;
 const WCA_COMPETITION_PAGE_LIMIT = 100;
-const WCA_RECOMMENDATION_REQUEST_SPACING_MS = 250;
 
 const updateDiversityConfigSchema = z.object({
   maxPerCompetition: z.coerce.number().int().min(1).max(30),
@@ -175,10 +176,86 @@ async function claimDraft(
 
 export async function generateWeeklyRecommendedContest(formData: FormData) {
   const admin = await requireAdmin();
-  const draft = await getOrCreateDraft(
+  const original = await getOrCreateDraft(
     formData.get("contestId")?.toString() ?? null,
     admin.id
   );
+  const originalPreparation = asMetadata(original.preparation);
+  if (asMetadata(originalPreparation.generationJob).status === "RUNNING") {
+    return { contestId: original.id };
+  }
+  const jobId = randomUUID();
+  const claimed = await prisma.contestSlate.updateMany({
+    where: { id: original.id, status: "DRAFT", updatedAt: original.updatedAt },
+    data: {
+      preparation: {
+        ...originalPreparation,
+        generationJob: { id: jobId, status: "RUNNING", startedAt: new Date().toISOString() }
+      } as Prisma.InputJsonObject
+    }
+  });
+  if (!claimed.count) throw new Error("This contest changed. Reload and try again.");
+  const draft = await prisma.contestSlate.findUniqueOrThrow({ where: { id: original.id } });
+  const expandWindow = formData.get("expandWindow") === "true";
+  after(async () => {
+    try {
+      await generateContestRecommendations(draft, admin.id, jobId, expandWindow);
+    } catch (error) {
+      const current = await prisma.contestSlate.findUnique({ where: { id: draft.id } });
+      const preparation = asMetadata(current?.preparation);
+      const job = asMetadata(preparation.generationJob);
+      if (current?.status === "DRAFT" && job.id === jobId && job.status === "RUNNING") {
+        console.error("[Contest generation]", draft.id, error);
+        await prisma.contestSlate.updateMany({
+          where: { id: current.id, updatedAt: current.updatedAt, status: "DRAFT" },
+          data: { preparation: {
+            ...preparation,
+            generationJob: {
+              ...job, status: "FAILED", finishedAt: new Date().toISOString(),
+              error: error instanceof Error ? error.message : "Generation failed. Try again."
+            }
+          } as Prisma.InputJsonObject }
+        });
+      }
+    }
+  });
+  revalidateV1Paths();
+  return { contestId: draft.id };
+}
+
+export async function cancelContestGeneration(formData: FormData) {
+  await requireAdmin();
+  const contestId = formData.get("contestId")?.toString();
+  if (!contestId) throw new Error("Choose a contest first.");
+  const draft = await prisma.contestSlate.findUniqueOrThrow({ where: { id: contestId } });
+  const preparation = asMetadata(draft.preparation);
+  const job = asMetadata(preparation.generationJob);
+  if (draft.status === "DRAFT" && job.status === "RUNNING") {
+    await prisma.contestSlate.updateMany({
+      where: { id: draft.id, status: "DRAFT", updatedAt: draft.updatedAt },
+      data: { preparation: {
+        ...preparation,
+        generationJob: { ...job, status: "CANCELLED", finishedAt: new Date().toISOString() }
+      } as Prisma.InputJsonObject }
+    });
+  }
+  revalidateV1Paths();
+  return { contestId: draft.id };
+}
+
+async function generateContestRecommendations(
+  draft: NonNullable<Awaited<ReturnType<typeof getOrCreateDraft>>>,
+  adminUserId: string,
+  jobId: string,
+  expandWindow: boolean
+) {
+  const assertActive = async () => {
+    const current = await prisma.contestSlate.findUnique({ where: { id: draft.id }, select: { status: true, preparation: true } });
+    const job = asMetadata(asMetadata(current?.preparation).generationJob);
+    if (current?.status !== "DRAFT" || job.id !== jobId || job.status !== "RUNNING") {
+      throw new Error("Generation was cancelled or superseded.");
+    }
+  };
   const preparation = asMetadata(draft.preparation);
   const start =
     typeof preparation.windowStart === "string"
@@ -188,23 +265,25 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
     typeof preparation.windowEnd === "string"
       ? new Date(preparation.windowEnd)
       : new Date(start.getTime() + 7 * 86400000);
-  const end = new Date(savedEnd.getTime() + (formData.get("expandWindow") === "true" ? 7 * 86400000 : 0));
+  const end = new Date(savedEnd.getTime() + (expandWindow ? 7 * 86400000 : 0));
   const now = new Date();
   let competitions: WCARecommendation[];
   let generated: Awaited<ReturnType<typeof generateEngagingRecommendations>>;
   try {
+    await assertActive();
     const upcoming = (
       await fetchAllWCACompetitions({
         start: formatWCADate(start),
         end: formatWCADate(end)
-      })
+      }, assertActive)
     ).filter(
       (competition) =>
         !competition.cancelled_at &&
         (parseWCADate(competition.start_date)?.getTime() ?? 0) >
           now.getTime() + 3600000
     );
-    competitions = await buildWCARecommendations(upcoming);
+    await assertActive();
+    competitions = await buildWCARecommendations(upcoming, assertActive);
     const candidates = createEngagingCandidates(
       competitions.map(({ competition, wcif }) => ({
         id: competition.id,
@@ -220,6 +299,7 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
     generated = await generateEngagingRecommendations(
       candidates,
       async (candidate) => {
+        await assertActive();
         await sleep(WCA_ODDS_REQUEST_SPACING_MS);
         return getHeadToHeadProbability({
           eventId: candidate.eventId,
@@ -230,11 +310,12 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
         });
       }
     );
-  } catch {
-    redirect(`/admin?contest=${draft.id}&wca=unavailable`);
+  } catch (error) {
+    throw new Error("Could not load WCA data. Existing markets have been preserved. Try again later.", { cause: error });
   }
+  await assertActive();
   if (!generated.markets.length)
-    redirect(`/admin?contest=${draft.id}&wca=no-recommendations`);
+    throw new Error("No qualifying markets were found. Existing markets have been preserved. Try expanding the contest window.");
   const featuredIds = new Set(
     generated.markets.map((market) => market.competitionId)
   );
@@ -285,7 +366,7 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
             category: MarketCategory.HEAD_TO_HEAD,
             closeTime: lockAt,
             competitionId: competitionIds.get(market.competitionId)!,
-            createdByUserId: admin.id,
+            createdByUserId: adminUserId,
             description:
               "Head-to-head forecast recommended for highly ranked competitors and close WCA Odds probabilities.",
             eventId: market.eventId,
@@ -338,6 +419,11 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
             windowStart: start.toISOString(),
             windowEnd: end.toISOString(),
             generationMethod: "engagement-v1",
+            generationJob: {
+              id: jobId, status: "COMPLETED",
+              startedAt: String(asMetadata(preparation.generationJob).startedAt),
+              finishedAt: new Date().toISOString()
+            },
             recommendations: recommendationMetadata,
             simulated: generated.simulated,
             unavailable: generated.unavailable,
@@ -357,7 +443,7 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
           adminActions: {
             create: {
               actionType: "SLATE_UPDATE",
-              adminUserId: admin.id,
+              adminUserId,
               metadata: {
                 operation: "GENERATE_ENGAGING_MARKETS",
                 simulated: generated.simulated,
@@ -372,7 +458,6 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
     { timeout: 30_000 }
   );
   revalidateV1Paths();
-  redirect(`/admin?contest=${draft.id}&wca=markets-generated`);
 }
 
 export async function updateSlateDiversityConfig(formData: FormData) {
@@ -438,6 +523,10 @@ export async function publishSelectedV1Markets(formData: FormData) {
           competitions: { include: { competition: true } }
         }
       });
+      if (asMetadata(asMetadata(contest.preparation).generationJob).status === "RUNNING") {
+        error = "Wait for recommendation generation to finish or cancel it before publishing.";
+        return;
+      }
       const selected = contest.markets.filter((market) =>
         marketIds.includes(market.id)
       );
@@ -732,10 +821,11 @@ async function fetchAllWCACompetitions({
 }: {
   end: string;
   start: string;
-}) {
+}, assertActive?: () => Promise<void>) {
   const competitions = [];
 
   for (let page = 1; page <= WCA_COMPETITION_PAGE_LIMIT; page += 1) {
+    await assertActive?.();
     const pageCompetitions = await fetchWCACompetitions({
       end,
       page,
@@ -754,14 +844,13 @@ async function fetchAllWCACompetitions({
   );
 }
 
-async function buildWCARecommendations(competitions: WCACompetitionPayload[]) {
+async function buildWCARecommendations(competitions: WCACompetitionPayload[], assertActive?: () => Promise<void>) {
   const recommendations: WCARecommendation[] = [];
 
   for (const competition of competitions.filter(
     (competition) => !competition.cancelled_at
   )) {
-    await sleep(WCA_RECOMMENDATION_REQUEST_SPACING_MS);
-
+    await assertActive?.();
     const { wcif, registrationError } = await fetchWCIFSafely(competition.id);
     const acceptedCompetitors = getAcceptedCompetitors(wcif);
     const marketEligibleCompetitors = getMarketEligibleCompetitors(wcif);

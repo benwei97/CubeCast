@@ -2,6 +2,22 @@
 
 Last updated: 2026-09-17
 
+## Nonblocking Recommendation Generation
+
+- Recommendation actions now claim a job in existing preparation metadata and return immediately. Next.js after runs ingestion/simulation after the response, rather than holding the browser's submission connection open for minutes.
+- Admin controls poll every five seconds while running, expose cancellation, and catch submission connection failures inline. Duplicate starts reuse the current job; publication is blocked during generation.
+- Existing markets remain intact until a successful atomic replacement. Cancellation invalidates the optimistic draft claim and stops work at request checkpoints. Failure details persist for review/retry.
+- Verified a real start/cancel in the browser: start returned in 364ms, 18 existing markets remained unchanged, and desktop/mobile had no overflow or runtime errors. An intentionally aborted submission displayed an inline error rather than an uncaught exception.
+- This is response-scoped background work, not a durable external worker. After a server restart, cancel a stranded running job and regenerate. Hosting execution limits still apply; serverless production needs a durable job runner for long generation tasks.
+
+## Shared WCA Request Controls
+
+- Replaced the 250ms registration-only delay with a process-wide queue for discovery, registration, and automatic result reads, with at least two seconds between request starts.
+- A 429 pauses all queued reads using Retry-After or 30/60/120-second fallback cooldowns, including when the triggering read cannot retry.
+- Successful non-result reads are reused for 30 minutes; concurrent identical requests share one fetch. Failed reads are not cached. Official results remain fresh.
+- Deterministic tests cover queue spacing, cooldowns, failure recovery, Retry-After formats, successful caching, request deduplication, and retry rules. No schema migration is needed.
+- This is single-process protection, not a guaranteed WCA quota. Multi-instance deployment needs coordinated ingestion or a distributed limiter.
+
 ## Market-First Engagement Recommendations
 
 - Removed competition selection and fixed three-competition publication requirements.

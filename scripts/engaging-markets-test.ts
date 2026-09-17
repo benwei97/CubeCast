@@ -8,6 +8,7 @@ import {
 import { getSelectedContestTiming } from "../src/lib/contest-workflow";
 import type { WCIFPublicPayload } from "../src/lib/wca";
 import { fetchWCAPublicWCIF, fetchWCACompetitionResults } from "../src/lib/wca";
+import { getWCARateLimitDelay, WCARequestQueue } from "../src/lib/wca-request-queue";
 
 function person(
   id: string,
@@ -185,7 +186,15 @@ async function main() {
   assert.equal(timing.lockAt.toISOString(), "2026-10-02T23:00:00.000Z");
   assert.throws(() => getSelectedContestTiming([]));
   const originalFetch = globalThis.fetch;
+  const originalNow = Date.now;
+  const originalTimeout = globalThis.setTimeout;
+  let time = Date.now();
   try {
+    Date.now = () => time;
+    globalThis.setTimeout = ((callback: () => void, ms = 0) => {
+      time += ms;
+      return originalTimeout(callback, 0);
+    }) as typeof setTimeout;
     for (const status of [429, 503]) {
       let calls = 0;
       globalThis.fetch = async (_input, options) => {
@@ -194,9 +203,18 @@ async function main() {
         assert.equal(options?.cache, "no-store", "Retries bypass cached errors");
         return Response.json({ persons: [] });
       };
-      assert.deepEqual(await fetchWCAPublicWCIF("RetryFixture"), { persons: [] });
+      assert.deepEqual(await fetchWCAPublicWCIF(`RetryFixture${status}`), { persons: [] });
       assert.equal(calls, 2);
+      await fetchWCAPublicWCIF(`RetryFixture${status}`);
+      assert.equal(calls, 2, "Successful roster reads are reused");
     }
+    let concurrentCalls = 0;
+    globalThis.fetch = async () => {
+      concurrentCalls++;
+      return Response.json({ persons: [] });
+    };
+    await Promise.all([fetchWCAPublicWCIF("SharedFixture"), fetchWCAPublicWCIF("SharedFixture")]);
+    assert.equal(concurrentCalls, 1, "Concurrent identical reads share one request");
     let calls = 0;
     globalThis.fetch = async () => {
       calls++;
@@ -213,7 +231,23 @@ async function main() {
     assert.equal(calls, 1, "Settlement reads retain fail-fast behavior");
   } finally {
     globalThis.fetch = originalFetch;
+    Date.now = originalNow;
+    globalThis.setTimeout = originalTimeout;
   }
+  let now = 0;
+  const starts: number[] = [];
+  const queue = new WCARequestQueue(2000, { now: () => now, sleep: async (ms) => { now += ms; } });
+  await Promise.all(Array.from({ length: 3 }, () => queue.run(async () => { starts.push(now); })));
+  assert.deepEqual(starts, [0, 2000, 4000]);
+  await queue.run(async () => { queue.defer(30_000); });
+  const cooldownStart = now;
+  await queue.run(async () => { assert.equal(now, cooldownStart + 30_000); });
+  await assert.rejects(queue.run(async () => { throw new Error("Failed fixture"); }));
+  await queue.run(async () => { starts.push(now); });
+  assert.equal(getWCARateLimitDelay(new Response("", { status: 429 }), 0), 30_000);
+  assert.equal(getWCARateLimitDelay(new Response("", { status: 429 }), 2), 120_000);
+  assert.equal(getWCARateLimitDelay(new Response("", { headers: { "retry-after": "45" } }), 0), 45_000);
+  assert.equal(getWCARateLimitDelay(new Response("", { headers: { "retry-after": new Date(60_000).toUTCString() } }), 0, 0), 60_000);
   console.log("Engaging market tests passed.");
 }
 
