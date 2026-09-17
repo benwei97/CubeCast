@@ -48,7 +48,7 @@ Two-second spacing is a conservative application policy, not a verified WCA quot
 
 ## Admin Review and Publication
 
-Default to recommendation order, with an optional competition-grouped view. All recommendations are preselected. Show world ranks, fixed probabilities, event, competition, and a short reason.
+Default to recommendation order, with an optional competition-grouped view. All recommendations are preselected. Lead with the Cubing event icon and full readable event name, then competition metadata. Show competitors on separate aligned rows with large percentages on the right and subtle world ranks beside each name. Remove redundant matchup/percentage summaries. This hierarchy also appears in publication review; player feed/review uses the same event-label component. No regeneration is needed for existing known event IDs to display canonical labels.
 
 Refresh replaces unpublished candidates only after new results are ready. No-op/failed searches preserve the saved draft. Old competition-first drafts are labelled; they are not silently repriced.
 

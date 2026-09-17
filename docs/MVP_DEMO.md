@@ -10,6 +10,8 @@ If fewer than 10 markets qualify, publication remains blocked. Refresh searches 
 
 ## Target Weekend Verification
 
+For readability checks, open the Recommended or By competition view. Each row should lead with an icon and full event name, then competition, followed by two competitor rows with subtle World # ranks and prominent right-aligned percentages. Select/deselect and publication review should retain the same layout. The player feed and pick modal also show canonical event labels; ranks appear only when saved with recommendations. Existing known event IDs require no regeneration for these display changes.
+
 The admin header should show the target Saturday-Sunday (for example, September 19-20), with full featured competition dates separately. Refresh legacy drafts to apply the weekend policy; publication is blocked until regeneration succeeds. Inspect the By competition view: Friday-Sunday and Saturday-Monday qualify, as do Thursday-Sunday and Sunday-Tuesday, but the following Saturday does not. Full competition dates and the earliest-competition lock are retained. Already published contests do not change.
 
 npm run test:v1 includes deterministic weekend/date/overlap tests, including year boundaries, pinned anchors, invalid dates, and Monday/Tuesday settlement ranges.

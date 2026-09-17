@@ -161,6 +161,8 @@ Controls and surfaces use modest radii. Standard cards and rows use `8px`; contr
 
 ### Market Cards
 
+Lead with a self-hosted Cubing event icon and canonical readable name (2x2x2 Cube, 3x3x3 One-Handed), never a raw event ID. Put competition metadata below. Show H2H competitors on separate aligned rows with large right-aligned, tabular percentages; keep average world ranks muted beside each name, wrapping when needed. Do not repeat the matchup or percentages in prose or recommendation reasons. Admin inclusion/review states and player pick controls retain their existing behavior.
+
 - **Required Content:** question, competition, event, outcomes, probability, point swing, lock status/time, selected state.
 - **Score Display:** Show score swing as `+40 / -60`, based on published probability.
 - **Probability Display:** Show published probabilities as percentages and keep them immutable once published.

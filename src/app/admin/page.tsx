@@ -323,8 +323,10 @@ export default async function AdminPage({
                 );
                 const ranks = asMetadata(recommendation.ranks);
                 return {
+                  category: market.category,
                   competitionName: market.competition.name,
                   eventName: market.eventName ?? market.eventId ?? "Event",
+                  eventId: market.eventId,
                   id: market.id,
                   question: market.question,
                   status: market.status,

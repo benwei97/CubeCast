@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@cubing/icons/css";
 
 :root {
   color-scheme: light;
@@ -1400,17 +1401,30 @@ footer {
   gap: 4px;
 }
 
-.admin-market-summary > span {
+.wca-event-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--ink);
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
-.admin-market-summary strong {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.35;
-}
+.wca-event-label .cubing-icon { font-size: 24px; flex: 0 0 24px; }
+.wca-event-label > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.admin-market-summary { gap: 6px; }
+.admin-market-summary .market-matchup-label { color: var(--muted); font-size: 12px; font-weight: 400; }
+.market-matchup-options { display: grid; gap: 0; margin-top: 2px; }
+.market-matchup-option { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: center; gap: 16px; padding: 9px 0; }
+.market-matchup-option + .market-matchup-option { border-top: 1px solid var(--line); }
+.market-competitor-identity { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; min-width: 0; font-size: 15px; font-weight: 600; }
+.market-competitor-identity > span { overflow-wrap: anywhere; }
+.market-competitor-identity small { font-weight: 400; white-space: nowrap; }
+.market-matchup-probability { color: var(--ink); font-size: 24px; font-weight: 750; line-height: 1.2; text-align: right; font-variant-numeric: tabular-nums; }
+.slate-market-main .wca-event-label, .slate-market-main .wca-event-label span { color: var(--ink); font-size: 16px; font-weight: 700; }
+.slate-market-main .wca-event-label .cubing-icon { font-size: 24px; }
+.pick-option-button .competitor-world-rank { font-weight: 400; }
 
 .admin-publish-review {
   border-color: #b9c3d4;

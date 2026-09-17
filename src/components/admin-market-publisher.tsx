@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { publishSelectedV1Markets } from "@/app/admin/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { WCAEventLabel } from "@/components/wca-event-label";
 import { getSelectedContestTiming } from "@/lib/contest-workflow";
 
 type AdminMarketOption = {
@@ -14,8 +15,10 @@ type AdminMarketOption = {
 };
 
 export type AdminPublishMarket = {
+  category?: string;
   competitionName: string;
   eventName: string;
+  eventId?: string | null;
   id: string;
   options: AdminMarketOption[];
   question: string;
@@ -412,27 +415,20 @@ function MarketSelectionRow({
 function MarketSummary({ market }: { market: AdminPublishMarket }) {
   return (
     <span className="admin-market-summary">
-      <span>{market.options.map((option) => option.label).join(" vs ")}</span>
-      <strong>
-        {market.options
-          .map(
-            (option) =>
-              `${option.label}${option.worldRanking ? ` (World #${option.worldRanking})` : ""} ${option.probability}%`
-          )
-          .join(" / ")}
-      </strong>
-      <small>
-        {market.eventName} · {market.competitionName}
-      </small>
-      {market.options.every((option) => option.worldRanking) && (
-        <small>
-          {market.options.every((option) => option.worldRanking! <= 25)
-            ? "Two top-25 competitors"
-            : `Two top-${getRankTier(market)} competitors`}{" "}
-          ·{" "}
-          {market.options.map((option) => `${option.probability}%`).join(" / ")}
-        </small>
-      )}
+      <WCAEventLabel eventId={market.eventId} fallback={market.eventName} />
+      <small className="market-competition-label">{market.competitionName}</small>
+      <span className="market-matchup-label">{market.category === "HEAD_TO_HEAD" ? "Who places higher?" : market.question}</span>
+      <span className="market-matchup-options">
+        {market.options.map((option) => (
+          <span className="market-matchup-option" key={option.id}>
+            <span className="market-competitor-identity">
+              <span>{option.label}</span>
+              {option.worldRanking && <small title="WCA average world ranking">World #{option.worldRanking}</small>}
+            </span>
+            <strong className="market-matchup-probability">{option.probability}%</strong>
+          </span>
+        ))}
+      </span>
     </span>
   );
 }

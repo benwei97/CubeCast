@@ -9,6 +9,7 @@ import {
   PUBLIC_CONTEST_WHERE
 } from "@/lib/contest-workflow";
 import { getPickCounterLabel } from "@/lib/v1-game";
+import { asMetadata } from "@/lib/wca-result-snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -78,21 +79,29 @@ export default async function HomePage() {
     requiredPicks: activeSlate.maxPicks
   });
 
-  const markets = activeSlate.markets.map((market) => ({
-    category: market.category.replaceAll("_", " "),
-    competitionName: market.competition.name,
-    eventName: market.eventName ?? market.eventId ?? "Event",
-    id: market.id,
-    lockLabel: formatDateTime(activeSlate.lockAt),
-    options: market.options.map((option) => ({
-      id: option.id,
-      label: option.label,
-      probability: option.probability,
-      sideKey: option.sideKey
-    })),
-    question: market.question,
-    status: market.status
-  }));
+  const recommendations = asMetadata(asMetadata(activeSlate.preparation).recommendations);
+  const markets = activeSlate.markets.map((market) => {
+    const ranks = asMetadata(asMetadata(recommendations[market.id]).ranks);
+    return {
+      category: market.category.replaceAll("_", " "),
+      competitionName: market.competition.name,
+      eventName: market.eventName ?? market.eventId ?? "Event",
+      eventId: market.eventId,
+      id: market.id,
+      lockLabel: formatDateTime(activeSlate.lockAt),
+      options: market.options.map((option) => ({
+        id: option.id,
+        label: option.label,
+        probability: option.probability,
+        sideKey: option.sideKey,
+        worldRanking: typeof ranks[option.competitorWcaId ?? ""] === "number"
+          ? ranks[option.competitorWcaId ?? ""] as number
+          : null
+      })),
+      question: market.question,
+      status: market.status
+    };
+  });
 
   const selectedPicks = predictions.map((prediction) => ({
     marketId: prediction.marketId,

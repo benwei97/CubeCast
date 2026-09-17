@@ -16,6 +16,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
+import { getWCAEventName as getEventName } from "@/lib/wca-events";
 import { getNextTargetWeekend, getTargetWeekend, getWeekendPublicationError, getWeekendSunday, overlapsTargetWeekend } from "@/lib/contest-weekend";
 import {
   createEngagingCandidates,
@@ -908,7 +909,7 @@ function getMarketEligibleCompetitors(wcif: WCIFPublicPayload | null) {
 
 function getWCIFEventNames(wcif: WCIFPublicPayload | null) {
   return new Map(
-    (wcif?.events ?? []).map((event) => [event.id, event.name ?? event.id])
+    (wcif?.events ?? []).map((event) => [event.id, getEventName(event.id, event.name)])
   );
 }
 
@@ -1059,18 +1060,6 @@ async function getHeadToHeadProbability({
   }
 
   return null;
-}
-
-function getEventName(eventId: string) {
-  const eventNames: Record<string, string> = {
-    "222": "2x2",
-    "333": "3x3",
-    "333oh": "3x3 One-Handed",
-    "444": "4x4",
-    "555": "5x5"
-  };
-
-  return eventNames[eventId] ?? eventId;
 }
 
 function formatWCADate(date: Date) {

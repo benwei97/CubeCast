@@ -2,6 +2,13 @@
 
 Last updated: 2026-09-17
 
+## Market Readability
+
+- Event-first admin recommendation and review rows use self-hosted @cubing/icons and canonical full WCA event names. Competitors and percentages are aligned in separate rows; world ranks are muted secondary metadata. Removed repeated matchup/probability prose.
+- Player feed/review shares the event-label component and displays stored recommendation ranks when available. Review probabilities no longer include redundant currency-style cents.
+- Future WCA generation uses the shared canonical event names; existing market IDs display correctly without database rewrites. Selection, odds, and scoring are unchanged.
+- Added event-name/fallback tests. Verified real admin data on desktop/mobile: icon font loaded, percentages rendered, no overflow or runtime errors.
+
 ## Fixed Target Weekends
 
 - Added immutable Saturday-date anchors in existing preparation metadata; no schema migration required. New drafts target the next unstarted weekend after any current featured competition window.

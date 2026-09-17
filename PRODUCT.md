@@ -22,6 +22,8 @@ Success for V1 means a WCA-authenticated user can choose 10 predictions before l
 
 ## Positioning
 
+Market scanning prioritizes the readable event name/icon, competitor identities, and clearly separated probabilities. World rankings are secondary metadata, not part of a dense matchup sentence. Admin recommendations and player picks share canonical event labels; rankings are shown only when recorded in recommendation metadata.
+
 CubeCast uses the scanability and interaction speed of modern prediction-market products while remaining a free forecasting game. It is not a real-money market, not a wagering product, and not a virtual-currency trading game.
 
 The product is differentiated by combining official WCA results, recognizable speedcubers, fixed model probabilities, exactly-10 pick selection, transparent point scoring, and objective settlement evidence.

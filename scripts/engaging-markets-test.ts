@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert";
+import { getWCAEventName } from "../src/lib/wca-events";
 import {
   createEngagingCandidates,
   generateEngagingRecommendations,
@@ -30,6 +31,10 @@ function person(
 }
 
 async function main() {
+  assert.equal(getWCAEventName("222", "222"), "2x2x2 Cube");
+  assert.equal(getWCAEventName("333oh", "333oh"), "3x3x3 One-Handed");
+  assert.equal(getWCAEventName("unknown", "Custom event"), "Custom event");
+  assert.equal(getWCAEventName(null, null), "Event");
   const excluded = person("unregistered", 1);
   excluded.registration!.eventIds = ["222"];
   const waiting = person("waiting", 1);

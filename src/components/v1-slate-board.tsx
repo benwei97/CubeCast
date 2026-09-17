@@ -8,18 +8,21 @@ import {
   selectPrediction
 } from "@/app/picks/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { WCAEventLabel } from "@/components/wca-event-label";
 
 type ContestMarketOption = {
   id: string;
   label: string;
   probability: number;
   sideKey: string;
+  worldRanking?: number | null;
 };
 
 type ContestMarket = {
   category: string;
   competitionName: string;
   eventName: string;
+  eventId?: string | null;
   id: string;
   lockLabel: string;
   options: ContestMarketOption[];
@@ -87,10 +90,9 @@ export function V1ContestBoard({
           return (
             <article className="slate-market-row" key={market.id}>
               <div className="slate-market-main">
-                <span>
-                  {market.competitionName} · {market.eventName}
-                </span>
-                <strong>{market.question}</strong>
+                <WCAEventLabel eventId={market.eventId} fallback={market.eventName} />
+                <span>{market.competitionName}</span>
+                <strong>{market.category === "HEAD TO HEAD" ? "Who places higher?" : market.question}</strong>
                 <small>{market.category} · Locks {market.lockLabel}</small>
               </div>
 
@@ -112,6 +114,7 @@ export function V1ContestBoard({
                     type="button"
                   >
                     <span>{option.label}</span>
+                    {option.worldRanking && <small className="competitor-world-rank" title="WCA average world ranking">World #{option.worldRanking}</small>}
                     <strong>{option.probability}%</strong>
                     <small>{formatScoreSwing(option.probability)}</small>
                     {market.status !== "OPEN" && <em>{market.status}</em>}
@@ -186,16 +189,17 @@ function PickReviewModal({
         </div>
 
         <div className="pick-review-market">
+          <WCAEventLabel eventId={selection.market.eventId} fallback={selection.market.eventName} />
           <strong>{selection.market.question}</strong>
           <span>
-            {selection.market.eventName} · Locks {selection.market.lockLabel}
+            Locks {selection.market.lockLabel}
           </span>
         </div>
 
         <div className="pick-review-side">
           <span>{selection.option.label}</span>
           <strong>
-            {selection.option.probability}% · {selection.option.probability}¢
+            {selection.option.probability}%
           </strong>
           <small>{formatScoreSwing(selection.option.probability)}</small>
         </div>
