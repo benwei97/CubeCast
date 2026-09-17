@@ -2,6 +2,12 @@
 
 Last updated: 2026-09-17
 
+## Production Market Presentation
+
+- Removed duplicate historical comparison and technical model/cache commentary from market pages. The two outcomes and large probabilities lead, followed by competitor PB averages/world ranks from WCA person records.
+- Missing historical PB metadata no longer creates misleading empty comparison rows. Current stats remain real WCA values; failed requests show an honest retry notice, not fabricated PBs.
+- Recent results and rules are expandable; raw settlement evidence is admin-only. Pick behavior, private previews, immutable odds, and saved internal metadata are unchanged.
+
 ## Pick Rejection Handling
 
 - Expected selection failures (locked/unavailable contest, unavailable outcome, or pick limit) return inline review messages rather than uncaught server runtime errors. Unexpected request failures also remain inside review.

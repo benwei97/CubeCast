@@ -12,14 +12,16 @@ export async function MarketResearch({ wcaId, eventId, name }: { wcaId: string; 
   return <section className="market-research-person">
     <h3><a className="text-link" href={`https://www.worldcubeassociation.org/persons/${encodeURIComponent(wcaId)}`} target="_blank" rel="noreferrer">{name}</a></h3>
     <dl className="market-stat-list">
-      <div><dt>Current average world rank</dt><dd>{average?.world_rank ? `#${average.world_rank}` : "Not available"}</dd></div>
-      <div><dt>Current personal-best average</dt><dd>{formatWCAResult(average?.best)}</dd></div>
+      <div><dt>Average world rank</dt><dd>{average?.world_rank ? `#${average.world_rank}` : "Not available"}</dd></div>
+      <div><dt>Personal-best average</dt><dd>{formatWCAResult(average?.best)}</dd></div>
     </dl>
-    <h4>Recent official averages</h4>
-    {results.status === "rejected" || competitions.status === "rejected" ? <p className="form-error">Some WCA history is unavailable. The forecast has not changed.</p> : null}
+    {profile.status === "rejected" && <p className="form-error">WCA stats could not be loaded. Please try again later.</p>}
+    <details className="market-recent-results"><summary>Recent results</summary>
+    {results.status === "rejected" || competitions.status === "rejected" ? <p className="form-error">Recent results could not be loaded. Please try again later.</p> : null}
     {rows.length ? <div className="research-table-wrap"><table className="research-table"><thead><tr><th>Competition</th><th>Round</th><th>Average</th></tr></thead><tbody>{rows.map((row, index) => {
       const competition = competitionMap.get(row.competition_id)!;
       return <tr key={`${row.competition_id}-${row.round_type_id}-${index}`}><td><a className="text-link" href={getWCACompetitionUrl(row.competition_id)} target="_blank" rel="noreferrer">{competition.name}</a><small>{competition.start_date}</small></td><td>{row.round_type_id === "f" ? "Final" : /^[1-3]$/.test(row.round_type_id) ? `Round ${row.round_type_id}` : row.round_type_id}</td><td>{formatWCAResult(row.average)}</td></tr>;
     })}</tbody></table></div> : <p>No recent averages available.</p>}
+    </details>
   </section>;
 }

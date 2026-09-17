@@ -1441,6 +1441,30 @@ footer {
 .market-stat-list dd { margin: 6px 0 0; font-weight: 600; overflow-wrap: anywhere; }
 .market-research-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
 .market-research-person { min-width: 0; }
+.market-detail-page { max-width: 1000px; margin-inline: auto; width: 100%; }
+.market-detail-meta { color: var(--muted); font-size: 14px; }
+.market-detail-counter { font-weight: 600; }
+.market-own-pick { font-weight: 500; }
+.market-detail-page .slate-market-header,
+.market-detail-page .slate-market-main { display: none; }
+.market-detail-page .slate-market-board { border: 0; background: transparent; border-radius: 0; box-shadow: none; }
+.market-detail-page .slate-market-row { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 20px 0; }
+.market-detail-page .pick-option-button { min-height: 150px; padding: 20px; }
+.market-detail-page .pick-option-button > strong,
+.market-detail-page .detail-forecast-options strong { font-size: 40px; line-height: 1.2; }
+.market-detail-page .pick-option-button > span { font-size: 18px; font-weight: 600; }
+.market-detail-page .pick-option-button:disabled:not(.is-selected) { opacity: 1; cursor: default; }
+.market-competitor-section { border-top: 1px solid var(--line); padding-top: 24px; }
+.market-research-person .market-stat-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.market-research-person .market-stat-list > div { display: block; min-width: 0; }
+.market-research-person .market-stat-list dd { font-size: 24px; font-variant-numeric: tabular-nums; }
+.market-detail-page summary { cursor: pointer; font-weight: 600; padding: 14px 0; }
+.market-resolution-section { border-top: 1px solid var(--line); padding-top: 8px; }
+.market-resolution-section p { max-width: 72ch; }
+@media (max-width: 480px) {
+  .market-detail-page .pick-option-button { padding: 14px 10px; }
+  .market-detail-page .pick-option-button > span { font-size: 16px; }
+}
 .research-table-wrap { overflow-x: auto; }
 .research-table { border-collapse: collapse; width: 100%; font-size: 13px; text-align: left; }
 .research-table th, .research-table td { padding: 12px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }

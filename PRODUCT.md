@@ -22,7 +22,7 @@ Success for V1 means a WCA-authenticated user can choose 10 predictions before l
 
 ## Positioning
 
-Users can navigate from a contest to its competition pages and individual market pages. Market details show fixed probabilities, score swings, saved generation context, current WCA statistics, recent official averages, and settlement rules/evidence. Current statistics are supplemental context, not a reconstruction of the model's individual solve inputs. Older markets explicitly indicate missing generation context rather than inventing it.
+Users can navigate from a contest to its competition pages and individual market pages. Market details prioritize competitors, fixed probabilities, score swings, and pick status, followed by WCA personal-best averages and average world rankings. Recent results and market rules are expandable. Use current WCA records for displayed competitor stats; do not expose internal generation metadata or missing historical snapshots as a player-facing comparison. Settlement evidence remains available to admins without cluttering the player experience.
 
 Draft market and competition pages are private admin previews. Admins can include/exclude candidates from preview pages or the main review, with choices persisted across navigation. Publication remains one atomic contest-wide action; previews never publish individual markets.
 

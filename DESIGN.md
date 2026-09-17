@@ -201,7 +201,7 @@ Lead with a self-hosted Cubing event icon and canonical readable name (2x2x2 Cub
 
 - Event labels and competition names are navigation links; outcome buttons remain independent pick actions. Avoid links nested inside selection buttons.
 - Competition pages are scoped to a contest and preserve the player pick flow. Draft competition pages are admin-only previews.
-- Market pages foreground event, question, competitors, percentages, score swings, and deadline. Follow with saved generation context, separately labelled current WCA statistics/recent averages, and settlement rules/evidence.
+- Market pages foreground event, question, competitors, large percentages, score swings, and deadline. Follow with real WCA PB averages/world ranks. Expandable recent results and rules sit below; internal model settings and serialized evidence are not player-facing content. Keep locked probabilities legible, not faded like unavailable actions.
 - Use compact comparison tables and unframed sections rather than decorative dashboards or speculative charts. Tables can scroll within their own wrapper on narrow screens.
 - Draft inclusion changes persist without resetting the selected admin grouping. Preview controls never imply individual publication.
 - Do not prefetch market research pages from every feed row: load research on navigation, through the shared WCA queue/cache. Research failures must not replace or alter published odds.
