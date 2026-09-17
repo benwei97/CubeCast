@@ -86,16 +86,19 @@ export async function fetchWCACompetition(wcaCompetitionId: string) {
 export async function fetchWCACompetitions({
   end,
   page,
-  start
+  start,
+  sort
 }: {
-  end: string;
+  end?: string;
   page?: number;
   start: string;
+  sort?: string;
 }) {
   const params = new URLSearchParams({
-    end,
     start
   });
+  if (end) params.set("end", end);
+  if (sort) params.set("sort", sort);
 
   if (page) {
     params.set("page", page.toString());

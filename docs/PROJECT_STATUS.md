@@ -2,6 +2,14 @@
 
 Last updated: 2026-09-17
 
+## Fixed Target Weekends
+
+- Added immutable Saturday-date anchors in existing preparation metadata; no schema migration required. New drafts target the next unstarted weekend after any current featured competition window.
+- Discover competitions in start-date order and stop after target Sunday, then apply date-range overlap and deadline checks before loading registrations. This retains Friday-Sunday/Saturday-Monday and Thursday/Tuesday extensions without mixing adjacent weekends.
+- Removed all discovery-window expansion paths. Publication requires regenerated weekend-policy candidates and independently validates selected competitions' overlap.
+- Header separates target Saturday-Sunday from full featured competition dates and lock time. Expired drafts can explicitly prepare a new contest. Published contests remain unchanged; old draft content survives until successful regeneration.
+- Added deterministic tests for multi-day overlap, adjacent-weekend exclusion, pinned anchors, invalid dates, full settlement duration, and year boundaries.
+
 ## Nonblocking Recommendation Generation
 
 - Recommendation actions now claim a job in existing preparation metadata and return immediately. Next.js after runs ingestion/simulation after the response, rather than holding the browser's submission connection open for minutes.
@@ -23,7 +31,7 @@ Last updated: 2026-09-17
 - Removed competition selection and fixed three-competition publication requirements.
 - Search upcoming global competitions in the window; prioritize top-100 accepted, event-registered competitors, expanding to top-250 and top-500 pairs when needed.
 - Simulate up to 120 distinct matchups using WCA Odds only, qualify probabilities in 35%-65%, target 20 and recommend up to 30 with diversity caps applied after simulation. Ranking tiers precede relevance/closeness scores.
-- Retry temporary WCA roster failures, retain failed competition names/reasons, and offer explicit seven-day discovery-window expansion when fewer than 10 markets qualify. Real-data availability cannot be guaranteed.
+- Retry temporary WCA roster failures and retain failed competition names/reasons. Search additional matchups only within the fixed target weekend when fewer than 10 markets qualify. Real-data availability cannot be guaranteed.
 - Recommendations are preselected and quality-ranked; optional competition grouping remains available.
 - World ranks and recommendation reasons appear on admin market rows. Unavailable registrations or probabilities are disclosed; no fallback odds or weak padding are added.
 - Publishing derives featured competitions, start/end dates, and the one-hour-before-earliest-start lock from included markets. Excluding an entire competition is supported.

@@ -12,6 +12,7 @@ import {
 } from "@/lib/contest-workflow";
 import { asMetadata } from "@/lib/wca-result-snapshot";
 import { prisma } from "@/lib/prisma";
+import { getTargetWeekend, getWeekendSunday } from "@/lib/contest-weekend";
 import {
   prepareNextContest,
   settleV1Market,
@@ -119,20 +120,12 @@ export default async function AdminPage({
   const pendingMarkets = publicMarkets.filter(
     (market) => !["RESOLVED", "VOID", "CANCELED"].includes(market.status)
   );
-  const windowStart =
-    contest &&
-    isDraft &&
-    !contest.competitions.length &&
-    typeof preparation.windowStart === "string"
-      ? new Date(preparation.windowStart)
-      : contest?.startsAt;
-  const windowEnd =
-    contest &&
-    isDraft &&
-    !contest.competitions.length &&
-    typeof preparation.windowEnd === "string"
-      ? new Date(preparation.windowEnd)
-      : contest?.endsAt;
+  const hasWeekendAnchor = typeof preparation.targetWeekend === "string";
+  const targetWeekend = contest && (isDraft || hasWeekendAnchor)
+    ? getTargetWeekend(preparation, now)
+    : null;
+  const windowStart = targetWeekend ?? contest?.startsAt;
+  const windowEnd = targetWeekend ? getWeekendSunday(targetWeekend) : contest?.endsAt;
   const windowLabel =
     windowStart && windowEnd
       ? `${formatWindowDate(windowStart)} – ${formatWindowDate(windowEnd)}`
@@ -168,7 +161,11 @@ export default async function AdminPage({
       <section className="admin-contest-heading">
         <div>
           <h1>{windowLabel}</h1>
+          {targetWeekend && <p>Target weekend</p>}
           <p>{contest?.title ?? "Contest Manager"}</p>
+          {contest && contest.competitions.length > 0 && (
+            <p>Featured competitions: {formatWindowDate(contest.startsAt)} – {formatWindowDate(contest.endsAt)}</p>
+          )}
           {contest && (
             <div className="admin-contest-state">
               <span
@@ -197,13 +194,13 @@ export default async function AdminPage({
               Current contest
             </Link>
           )}
-          {current && !isDraft && (
+          {((current && !isDraft) || (isDraft && targetWeekend && getWeekendSunday(targetWeekend) < now)) && (
             <form action={prepareNextContest}>
               <PendingSubmitButton
                 className="secondary-button"
                 pendingLabel="Opening draft..."
               >
-                {draft && draft.startsAt > current.endsAt
+                {draft && current && draft.startsAt > current.endsAt
                   ? "Continue next draft"
                   : "Prepare next contest"}
               </PendingSubmitButton>
@@ -259,6 +256,9 @@ export default async function AdminPage({
           {generationJob.status === "FAILED" && (
             <p className="form-error" role="alert">{String(generationJob.error ?? "Generation failed. Try again.")}</p>
           )}
+          {!generating && hasMarkets && preparation.weekendPolicyVersion !== 1 && (
+            <p className="form-error">Refresh recommendations to restrict this draft to the target weekend before publishing.</p>
+          )}
           {!generating && hasMarkets && preparation.generationMethod !== "engagement-v1" && (
             <p>
               These markets were generated using the previous competition-first
@@ -302,10 +302,9 @@ export default async function AdminPage({
               <p className="form-error">
                 Only {contest.markets.length} qualifying markets are available. At
                 least {contest.maxPicks} are needed to publish a playable contest.
-                {" "}Try a wider contest window; probabilities are never substituted
-                to fill the list.
+                {" "}Refresh to search more matchups within this weekend. Markets
+                from another weekend are never added to fill the list.
               </p>
-              <AdminRecommendationControls contestId={contest.id} expandWindow className="secondary-button" label="Expand window by 7 days" />
             </div>
           )}
           {hasMarkets && !generating && (

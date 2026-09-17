@@ -8,13 +8,11 @@ export function AdminRecommendationControls({
   contestId,
   label,
   className,
-  expandWindow = false,
   running = false
 }: {
   contestId?: string;
   label: string;
   className?: string;
-  expandWindow?: boolean;
   running?: boolean;
 }) {
   const router = useRouter();
@@ -30,7 +28,6 @@ export function AdminRecommendationControls({
   const submit = (cancel = false) => {
     const data = new FormData();
     if (contestId) data.set("contestId", contestId);
-    if (expandWindow) data.set("expandWindow", "true");
     setError(null);
     startTransition(async () => {
       try {

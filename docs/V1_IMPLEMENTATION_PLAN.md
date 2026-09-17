@@ -4,7 +4,7 @@ Last updated: 2026-09-17
 
 ## Admin Contest Workflow
 
-- Generate market-first recommendations across upcoming competitions, preferring top-100 event-specific average world ranks and expanding to top-250/top-500 tiers as needed. Target 20 recommendations with at most 120 WCA Odds simulations; apply diversity caps after simulation. Retry temporary roster failures and allow explicit seven-day discovery-window expansion for short lists. Review/publish a variable-sized release with all recommendations preselected.
+- Generate market-first recommendations only from competitions overlapping a fixed target Saturday-Sunday, retaining full multi-day durations. Prefer top-100 event-specific average world ranks and expand to top-250/top-500 tiers as needed. Target 20 recommendations with at most 120 WCA Odds simulations; apply diversity caps after simulation. Retry temporary roster failures but never expand into another weekend. Review/publish a variable-sized release with all recommendations preselected.
 - Derive featured competitions and contest timing from included markets; remove fixed three-competition selection.
 - Show Draft, Active, and Complete views with timeframe-first headers.
 - Publish the contest and selected markets atomically, preserve fixed probabilities, and retire unselected candidates.

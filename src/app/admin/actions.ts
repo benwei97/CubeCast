@@ -16,6 +16,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
+import { getNextTargetWeekend, getTargetWeekend, getWeekendPublicationError, getWeekendSunday, overlapsTargetWeekend } from "@/lib/contest-weekend";
 import {
   createEngagingCandidates,
   ENGAGING_MARKET_CONFIG,
@@ -109,12 +110,11 @@ async function getOrCreateDraft(contestId: string | null, adminUserId: string) {
     orderBy: CURRENT_CONTEST_ORDER
   });
   const now = new Date();
+  const upcomingWeekend = getNextTargetWeekend(now);
   const startsAt = previous
-    ? new Date(
-        Math.max(now.getTime(), previous.endsAt.getTime() + 24 * 60 * 60 * 1000)
-      )
-    : now;
-  const endsAt = new Date(startsAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    ? new Date(Math.max(upcomingWeekend.getTime(), getNextTargetWeekend(previous.endsAt).getTime()))
+    : upcomingWeekend;
+  const endsAt = getWeekendSunday(startsAt);
   const title = `WCA Contest - ${formatContestDate(startsAt)}`;
   return prisma.contestSlate.create({
     data: {
@@ -128,6 +128,7 @@ async function getOrCreateDraft(contestId: string | null, adminUserId: string) {
       preparation: {
         windowStart: startsAt.toISOString(),
         windowEnd: endsAt.toISOString(),
+        targetWeekend: formatWCADate(startsAt),
         candidateIds: []
       },
       diversityConfig: getDefaultDiversityConfig(),
@@ -142,13 +143,16 @@ export async function prepareNextContest() {
     where: PUBLIC_CONTEST_WHERE,
     orderBy: CURRENT_CONTEST_ORDER
   });
-  const existing = await prisma.contestSlate.findFirst({
+  const drafts = await prisma.contestSlate.findMany({
     where: {
       status: "DRAFT",
       ...(current ? { startsAt: { gt: current.endsAt } } : {})
     },
     orderBy: { createdAt: "desc" }
   });
+  const existing = drafts.find((draft) =>
+    getTargetWeekend(asMetadata(draft.preparation), new Date()) >= getNextTargetWeekend(new Date())
+  );
   const draft = existing ?? (await getOrCreateDraft(null, admin.id));
   redirect(`/admin?contest=${draft.id}`);
 }
@@ -185,21 +189,24 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
     return { contestId: original.id };
   }
   const jobId = randomUUID();
+  const targetWeekend = getTargetWeekend(originalPreparation, new Date());
   const claimed = await prisma.contestSlate.updateMany({
     where: { id: original.id, status: "DRAFT", updatedAt: original.updatedAt },
     data: {
       preparation: {
         ...originalPreparation,
+        targetWeekend: formatWCADate(targetWeekend),
+        windowStart: targetWeekend.toISOString(),
+        windowEnd: getWeekendSunday(targetWeekend).toISOString(),
         generationJob: { id: jobId, status: "RUNNING", startedAt: new Date().toISOString() }
       } as Prisma.InputJsonObject
     }
   });
   if (!claimed.count) throw new Error("This contest changed. Reload and try again.");
   const draft = await prisma.contestSlate.findUniqueOrThrow({ where: { id: original.id } });
-  const expandWindow = formData.get("expandWindow") === "true";
   after(async () => {
     try {
-      await generateContestRecommendations(draft, admin.id, jobId, expandWindow);
+      await generateContestRecommendations(draft, admin.id, jobId);
     } catch (error) {
       const current = await prisma.contestSlate.findUnique({ where: { id: draft.id } });
       const preparation = asMetadata(current?.preparation);
@@ -246,8 +253,7 @@ export async function cancelContestGeneration(formData: FormData) {
 async function generateContestRecommendations(
   draft: NonNullable<Awaited<ReturnType<typeof getOrCreateDraft>>>,
   adminUserId: string,
-  jobId: string,
-  expandWindow: boolean
+  jobId: string
 ) {
   const assertActive = async () => {
     const current = await prisma.contestSlate.findUnique({ where: { id: draft.id }, select: { status: true, preparation: true } });
@@ -257,15 +263,8 @@ async function generateContestRecommendations(
     }
   };
   const preparation = asMetadata(draft.preparation);
-  const start =
-    typeof preparation.windowStart === "string"
-      ? new Date(preparation.windowStart)
-      : draft.startsAt;
-  const savedEnd =
-    typeof preparation.windowEnd === "string"
-      ? new Date(preparation.windowEnd)
-      : new Date(start.getTime() + 7 * 86400000);
-  const end = new Date(savedEnd.getTime() + (expandWindow ? 7 * 86400000 : 0));
+  const start = getTargetWeekend(preparation, new Date());
+  const end = getWeekendSunday(start);
   const now = new Date();
   let competitions: WCARecommendation[];
   let generated: Awaited<ReturnType<typeof generateEngagingRecommendations>>;
@@ -273,12 +272,13 @@ async function generateContestRecommendations(
     await assertActive();
     const upcoming = (
       await fetchAllWCACompetitions({
-        start: formatWCADate(start),
-        end: formatWCADate(end)
+        start: formatWCADate(now),
+        lastStartDate: end
       }, assertActive)
     ).filter(
       (competition) =>
         !competition.cancelled_at &&
+        overlapsTargetWeekend(parseWCADate(competition.start_date), parseWCADate(competition.end_date), start) &&
         (parseWCADate(competition.start_date)?.getTime() ?? 0) >
           now.getTime() + 3600000
     );
@@ -315,7 +315,7 @@ async function generateContestRecommendations(
   }
   await assertActive();
   if (!generated.markets.length)
-    throw new Error("No qualifying markets were found. Existing markets have been preserved. Try expanding the contest window.");
+    throw new Error("No qualifying markets were found for this weekend. Existing markets have been preserved. Try refreshing recommendations later.");
   const featuredIds = new Set(
     generated.markets.map((market) => market.competitionId)
   );
@@ -414,10 +414,12 @@ async function generateContestRecommendations(
           startsAt,
           endsAt,
           lockAt,
-          title: `WCA Contest - ${formatContestDate(startsAt)}`,
+          title: `WCA Contest - ${formatContestDate(start)}`,
           preparation: {
             windowStart: start.toISOString(),
             windowEnd: end.toISOString(),
+            targetWeekend: formatWCADate(start),
+            weekendPolicyVersion: 1,
             generationMethod: "engagement-v1",
             generationJob: {
               id: jobId, status: "COMPLETED",
@@ -527,6 +529,7 @@ export async function publishSelectedV1Markets(formData: FormData) {
         error = "Wait for recommendation generation to finish or cancel it before publishing.";
         return;
       }
+      const preparation = asMetadata(contest.preparation);
       const selected = contest.markets.filter((market) =>
         marketIds.includes(market.id)
       );
@@ -549,6 +552,11 @@ export async function publishSelectedV1Markets(formData: FormData) {
             endDate: competition.endDate
           }))
       );
+      error = getWeekendPublicationError(preparation,
+        contest.competitions.filter(({ competition }) => selectedCompetitionIds.includes(competition.id)).map(({ competition }) => competition),
+        new Date()
+      );
+      if (error) return;
       const now = new Date();
       error = getContestPublishError({
         status: contest.status,
@@ -817,10 +825,12 @@ type WCARecommendation = {
 
 async function fetchAllWCACompetitions({
   end,
-  start
+  start,
+  lastStartDate
 }: {
-  end: string;
+  end?: string;
   start: string;
+  lastStartDate?: Date;
 }, assertActive?: () => Promise<void>) {
   const competitions = [];
 
@@ -829,12 +839,15 @@ async function fetchAllWCACompetitions({
     const pageCompetitions = await fetchWCACompetitions({
       end,
       page,
-      start
+      start,
+      sort: "start_date,name"
     });
 
     competitions.push(...pageCompetitions);
 
-    if (pageCompetitions.length < WCA_COMPETITION_PAGE_SIZE) {
+    if (pageCompetitions.length < WCA_COMPETITION_PAGE_SIZE || (lastStartDate && pageCompetitions.some((competition) =>
+      (parseWCADate(competition.start_date)?.getTime() ?? 0) > lastStartDate.getTime()
+    ))) {
       return competitions;
     }
   }

@@ -6,6 +6,12 @@ CubeCast recommends matchups before choosing featured competitions. Competition 
 
 Search non-cancelled global competitions in the contest's discovery window whose prediction deadlines have not passed. Read accepted public WCIF registrations. Both people in a matchup must be registered for the same event, have WCA IDs, and have a valid average personal best and event-specific average world ranking. Prioritize top-100 pairs, expanding to top-250 and then top-500 when fewer than 20 diverse recommendations qualify.
 
+The discovery identity is a fixed target Saturday-Sunday, stored as preparation.targetWeekend (a Saturday YYYY-MM-DD). Default to the next Saturday that has not started, using UTC calendar dates consistently with WCA ingestion. Publication of the next contest still respects non-overlapping featured competition windows. Legacy drafts acquire an anchor on regeneration; refresh never moves a pinned anchor. Published contests remain unchanged.
+
+Include a competition when start_date <= target Sunday and end_date >= target Saturday. Friday-Sunday, Saturday-Monday, Thursday-Sunday, and Sunday-Tuesday all qualify; keep the entire competition duration for market settlement. Exclude cancelled competitions, past prediction deadlines, and competitions wholly before/after the weekend. Never add next weekend to fill the market list.
+
+WCA's API start/end filters use containment, not overlap. Query from today's date without an end bound, sorted by start_date,name; paginate until a start date exceeds the target Sunday, then apply the overlap/deadline filters before roster loading. This avoids dropping Monday/Tuesday finishes or querying all future rosters. Source: https://github.com/thewca/worldcubeassociation.org/blob/main/app/models/competition.rb (Competition.search).
+
 The initial supported events remain 2x2, 3x3, one-handed 3x3, 4x4, and 5x5, matching the existing H2H generator.
 
 ## Shortlisting and Probabilities
@@ -30,7 +36,7 @@ Select up to 30 candidates in ranking-tier order, then descending score, with co
 
 If strong candidates are scarce, show fewer rather than padding. At least ten included markets are required to publish a playable contest.
 
-Enough qualifying real-data markets cannot be guaranteed in every window. A short list offers an explicit Expand window by 7 days action, which searches again and updates the displayed discovery dates only on successful generation. It never silently extends the week or fabricates probabilities. Temporary WCA registration network errors, timeouts, HTTP 429 and 5xx errors retry up to three times, bypassing cached errors on retry; permanent errors such as 404 do not retry. Persist failed competition names/reasons and search diagnostics in preparation metadata.
+Enough qualifying real-data markets cannot be guaranteed in every weekend. A short list remains blocked below ten; search ranking tiers and additional matchups within the same weekend rather than extending dates or fabricating probabilities. Removed the seven-day expansion action. Temporary WCA registration network errors, timeouts, HTTP 429 and 5xx errors retry up to three times; permanent errors such as 404 do not retry. Persist failed competition names/reasons and search diagnostics in preparation metadata.
 
 ## WCA Request Pacing
 
@@ -49,6 +55,8 @@ Refresh replaces unpublished candidates only after new results are ready. No-op/
 Generation claims a RUNNING job in preparation metadata and returns the contest ID immediately. Next.js after performs the work; the admin page polls every five seconds. Failed jobs preserve saved markets and expose errors. Cancelled or superseded jobs cannot replace markets; cancellation checkpoints precede discovery pages, registration reads, and simulations. Duplicate starts do not launch concurrent jobs for the same running draft. Publication is blocked while generation runs. Process restarts do not resume work automatically: cancel a stranded job and regenerate. This does not remove serverless execution limits or replace a durable production job runner.
 
 Publish included markets and activate the contest in one transaction. Derive featured competitions and timing from included markets, dropping competitions with no included markets. Set the global lock one hour before the earliest included scheduled start. The current WCA ingestion uses competition dates as start timestamps; precise schedule/timezone ingestion remains a separate limitation.
+
+Publication requires regenerated weekend-policy candidates (preparation.weekendPolicyVersion = 1) and independently checks every selected competition's overlap. Legacy multi-week draft markets remain saved on failure/cancellation but cannot be published until regenerated. No database schema migration or deletion of public contests is required.
 
 Published probabilities never change when recommendations refresh. Existing user pick rules, scoring, settlement evidence, automatic result monitoring, and historical contests remain unchanged.
 

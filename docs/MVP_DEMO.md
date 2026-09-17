@@ -6,7 +6,13 @@ Last updated: 2026-09-17
 
 On a Draft contest in /admin, click Refresh recommendations. Top-100 pairs are searched first; top-250 and top-500 pairs are added if needed, using WCA Odds only. The search targets 20 diverse markets, with a 120-simulation ceiling. Temporary registration failures retry and unavailable competitions can be inspected through View unavailable competitions.
 
-If fewer than 10 markets qualify, publication remains blocked. Expand window by 7 days explicitly searches a larger date range; the header updates after successful generation. No contest is published automatically, and no fallback probabilities are used.
+If fewer than 10 markets qualify, publication remains blocked. Refresh searches additional matchups within the same fixed weekend; another weekend is never added and there is no Expand window action. No contest is published automatically, and no fallback probabilities are used.
+
+## Target Weekend Verification
+
+The admin header should show the target Saturday-Sunday (for example, September 19-20), with full featured competition dates separately. Refresh legacy drafts to apply the weekend policy; publication is blocked until regeneration succeeds. Inspect the By competition view: Friday-Sunday and Saturday-Monday qualify, as do Thursday-Sunday and Sunday-Tuesday, but the following Saturday does not. Full competition dates and the earliest-competition lock are retained. Already published contests do not change.
+
+npm run test:v1 includes deterministic weekend/date/overlap tests, including year boundaries, pinned anchors, invalid dates, and Monday/Tuesday settlement ranges.
 
 WCA discovery and registration requests now share pacing with automatic result checks. Cold generation starts requests at least two seconds apart; a rate limit pauses all reads for Retry-After or a 30/60/120-second cooldown. Let generation finish rather than repeatedly refreshing. Successful rosters are reused for 30 minutes, so immediate refreshes are usually faster but may not reflect registrations changed during that period. WCA Odds remains separately rate-controlled.
 
