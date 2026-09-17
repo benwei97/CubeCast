@@ -9,6 +9,7 @@ import { WCAEventLabel } from "@/components/wca-event-label";
 import { V1ContestBoard } from "@/components/v1-slate-board";
 import { MarketResearch } from "@/components/market-research";
 import { DraftMarketInclusion } from "@/components/draft-market-inclusion";
+import { BackLink } from "@/components/back-link";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
   const date = (value: Date) => value.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC";
   return <div className="page-stack market-detail-page">
     <section>
-      <Link className="text-link" href={`/competitions/${market.competition.slug}?contest=${contest.id}`}>Back to {market.competition.name}</Link>
+      <BackLink />
       <div className="market-detail-heading"><WCAEventLabel eventId={market.eventId} fallback={market.eventName} /><span className={preview ? "admin-status admin-status-draft" : "status-pill"}>{preview ? "Draft · Admin preview" : market.status.replaceAll("_", " ")}</span></div>
       <h1>{market.category === "HEAD_TO_HEAD" ? "Who places higher?" : market.question}</h1>
       <p className="market-detail-meta">{market.competition.name} · {contest.title}</p>

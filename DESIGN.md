@@ -199,6 +199,9 @@ Lead with a self-hosted Cubing event icon and canonical readable name (2x2x2 Cub
 
 ## Market and Competition Detail Pages
 
+- Keep Home's contest heading and competition cards compact so the market feed appears in the first viewport. Competition cards use a single horizontally scrollable strip on narrow screens, with name, dates, and market count.
+- No separate competition directory or competition-page filters. Enter competition pages through Home cards or existing competition links. Shared Back navigation returns to the previous in-app screen, with Home as the direct-visit fallback.
+
 - Event labels and competition names are navigation links; outcome buttons remain independent pick actions. Avoid links nested inside selection buttons.
 - Competition pages are scoped to a contest and preserve the player pick flow. Draft competition pages are admin-only previews.
 - Market pages foreground event, question, competitors, large percentages, score swings, and deadline. Follow with real WCA PB averages/world ranks. Recent results and rules are always visible below, without disclosure controls; internal model settings and serialized evidence are not player-facing content. Keep locked probabilities legible, not faded like unavailable actions.

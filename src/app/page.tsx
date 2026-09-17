@@ -112,11 +112,10 @@ export default async function HomePage() {
   }));
 
   return (
-    <div className="page-stack">
+    <div className="page-stack home-page">
       <section className="slate-hero">
         <div className="slate-hero-main">
           <h1>{activeSlate.title}</h1>
-          <p>{activeSlate.description}</p>
           <div className="slate-meta-row">
             <span>{activeSlate.markets.length} markets</span>
             <span>{activeSlate.competitions.length} competitions</span>
@@ -125,12 +124,9 @@ export default async function HomePage() {
         </div>
 
         <aside className="pick-status-panel">
-          <span>Contest entry</span>
           <strong>{pickCounterLabel}</strong>
           <p>
-            {isLocked
-              ? "The contest is locked. Picks are now read-only."
-              : "Choose exactly 10 picks before lock for an official entry."}
+            {isLocked ? "Picks locked" : "Picks open"}
           </p>
           <Link className="button-link secondary-button" href="/picks">
             Review picks
@@ -140,14 +136,13 @@ export default async function HomePage() {
 
       <section className="competition-strip" aria-label="Contest competitions">
         {activeSlate.competitions.map(({ competition }) => (
-          <article key={competition.id}>
-            <span>{competition.location}</span>
+          <Link key={competition.id} className="home-competition-card" href={`/competitions/${competition.slug}?contest=${activeSlate.id}`}>
             <strong>{competition.name}</strong>
             <small>
-              {formatDate(competition.startDate)} -{" "}
-              {formatDate(competition.endDate)}
+              {formatDate(competition.startDate)}{competition.startDate.getTime() !== competition.endDate.getTime() && ` - ${formatDate(competition.endDate)}`}
+              {" · "}{activeSlate.markets.filter((market) => market.competitionId === competition.id).length} markets
             </small>
-          </article>
+          </Link>
         ))}
       </section>
 

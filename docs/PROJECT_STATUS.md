@@ -2,6 +2,13 @@
 
 Last updated: 2026-09-17
 
+## Compact Home and Detail Navigation
+
+- Removed the `/competitions` directory route and competition-detail category/status filters. Old filter query parameters no longer hide markets; contest scoping and private preview permissions remain enforced.
+- Removed the competition-page Markets/Open/Final/Picks summary grid; the header is single-column, followed by the market list and entry counter.
+- Home's competition cards now link directly to contest-scoped detail pages and show name, dates, and market count in a compact scrollable strip. Reduced contest-heading height while preserving entry counter/review access.
+- Shared Back navigation tracks in-app navigation, returning to the preceding screen or Home for direct visits. Both market and competition detail pages use it; explicit admin review links remain available.
+
 ## WCA Recent Result Ordering
 
 - Recent results use First Round, Second Round, Third Round, and Final for regular/cutoff IDs; legacy qualification and B-final IDs also have readable labels. Third Round is the requested product wording for WCA's legacy Semi Final label.

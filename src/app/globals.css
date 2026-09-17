@@ -332,6 +332,45 @@ footer {
   font-size: 18px;
 }
 
+.home-page { gap: 20px; }
+.home-page .slate-hero { align-items: center; gap: 12px; }
+.home-page .slate-hero-main { min-height: 0; padding: 0; gap: 10px; }
+.home-page .slate-hero h1 { font-size: 28px; line-height: 1.25; }
+.home-page .slate-hero p { font-size: 14px; }
+.home-page .pick-status-panel { padding: 0; gap: 8px 12px; position: static; border: 0; background: transparent; grid-template-columns: minmax(0, 1fr) auto; }
+.home-page .pick-status-panel strong { font-size: 18px; }
+.home-page .pick-status-panel .button-link { grid-column: 2; grid-row: 1 / 3; align-self: center; white-space: nowrap; }
+.home-page .competition-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 1fr);
+  grid-template-columns: none;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.home-competition-card {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 10px 12px;
+  min-width: 0;
+  min-height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+.home-page .competition-strip strong { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+.home-page .competition-strip small { font-size: 12px; }
+.home-competition-card:hover { border-color: var(--accent); }
+.competition-hero.competition-detail-header { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 800px) {
+  .home-page .slate-market-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-page .slate-market-main { grid-column: 1 / -1; }
+}
+
 .slate-market-board {
   background: var(--surface);
   border: 1px solid var(--line);

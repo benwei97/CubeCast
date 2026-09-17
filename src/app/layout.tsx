@@ -4,6 +4,7 @@ import { UserRole } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { SignOutButton } from "@/components/sign-out-button";
+import { BackNavigationProvider } from "@/components/back-link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -54,7 +55,7 @@ export default async function RootLayout({
             )}
           </div>
         </header>
-        <main>{children}</main>
+        <main><BackNavigationProvider>{children}</BackNavigationProvider></main>
         <footer>CubeCast is a free forecasting game. No deposits, stakes, or wagering.</footer>
       </body>
     </html>

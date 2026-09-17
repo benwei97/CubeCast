@@ -24,6 +24,8 @@ Success for V1 means a WCA-authenticated user can choose 10 predictions before l
 
 Users can navigate from a contest to its competition pages and individual market pages. Market details prioritize competitors, fixed probabilities, score swings, and pick status, followed by WCA personal-best averages and average world rankings. Recent results and market rules are always visible. Use current WCA records for displayed competitor stats; do not expose internal generation metadata or missing historical snapshots as a player-facing comparison. Settlement evidence remains available to admins without cluttering the player experience.
 
+Home is the competition discovery surface: compact clickable competition cards sit above the market feed. There is no separate competition directory. Competition detail pages show every accessible market for their selected contest, without category/status filters. Detail-page Back links return to the preceding in-app page, or Home when opened directly.
+
 Draft market and competition pages are private admin previews. Admins can include/exclude candidates from preview pages or the main review, with choices persisted across navigation. Publication remains one atomic contest-wide action; previews never publish individual markets.
 
 Market scanning prioritizes the readable event name/icon, competitor identities, and clearly separated probabilities. World rankings are secondary metadata, not part of a dense matchup sentence. Admin recommendations and player picks share canonical event labels; rankings are shown only when recorded in recommendation metadata.
