@@ -52,9 +52,9 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
       </>}
     </section>
     {market.eventId && <section className="market-competitor-section"><h2>Competitor stats</h2><div className="market-research-grid">{market.options.filter((option) => option.competitorWcaId).map((option) => <Suspense key={option.id} fallback={<p>Loading stats for {option.label}...</p>}><MarketResearch wcaId={option.competitorWcaId!} eventId={market.eventId!} name={option.label} /></Suspense>)}</div></section>}
-    <section className="market-resolution-section"><details><summary>Market rules</summary><p>{market.resolutionRules}</p>
+    <section className="market-resolution-section"><h2>Market rules</h2><p>{market.resolutionRules}</p>
       {market.category === "HEAD_TO_HEAD" && <p>Compare furthest round reached, then official placement in that round. An exact tie awards half the normal positive score to either side. Nonparticipation voids the market; void picks score zero.</p>}
-      <p>Results: World Cube Association.</p></details>
+      <p>Results: World Cube Association.</p>
       {market.voidReason && <p>Void reason: {market.voidReason}</p>}
       {market.settlementSnapshots.map((snapshot) => <details key={snapshot.id}><summary>Result: {String(asMetadata(snapshot.snapshot).winningMarketOptionLabel ?? asMetadata(snapshot.snapshot).result ?? snapshot.status)}</summary><p>Settled {date(snapshot.settledAt)}</p>{snapshot.sourceUrl && <a className="text-link" href={snapshot.sourceUrl} target="_blank" rel="noreferrer">Official results</a>}{session?.user?.role === "ADMIN" && <details><summary>Settlement evidence</summary><p>Rule {snapshot.ruleVersion} · First observed: {snapshot.observedPublicationAt ? date(snapshot.observedPublicationAt) : "Not recorded"}</p><pre className="settlement-evidence">{JSON.stringify(snapshot.snapshot, null, 2)}</pre></details>}</details>)}
     </section>
