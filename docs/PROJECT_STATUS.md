@@ -2,6 +2,12 @@
 
 Last updated: 2026-09-16
 
+## Prisma Development Startup
+
+- npm run dev regenerates Prisma Client before starting Next.js.
+- Restart the dev server after schema changes so cached client instances match the database.
+- Verified the preparation-field update in a rolled-back transaction; existing contest markets are preserved.
+
 ## Contest Preparation and Transition Workflow
 
 - Admin header leads with the contest date range and Draft/Active/Complete status.

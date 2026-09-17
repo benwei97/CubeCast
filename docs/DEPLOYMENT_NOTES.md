@@ -76,6 +76,8 @@ Checks preserve first-observed person/event/round result rows and their observat
 
 ## Database Setup
 
+After Prisma schema changes, restart the dev server. Next.js hot reload can retain an older Prisma Client instance and report Unknown argument errors for new fields even when the database migration is applied. npm run dev now regenerates Prisma Client before starting Next.js. Generation does not apply migrations; run the migration commands separately.
+
 Migration 20260916210000_contest_only_publication clears legacy single-market publications inside draft contests. It preserves market content and audit history and refuses to change markets with picks or settlement evidence. Markets now become public exclusively through whole-contest publication.
 
 The admin contest workflow adds nullable ContestSlate.preparation metadata in migration 20260916200000_admin_contest_preparation. Deploy this migration and regenerate Prisma Client before running the updated app. This is additive and does not delete existing contests, markets, or picks.
