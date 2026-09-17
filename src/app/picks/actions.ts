@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import {
   canAddPrediction,
   canModifyPrediction,
+  getPredictionAvailabilityError,
   V1_REQUIRED_PICKS
 } from "@/lib/v1-game";
 
@@ -25,10 +26,10 @@ export async function selectPrediction(formData: FormData) {
   const marketOptionId = String(formData.get("marketOptionId") ?? "");
 
   if (!slateId || !marketId || !marketOptionId) {
-    throw new Error("Missing prediction selection.");
+    return { error: "Missing prediction selection." };
   }
 
-  await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     await lockContestIfDue(tx, slateId);
 
     const slate = await tx.contestSlate.findUnique({
@@ -36,13 +37,9 @@ export async function selectPrediction(formData: FormData) {
       select: { baseScore: true, id: true, lockAt: true, maxPicks: true, status: true }
     });
 
-    if (!slate || slate.status !== "OPEN") {
-      throw new Error("This contest is not open for picks.");
-    }
-
-    if (!canModifyPrediction({ lockAt: slate.lockAt })) {
-      throw new Error("This contest is locked.");
-    }
+    if (!slate) return { error: "Contest not found." };
+    const availabilityError = getPredictionAvailabilityError(slate);
+    if (availabilityError) return { error: availabilityError };
 
     const marketOption = await tx.marketOption.findFirst({
       where: {
@@ -61,7 +58,7 @@ export async function selectPrediction(formData: FormData) {
     });
 
     if (!marketOption) {
-      throw new Error("That outcome is not available for this contest.");
+      return { error: "That outcome is not available for this contest." };
     }
 
     const entry = await tx.contestEntry.upsert({
@@ -100,7 +97,7 @@ export async function selectPrediction(formData: FormData) {
           maxPicks: slate.maxPicks
         })
       ) {
-        throw new Error(`You can only select ${V1_REQUIRED_PICKS} picks.`);
+        return { error: `You can only select ${V1_REQUIRED_PICKS} picks.` };
       }
 
       await tx.prediction.create({
@@ -112,7 +109,7 @@ export async function selectPrediction(formData: FormData) {
         }
       });
 
-      return;
+      return { error: null };
     }
 
     await tx.prediction.update({
@@ -122,10 +119,14 @@ export async function selectPrediction(formData: FormData) {
         selectedProbability: marketOption.probability
       }
     });
+    return { error: null };
   });
 
   revalidatePath("/");
   revalidatePath("/picks");
+  revalidatePath("/markets/[slug]", "page");
+  revalidatePath("/competitions/[slug]", "page");
+  return result;
 }
 
 export async function removePrediction(formData: FormData) {
@@ -178,4 +179,6 @@ export async function removePrediction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/picks");
+  revalidatePath("/markets/[slug]", "page");
+  revalidatePath("/competitions/[slug]", "page");
 }

@@ -2,6 +2,12 @@
 
 CubeCast recommends matchups before choosing featured competitions. Competition size does not determine recommendation quality.
 
+## Review and Research
+
+Recommendation metadata now records WCA Odds source, history start/end, 180-day half-life, DNF setting, generation timestamp, and competitor average PBs/ranks. These are saved with the market; supplementary current WCA records and recent official round averages on detail pages are separately labelled and never reprice it. Existing markets are not backfilled with fabricated generation context.
+
+Each candidate has an admin-only market preview and a contest-scoped competition preview. Include/exclude decisions are persisted as preparation.excludedMarketIds, shared with the main publisher, and reset when a successful regeneration replaces candidates. All candidates start included. Preview actions do not publish; admins still review and release the whole contest atomically.
+
 ## Eligibility
 
 Search non-cancelled global competitions in the contest's discovery window whose prediction deadlines have not passed. Read accepted public WCIF registrations. Both people in a matchup must be registered for the same event, have WCA IDs, and have a valid average personal best and event-specific average world ranking. Prioritize top-100 pairs, expanding to top-250 and then top-500 when fewer than 20 diverse recommendations qualify.

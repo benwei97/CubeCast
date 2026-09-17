@@ -7,6 +7,7 @@ import {
   canAddPrediction,
   canModifyPrediction,
   getLockedEntryStatus,
+  getPredictionAvailabilityError,
   getPickCounterLabel,
   getPredictionScoreChange,
   isValidLockedEntry,
@@ -24,6 +25,16 @@ import {
 } from "../src/lib/prizes";
 
 function testScoring() {
+  const lockAt = new Date("2026-09-17T23:00:00Z");
+  const before = new Date("2026-09-17T22:59:59Z");
+  assert.equal(getPredictionAvailabilityError({ status: "OPEN", lockAt, now: before }), null);
+  assert.match(getPredictionAvailabilityError({ status: "OPEN", lockAt, now: lockAt })!, /locked/);
+  for (const status of ["LOCKED", "SETTLING", "FINALIZED"]) {
+    assert.match(getPredictionAvailabilityError({ status, lockAt, now: before })!, /locked/);
+  }
+  for (const status of ["DRAFT", "CANCELLED"]) {
+    assert.match(getPredictionAvailabilityError({ status, lockAt, now: before })!, /not open/);
+  }
   assert.equal(
     getPredictionScoreChange({ probability: 35, result: "CORRECT" }),
     65

@@ -22,6 +22,10 @@ Success for V1 means a WCA-authenticated user can choose 10 predictions before l
 
 ## Positioning
 
+Users can navigate from a contest to its competition pages and individual market pages. Market details show fixed probabilities, score swings, saved generation context, current WCA statistics, recent official averages, and settlement rules/evidence. Current statistics are supplemental context, not a reconstruction of the model's individual solve inputs. Older markets explicitly indicate missing generation context rather than inventing it.
+
+Draft market and competition pages are private admin previews. Admins can include/exclude candidates from preview pages or the main review, with choices persisted across navigation. Publication remains one atomic contest-wide action; previews never publish individual markets.
+
 Market scanning prioritizes the readable event name/icon, competitor identities, and clearly separated probabilities. World rankings are secondary metadata, not part of a dense matchup sentence. Admin recommendations and player picks share canonical event labels; rankings are shown only when recorded in recommendation metadata.
 
 CubeCast uses the scanability and interaction speed of modern prediction-market products while remaining a free forecasting game. It is not a real-money market, not a wagering product, and not a virtual-currency trading game.

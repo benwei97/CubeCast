@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 
-import { publishSelectedV1Markets } from "@/app/admin/actions";
+import { publishSelectedV1Markets, updateDraftMarketInclusion } from "@/app/admin/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { WCAEventLabel } from "@/components/wca-event-label";
 import { getSelectedContestTiming } from "@/lib/contest-workflow";
@@ -16,6 +17,9 @@ type AdminMarketOption = {
 
 export type AdminPublishMarket = {
   category?: string;
+  slug: string;
+  competitionSlug: string;
+  contestId: string;
   competitionName: string;
   eventName: string;
   eventId?: string | null;
@@ -51,7 +55,8 @@ export function AdminMarketPublisher({
   contestId,
   lockLabel,
   windowLabel,
-  requiredPicks
+  requiredPicks,
+  excludedMarketIds = []
 }: {
   markets: AdminPublishMarket[];
   competitions: CompetitionPreview[];
@@ -59,6 +64,7 @@ export function AdminMarketPublisher({
   lockLabel: string;
   windowLabel: string;
   requiredPicks: number;
+  excludedMarketIds?: string[];
 }) {
   const draftMarkets = useMemo(
     () =>
@@ -72,8 +78,16 @@ export function AdminMarketPublisher({
     [markets]
   );
   const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>(() =>
-    draftMarkets.map((market) => market.id)
+    draftMarkets.filter((market) => !excludedMarketIds.includes(market.id)).map((market) => market.id)
   );
+  const exclusionKey = [...excludedMarketIds].sort().join(":");
+  const [savedExclusionKey, setSavedExclusionKey] = useState(exclusionKey);
+  if (savedExclusionKey !== exclusionKey) {
+    setSavedExclusionKey(exclusionKey);
+    setSelectedMarketIds(draftMarkets.filter((market) => !excludedMarketIds.includes(market.id)).map((market) => market.id));
+  }
+  const [saving, startTransition] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [view, setView] = useState<"recommended" | "competition">(
     "recommended"
@@ -122,19 +136,26 @@ export function AdminMarketPublisher({
   const reviewLockLabel = timing ? timing.lockAt.toLocaleString() : lockLabel;
 
   function toggleMarket(marketId: string) {
-    setIsReviewing(false);
-    setSelectedMarketIds((current) => {
-      if (current.includes(marketId)) {
-        return current.filter((selectedId) => selectedId !== marketId);
-      }
+    changeInclusion([marketId], !selectedMarketIds.includes(marketId));
+  }
 
-      return [...current, marketId];
+  function changeInclusion(ids: string[], included: boolean) {
+    const previous = selectedMarketIds;
+    setIsReviewing(false);
+    setSaveError(null);
+    setSelectedMarketIds(included ? [...new Set([...previous, ...ids])] : previous.filter((id) => !ids.includes(id)));
+    const data = new FormData();
+    data.set("contestId", contestId);
+    data.set("included", String(included));
+    ids.forEach((id) => data.append("marketIds", id));
+    startTransition(async () => {
+      try { await updateDraftMarketInclusion(data); }
+      catch { setSelectedMarketIds(previous); setSaveError("Could not save selection. Reload and try again."); }
     });
   }
 
   function clearSelections() {
-    setIsReviewing(false);
-    setSelectedMarketIds([]);
+    changeInclusion(draftMarkets.map((market) => market.id), false);
   }
 
   if (draftMarkets.length === 0) {
@@ -155,6 +176,7 @@ export function AdminMarketPublisher({
 
   return (
     <div className="admin-publish-flow">
+      {saveError && <p role="alert" className="form-error">{saveError}</p>}
       <div className="admin-publish-toolbar">
         <div>
           <strong>{selectedMarketIds.length} markets included</strong>
@@ -170,9 +192,9 @@ export function AdminMarketPublisher({
           {!isReviewing && (
             <button
               className="secondary-button"
-              disabled={selectedMarketIds.length === draftMarkets.length}
+              disabled={saving || selectedMarketIds.length === draftMarkets.length}
               onClick={() =>
-                setSelectedMarketIds(draftMarkets.map((market) => market.id))
+                changeInclusion(draftMarkets.map((market) => market.id), true)
               }
               type="button"
             >
@@ -182,7 +204,7 @@ export function AdminMarketPublisher({
           {!isReviewing && (
             <button
               className="secondary-button"
-              disabled={selectedMarketIds.length === 0}
+              disabled={saving || selectedMarketIds.length === 0}
               onClick={clearSelections}
               type="button"
             >
@@ -191,7 +213,7 @@ export function AdminMarketPublisher({
           )}
           {!isReviewing && (
             <button
-              disabled={!isComplete}
+              disabled={saving || !isComplete}
               onClick={() => setIsReviewing(true)}
               type="button"
             >
@@ -289,6 +311,7 @@ export function AdminMarketPublisher({
                     market={market}
                     selected={selectedMarketIds.includes(market.id)}
                     onToggle={toggleMarket}
+                    disabled={saving}
                   />
                 ))}
               </div>
@@ -323,6 +346,7 @@ export function AdminMarketPublisher({
                           market={market}
                           selected={selectedMarketIds.includes(market.id)}
                           onToggle={toggleMarket}
+                          disabled={saving}
                         />
                       ))}
                     </div>
@@ -391,32 +415,31 @@ export function CompetitionHeading({
 function MarketSelectionRow({
   market,
   selected,
-  onToggle
+  onToggle,
+  disabled
 }: {
   market: AdminPublishMarket;
   selected: boolean;
   onToggle: (id: string) => void;
+  disabled: boolean;
 }) {
   return (
-    <button
+    <div
       className={`admin-market-select-row${selected ? " is-selected" : ""}`}
-      aria-pressed={selected}
-      onClick={() => onToggle(market.id)}
-      type="button"
     >
-      <span className="admin-market-select-control">
+      <button className="admin-market-select-control" aria-label={`${selected ? "Exclude" : "Include"} market: ${market.question}`} aria-pressed={selected} disabled={disabled} onClick={() => onToggle(market.id)} type="button">
         {selected ? "Included" : "Excluded"}
-      </span>
+      </button>
       <MarketSummary market={market} />
-    </button>
+    </div>
   );
 }
 
 function MarketSummary({ market }: { market: AdminPublishMarket }) {
   return (
     <span className="admin-market-summary">
-      <WCAEventLabel eventId={market.eventId} fallback={market.eventName} />
-      <small className="market-competition-label">{market.competitionName}</small>
+      <Link prefetch={false} className="market-detail-link" href={`/markets/${market.slug}`}><WCAEventLabel eventId={market.eventId} fallback={market.eventName} /></Link>
+      <Link className="market-competition-label" href={`/competitions/${market.competitionSlug}?contest=${market.contestId}`}>{market.competitionName}</Link>
       <span className="market-matchup-label">{market.category === "HEAD_TO_HEAD" ? "Who places higher?" : market.question}</span>
       <span className="market-matchup-options">
         {market.options.map((option) => (

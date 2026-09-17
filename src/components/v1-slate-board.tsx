@@ -19,6 +19,8 @@ type ContestMarketOption = {
 };
 
 type ContestMarket = {
+  slug?: string;
+  competitionSlug?: string;
   category: string;
   competitionName: string;
   eventName: string;
@@ -90,8 +92,8 @@ export function V1ContestBoard({
           return (
             <article className="slate-market-row" key={market.id}>
               <div className="slate-market-main">
-                <WCAEventLabel eventId={market.eventId} fallback={market.eventName} />
-                <span>{market.competitionName}</span>
+                {market.slug ? <Link prefetch={false} className="market-detail-link" href={`/markets/${market.slug}`}><WCAEventLabel eventId={market.eventId} fallback={market.eventName} /></Link> : <WCAEventLabel eventId={market.eventId} fallback={market.eventName} />}
+                {market.competitionSlug ? <Link className="market-competition-label" href={`/competitions/${market.competitionSlug}?contest=${slateId}`}>{market.competitionName}</Link> : <span>{market.competitionName}</span>}
                 <strong>{market.category === "HEAD TO HEAD" ? "Who places higher?" : market.question}</strong>
                 <small>{market.category} · Locks {market.lockLabel}</small>
               </div>
@@ -128,6 +130,7 @@ export function V1ContestBoard({
 
       {pendingSelection && (
         <PickReviewModal
+          isLocked={isLocked || pendingSelection.market.status !== "OPEN"}
           isSignedIn={isSignedIn}
           onClose={() => setPendingSelection(null)}
           pickCount={pickCount}
@@ -142,6 +145,7 @@ export function V1ContestBoard({
 }
 
 function PickReviewModal({
+  isLocked,
   isSignedIn,
   onClose,
   pickCount,
@@ -150,6 +154,7 @@ function PickReviewModal({
   selection,
   slateId
 }: {
+  isLocked: boolean;
   isSignedIn: boolean;
   onClose: () => void;
   pickCount: number;
@@ -161,6 +166,7 @@ function PickReviewModal({
   selection: PendingSelection;
   slateId: string;
 }) {
+  const [error, setError] = useState<string | null>(null);
   const isChangingExistingPick = Boolean(selectedPick);
   const nextPickCount = isChangingExistingPick ? pickCount : pickCount + 1;
   const isSameSelection = selectedPick?.marketOptionId === selection.option.id;
@@ -206,6 +212,7 @@ function PickReviewModal({
 
         {isSignedIn ? (
           <>
+            {(error || isLocked) && <p className="form-error" role="alert">{error ?? "This contest is locked. Picks can no longer be changed."}</p>}
             <p className="pick-review-copy">
               {isChangingExistingPick
                 ? "This changes your pick for this market."
@@ -215,7 +222,11 @@ function PickReviewModal({
 
             <div className="review-actions">
               {selectedPick && (
-                <form action={removePrediction}>
+                <form action={async (data) => {
+                  setError(null);
+                  try { await removePrediction(data); onClose(); }
+                  catch { setError("Could not remove this pick. The contest may have locked; refresh to check its status."); }
+                }}>
                   <input
                     name="predictionId"
                     type="hidden"
@@ -224,13 +235,23 @@ function PickReviewModal({
                   <PendingSubmitButton
                     className="secondary-button"
                     pendingLabel="Removing..."
+                    disabled={isLocked}
                   >
                     Remove
                   </PendingSubmitButton>
                 </form>
               )}
 
-              <form action={selectPrediction}>
+              <form action={async (data) => {
+                setError(null);
+                try {
+                  const result = await selectPrediction(data);
+                  if (result.error) setError(result.error);
+                  else onClose();
+                } catch {
+                  setError("Could not save this pick. Please refresh and try again.");
+                }
+              }}>
                 <input name="slateId" type="hidden" value={slateId} />
                 <input
                   name="marketId"
@@ -243,6 +264,7 @@ function PickReviewModal({
                   value={selection.option.id}
                 />
                 <PendingSubmitButton
+                  disabled={isLocked}
                   pendingLabel={isChangingExistingPick ? "Changing..." : "Adding..."}
                 >
                   {isSameSelection

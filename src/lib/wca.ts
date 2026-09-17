@@ -126,6 +126,30 @@ export function getWCACompetitionUrl(wcaCompetitionId: string) {
   return `${WCA_BASE_URL}/competitions/${encodeURIComponent(wcaCompetitionId)}`;
 }
 
+export type WCAHistoryResult = {
+  competition_id: string;
+  event_id: string;
+  round_type_id: string;
+  average: number;
+  best: number;
+};
+
+export type WCAPersonPayload = {
+  personal_records?: Record<string, { average?: { best: number; world_rank: number }; single?: { best: number } }>;
+};
+
+export async function fetchWCAPerson(wcaId: string) {
+  return fetchWCAJson<WCAPersonPayload>(`/api/v0/persons/${encodeURIComponent(wcaId)}`);
+}
+
+export async function fetchWCAPersonResults(wcaId: string, eventId: string) {
+  return fetchWCAJson<WCAHistoryResult[]>(`/api/v0/persons/${encodeURIComponent(wcaId)}/results?${new URLSearchParams({ event_id: eventId })}`);
+}
+
+export async function fetchWCAPersonCompetitions(wcaId: string) {
+  return fetchWCAJson<WCACompetitionPayload[]>(`/api/v0/persons/${encodeURIComponent(wcaId)}/competitions`);
+}
+
 async function fetchWCAJson<T>(path: string, fresh = false): Promise<T> {
   const key = `${WCA_BASE_URL}${path}:${fresh}`;
   const cached = client.cache.get(key);

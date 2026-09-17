@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CompetitionStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { visibleMarkets } from "@/lib/market-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +13,18 @@ export default async function CompetitionsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
+  const session = await auth();
+  const visibility = visibleMarkets(session?.user?.role === "ADMIN");
   const competitions = await prisma.competition.findMany({
+    where: { markets: { some: visibility } },
     orderBy: [{ startDate: "asc" }, { name: "asc" }],
     include: {
       markets: {
+        where: visibility,
         orderBy: { closeTime: "asc" },
         select: {
           id: true,
+          slug: true,
           question: true,
           status: true,
           options: {
@@ -98,7 +105,7 @@ export default async function CompetitionsPage({
             <div className="market-list">
               {competition.markets.map((market) => (
                 <div className="market-list-row" key={market.id}>
-                  <span>{market.question}</span>
+                  <Link prefetch={false} className="text-link" href={`/markets/${market.slug}`}>{market.question}</Link>
                   <strong>
                     {market.options
                       .map((option) => `${option.label} ${option.probability}%`)

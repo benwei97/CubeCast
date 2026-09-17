@@ -2,6 +2,21 @@
 
 Last updated: 2026-09-17
 
+## Pick Rejection Handling
+
+- Expected selection failures (locked/unavailable contest, unavailable outcome, or pick limit) return inline review messages rather than uncaught server runtime errors. Unexpected request failures also remain inside review.
+- Open pages crossing the deadline are revalidated on rejection. Deadline locking commits even when the pick is rejected; no picks are added after lock.
+- Review submit/remove controls disable when refreshed contest state is locked. Successful actions close review. Added deterministic availability tests for draft/cancelled, open-before-deadline, exact deadline, locked, settling, and finalized states.
+
+## Market Research and Private Previews
+
+- Added `/markets/[slug]` detail pages with fixed probabilities, score swings, generation settings/PB/ranking context, current WCA records, recent official round averages, and settlement rules/evidence.
+- Competition pages scope markets to a selected contest and provide the same player selection flow as Home. Feed and admin event/competition labels now link to details without nesting links in pick buttons.
+- Anonymous/non-admin browsing requires both a published market and a published public contest. Unpublished competition/market previews return 404; admins can inspect them before release.
+- Admin include/exclude changes persist in existing preparation metadata and sync across previews and the main publisher. Whole-contest review/publication remains unchanged.
+- Future generation saves WCA Odds request settings and original PB context. Older markets honestly show unavailable historical context. Current WCA statistics use the existing paced/cache-backed client and never change scoring probabilities.
+- No database migration required. Verified admin preview, real WCA history loading, inclusion save/restore, anonymous 404s, and desktop/mobile overflow/runtime checks. Transactional database checks verify parent/child publication visibility and cancellation/void behavior without retaining changes.
+
 ## Market Readability
 
 - Event-first admin recommendation and review rows use self-hosted @cubing/icons and canonical full WCA event names. Competitors and percentages are aligned in separate rows; world ranks are muted secondary metadata. Removed repeated matchup/probability prose.

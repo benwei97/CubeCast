@@ -85,6 +85,8 @@ export default async function HomePage() {
     return {
       category: market.category.replaceAll("_", " "),
       competitionName: market.competition.name,
+      competitionSlug: market.competition.slug,
+      slug: market.slug,
       eventName: market.eventName ?? market.eventId ?? "Event",
       eventId: market.eventId,
       id: market.id,

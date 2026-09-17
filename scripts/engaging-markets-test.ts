@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
 import { getWCAEventName } from "../src/lib/wca-events";
+import { formatWCAResult, visibleMarkets } from "../src/lib/market-visibility";
 import {
   createEngagingCandidates,
   generateEngagingRecommendations,
@@ -31,6 +32,17 @@ function person(
 }
 
 async function main() {
+  assert.deepEqual(visibleMarkets(true), {});
+  assert.deepEqual(visibleMarkets(false), {
+    publishedAt: { not: null },
+    status: { in: ["OPEN", "LOCKED", "PENDING_RESULT", "RESOLVED", "VOID"] },
+    slate: { is: { status: { in: ["OPEN", "LOCKED", "SETTLING", "FINALIZED"] }, publishedAt: { not: null } } }
+  });
+  assert.equal(formatWCAResult(633), "6.33 s");
+  assert.equal(formatWCAResult(-1), "DNF");
+  assert.equal(formatWCAResult(-2), "DNS");
+  assert.equal(formatWCAResult(0), "Not available");
+  assert.equal(formatWCAResult(undefined), "Not available");
   assert.equal(getWCAEventName("222", "222"), "2x2x2 Cube");
   assert.equal(getWCAEventName("333oh", "333oh"), "3x3x3 One-Handed");
   assert.equal(getWCAEventName("unknown", "Custom event"), "Custom event");

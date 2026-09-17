@@ -2,6 +2,19 @@
 
 Last updated: 2026-09-17
 
+## Market and Competition Navigation
+
+For lock handling, leave pick review open across the contest deadline and submit: it should show an inline locked message, not a runtime overlay, and save no pick. After refresh, locked market outcomes and review controls are disabled. Do not move a real published contest's deadline to bypass this check; only published OPEN contests before their global deadline accept picks.
+
+1. In `/admin`, open a generated market using its event label, or open its competition using the competition name. Draft pages show an admin-only preview; they are not public.
+2. On a market preview, check both probabilities, score swings, generation context, current WCA PB/rank, recent official averages, and settlement rules. WCA context may stream in later or display an unavailable notice; odds must stay unchanged.
+3. Exclude/include a candidate in preview, then return to admin review. The included count and row selection should match. Reload to verify persistence. Changing inclusion should preserve the current Recommended/By competition view.
+4. Open the draft URL in a signed-out/private window: both market and competition preview URLs should return 404.
+5. After normal whole-contest publication, open the competition/market from Home. Outcome buttons should still open pick review; adding/changing a pick updates the entry and its counter. A competition page lists only that contest's markets.
+6. Older markets may show that original generation settings or PBs were not recorded. Regenerate a draft to capture the new metadata; no regeneration is needed merely to use the new routes. Current WCA round averages are context, not the exact historical individual solves used by WCA Odds.
+
+No database migration is required for these pages. Do not publish a contest merely to test private preview navigation.
+
 ## Recommendation Recovery
 
 On a Draft contest in /admin, click Refresh recommendations. Top-100 pairs are searched first; top-250 and top-500 pairs are added if needed, using WCA Odds only. The search targets 20 diverse markets, with a 120-simulation ceiling. Temporary registration failures retry and unavailable competitions can be inspected through View unavailable competitions.

@@ -269,6 +269,8 @@ async function generateContestRecommendations(
   const now = new Date();
   let competitions: WCARecommendation[];
   let generated: Awaited<ReturnType<typeof generateEngagingRecommendations>>;
+  const modelEndDate = new Date();
+  const modelStartDate = new Date(modelEndDate.getTime() - WCA_ODDS_DEFAULT_LOOKBACK_DAYS * 86400000);
   try {
     await assertActive();
     const upcoming = (
@@ -292,10 +294,6 @@ async function generateContestRecommendations(
         persons: wcif?.persons ?? []
       })),
       ENGAGING_MARKET_CONFIG.rankTiers.at(-1)!
-    );
-    const modelEndDate = new Date();
-    const modelStartDate = new Date(
-      modelEndDate.getTime() - WCA_ODDS_DEFAULT_LOOKBACK_DAYS * 86400000
     );
     generated = await generateEngagingRecommendations(
       candidates,
@@ -403,6 +401,12 @@ async function generateContestRecommendations(
         });
         recommendationMetadata[created.id] = {
           score: market.score,
+          model: {
+            source: "WCA Odds", historyStart: formatWCADate(modelStartDate), historyEnd: formatWCADate(modelEndDate),
+            halfLifeDays: WCA_ODDS_DEFAULT_HALF_LIFE_DAYS, includeDnf: false,
+            generatedAt: new Date().toISOString()
+          },
+          averagePBs: { [market.left.id]: market.left.average, [market.right.id]: market.right.average },
           ranks: {
             [market.left.id]: market.left.worldRank,
             [market.right.id]: market.right.worldRank
@@ -658,6 +662,35 @@ export async function publishSelectedV1Markets(formData: FormData) {
     );
   revalidateV1Paths();
   redirect(`/admin?contest=${contestId}&v1Market=published`);
+}
+
+export async function updateDraftMarketInclusion(formData: FormData) {
+  await requireAdmin();
+  const contestId = String(formData.get("contestId") ?? "");
+  const ids = [...new Set(formData.getAll("marketIds").map(String))];
+  const included = formData.get("included") === "true";
+  if (!contestId || !ids.length) throw new Error("Choose draft markets first.");
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const contest = await prisma.contestSlate.findUniqueOrThrow({ where: { id: contestId }, include: { markets: { select: { id: true, status: true } } } });
+    const preparation = asMetadata(contest.preparation);
+    if (contest.status !== "DRAFT" || asMetadata(preparation.generationJob).status === "RUNNING" ||
+      ids.some((id) => !contest.markets.some((market) => market.id === id && market.status === "DRAFT"))) {
+      throw new Error("Only unpublished markets in an idle draft can be changed.");
+    }
+    const excluded = new Set(Array.isArray(preparation.excludedMarketIds) ? preparation.excludedMarketIds.filter((id): id is string => typeof id === "string") : []);
+    ids.forEach((id) => included ? excluded.delete(id) : excluded.add(id));
+    const saved = await prisma.contestSlate.updateMany({
+      where: { id: contest.id, status: "DRAFT", updatedAt: contest.updatedAt },
+      data: { preparation: { ...preparation, excludedMarketIds: [...excluded] } as Prisma.InputJsonObject }
+    });
+    if (saved.count) {
+      revalidatePath("/admin");
+      revalidatePath("/markets/[slug]", "page");
+      revalidatePath("/competitions/[slug]", "page");
+      return;
+    }
+  }
+  throw new Error("This draft changed. Reload and try again.");
 }
 
 export async function settleV1Market(formData: FormData) {

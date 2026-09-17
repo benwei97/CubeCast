@@ -33,7 +33,7 @@ const contestInclude = {
   markets: {
     include: {
       competition: {
-        select: { name: true, sourceMetadata: true, wcaCompetitionId: true }
+        select: { name: true, slug: true, sourceMetadata: true, wcaCompetitionId: true }
       },
       options: { orderBy: { displayOrder: "asc" as const } },
       _count: { select: { predictions: true } },
@@ -309,9 +309,10 @@ export default async function AdminPage({
           )}
           {hasMarkets && !generating && (
             <AdminMarketPublisher
-              key={contest.updatedAt.toISOString()}
+              key={contest.markets.map((market) => market.id).join(":")}
               contestId={contest.id}
               requiredPicks={contest.maxPicks}
+              excludedMarketIds={Array.isArray(preparation.excludedMarketIds) ? preparation.excludedMarketIds.filter((id): id is string => typeof id === "string") : []}
               lockLabel={contest.lockAt.toLocaleString()}
               windowLabel={windowLabel}
               competitions={contest.competitions.map(({ competition }) =>
@@ -324,6 +325,9 @@ export default async function AdminPage({
                 const ranks = asMetadata(recommendation.ranks);
                 return {
                   category: market.category,
+                  slug: market.slug,
+                  competitionSlug: market.competition.slug,
+                  contestId: contest.id,
                   competitionName: market.competition.name,
                   eventName: market.eventName ?? market.eventId ?? "Event",
                   eventId: market.eventId,

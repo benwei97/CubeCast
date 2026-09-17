@@ -20,6 +20,18 @@ export type RankedLeaderboardEntry = LeaderboardInput & {
 
 export type LockedEntryStatus = "LOCKED" | "INVALID";
 
+export function getPredictionAvailabilityError({
+  status,
+  lockAt,
+  now = new Date()
+}: { status: string; lockAt: Date; now?: Date }) {
+  if (status === "LOCKED" || status === "SETTLING" || status === "FINALIZED" ||
+    (status === "OPEN" && now >= lockAt)) {
+    return "This contest is locked. Picks can no longer be changed.";
+  }
+  return status === "OPEN" ? null : "This contest is not open for picks.";
+}
+
 export function getPredictionScoreChange({
   probability,
   result
