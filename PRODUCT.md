@@ -28,7 +28,9 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 ## Operating Context
 
-The admin workspace shows the contest timeframe first and uses Draft (red), Active (green), and Complete states. Draft preparation separates competition generation, selection of three competitions, generation of WCA Odds markets, review of preselected markets, and publication. All generated markets start included; admins can exclude any before review. Contest market counts vary, with at least 10 and representation from each featured competition required for publication. Users still choose exactly 10 picks.
+The admin workspace shows the contest timeframe first and uses Draft (red), Active (green), and Complete states. Draft preparation generates market-first recommendations across upcoming global WCA competitions: both registered competitors must have event-specific average world ranks in the top 100. WCA Odds probabilities must be between 35% and 65%; final recommendation quality combines competitor relevance and closeness to 50/50, with diversity caps.
+
+All recommended markets start included in a quality-ranked list; admins exclude unwanted markets, review, and publish. Competition grouping is optional. Featured competitions and the global prediction deadline are derived from the included markets at publication, with no fixed competition count. At least 10 markets are needed for a playable contest. Users still choose exactly 10 picks. Weak or unavailable candidates are not used to fill quotas.
 
 Publishing activates the contest and its selected markets together and makes it current on Home, My Picks, and Leaderboard. A next contest can be prepared privately while the current one runs, but cannot publish while the current contest still accepts picks or if competition windows overlap. Drafts never become public automatically. The previous contest remains accessible for delayed results and settlement, and automatic WCA monitoring continues. Complete means every published market has resolved or voided, not merely that WCA results are available.
 

@@ -1219,6 +1219,10 @@ footer {
 .admin-settled-market summary { cursor: pointer; overflow-wrap: anywhere; }
 .admin-settled-market pre { overflow: auto; max-width: 100%; font-size: 12px; background: var(--surface); padding: 12px; }
 .admin-workspace h2 { font-size: 20px; }
+.admin-market-view-tabs { display: flex; gap: 16px; border-bottom: 1px solid var(--line); }
+.admin-market-view-tabs button { background: transparent; color: var(--muted); border: 0; border-radius: 0; border-bottom: 2px solid transparent; padding: 10px 0; }
+.admin-market-view-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.admin-market-summary small { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .admin-workspace .section-heading { flex-wrap: wrap; gap: 12px; }
 .admin-contest-heading p { margin: 0 0 4px; }
 

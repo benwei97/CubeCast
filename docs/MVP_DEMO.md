@@ -63,8 +63,8 @@ Settlement stores snapshot evidence and admin audit records. A background monito
 All generated draft markets start included. The toolbar shows the actual included count, with Select all and Deselect all controls. Every candidate can be toggled. Only Publish contest releases the selected group; there is no fixed 25-market target.
 
 1. Open /admin. The header shows contest dates and Draft, Active, or Complete status.
-2. In a Draft, generate competition suggestions, select three, and generate markets. Existing drafts retain their previously selected competitions and markets.
-3. Deselect any unwanted markets, retain at least 10 spanning all three competitions, review dates and lock time, and publish the contest.
+2. In a Draft, generate recommended markets across the global window. Existing drafts retain their old markets until a successful refresh; a notice identifies the older competition-first method.
+3. Review the quality-ranked list with world ranks and WCA Odds probabilities; optionally switch to By competition. Deselect unwanted markets, retain at least 10, review the resulting dates and lock time, and publish the contest. There is no fixed competition count.
 4. Confirm the contest becomes Active and Home, My Picks, and Leaderboard follow it.
 5. Active contests show complete entries, settled market progress, selection open/locked status, and competition progress.
 6. Prepare next contest creates a separate private draft for the following window. It cannot be published before the previous picks lock or with overlapping competition windows.

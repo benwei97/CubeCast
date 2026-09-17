@@ -363,7 +363,9 @@ function main() {
   assert.ok(getContestPublishError({ ...publish, selectedCount: 9 }));
   assert.ok(getContestPublishError({ ...publish, selectedCount: 31 }));
   assert.ok(getContestPublishError({ ...publish, marketCount: 24 }));
-  assert.ok(getContestPublishError({ ...publish, representedCompetitions: 2 }));
+  assert.equal(getContestPublishError({ ...publish, competitionCount: 1, representedCompetitions: 1 }), null);
+  assert.equal(getContestPublishError({ ...publish, representedCompetitions: 2 }), null);
+  assert.ok(getContestPublishError({ ...publish, representedCompetitions: 0 }));
   assert.ok(getContestPublishError({ ...publish, status: "OPEN" }));
   assert.ok(getContestPublishError({ ...publish, now: publish.lockAt }));
   assert.ok(getContestPublishError({ ...publish, startsAt: publish.previous.endsAt }));

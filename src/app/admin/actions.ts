@@ -15,9 +15,14 @@ import { auth } from "@/auth";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import {
+  createEngagingCandidates,
+  generateEngagingRecommendations
+} from "@/lib/engaging-markets";
+import {
   CURRENT_CONTEST_ORDER,
   PUBLIC_CONTEST_WHERE,
-  getContestPublishError
+  getContestPublishError,
+  getSelectedContestTiming
 } from "@/lib/contest-workflow";
 import { asMetadata } from "@/lib/wca-result-snapshot";
 import { slugify, withTimestampSuffix } from "@/lib/slug";
@@ -42,10 +47,8 @@ import {
 } from "@/lib/v1-settlement";
 
 const WCA_COMPETITION_PAGE_SIZE = 25;
-const WCA_COMPETITION_PAGE_LIMIT = 10;
+const WCA_COMPETITION_PAGE_LIMIT = 100;
 const WCA_RECOMMENDATION_REQUEST_SPACING_MS = 250;
-const MARKET_PROBABILITY_MIN = 35;
-const MARKET_PROBABILITY_MAX = 65;
 
 const updateDiversityConfigSchema = z.object({
   maxPerCompetition: z.coerce.number().int().min(1).max(30),
@@ -185,168 +188,179 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
       ? new Date(preparation.windowEnd)
       : new Date(start.getTime() + 7 * 86400000);
   const now = new Date();
-  let recommendations: WCARecommendation[];
+  let competitions: WCARecommendation[];
+  let generated: Awaited<ReturnType<typeof generateEngagingRecommendations>>;
   try {
-    const competitions = await fetchAllWCACompetitions({
-      start: formatWCADate(start),
-      end: formatWCADate(end)
-    });
-    recommendations = (await buildWCARecommendations(competitions))
-      .filter(
-        ({ competition }) =>
-          (parseWCADate(competition.start_date)?.getTime() ?? 0) >
+    const upcoming = (
+      await fetchAllWCACompetitions({
+        start: formatWCADate(start),
+        end: formatWCADate(end)
+      })
+    ).filter(
+      (competition) =>
+        !competition.cancelled_at &&
+        (parseWCADate(competition.start_date)?.getTime() ?? 0) >
           now.getTime() + 3600000
-      )
-      .sort(
-        (a, b) => b.acceptedCompetitors.length - a.acceptedCompetitors.length
-      )
-      .slice(0, 9);
+    );
+    competitions = await buildWCARecommendations(upcoming);
+    const candidates = createEngagingCandidates(
+      competitions.map(({ competition, wcif }) => ({
+        id: competition.id,
+        name: competition.name,
+        persons: wcif?.persons ?? []
+      }))
+    );
+    const modelEndDate = new Date();
+    const modelStartDate = new Date(
+      modelEndDate.getTime() - WCA_ODDS_DEFAULT_LOOKBACK_DAYS * 86400000
+    );
+    generated = await generateEngagingRecommendations(
+      candidates,
+      async (candidate) => {
+        await sleep(WCA_ODDS_REQUEST_SPACING_MS);
+        return getHeadToHeadProbability({
+          eventId: candidate.eventId,
+          leftCompetitorWcaId: candidate.left.id,
+          rightCompetitorWcaId: candidate.right.id,
+          modelEndDate,
+          modelStartDate
+        });
+      }
+    );
   } catch {
     redirect(`/admin?contest=${draft.id}&wca=unavailable`);
   }
-  if (recommendations.length < 3)
+  if (!generated.markets.length)
     redirect(`/admin?contest=${draft.id}&wca=no-recommendations`);
-  await prisma.$transaction(async (tx) => {
-    await claimDraft(tx, draft);
-    const candidateIds: string[] = [];
-    for (const recommendation of recommendations) {
-      const competition = await upsertWCACompetitionFromRecommendation(
-        tx,
-        recommendation
-      );
-      candidateIds.push(competition.id);
-    }
-    await tx.market.deleteMany({ where: { slateId: draft.id } });
-    await tx.contestCompetition.deleteMany({ where: { slateId: draft.id } });
-    await tx.contestSlate.update({
-      where: { id: draft.id },
-      data: {
-        preparation: {
-          windowStart: start.toISOString(),
-          windowEnd: end.toISOString(),
-          candidateIds
-        },
-        adminActions: {
-          create: {
-            actionType: "SLATE_UPDATE",
-            adminUserId: admin.id,
-            metadata: { operation: "GENERATE_COMPETITIONS", candidateIds }
-          }
-        }
-      }
-    });
-  });
-  revalidateV1Paths();
-  redirect(`/admin?contest=${draft.id}&wca=competitions-generated`);
-}
-
-export async function generateSelectedCompetitionMarkets(formData: FormData) {
-  const admin = await requireAdmin();
-  const contestId = formData.get("contestId")?.toString();
-  const competitionIds = [
-    ...new Set(formData.getAll("competitionIds").map(String))
-  ];
-  if (!contestId || competitionIds.length !== 3)
-    redirect("/admin?wca=invalid-competitions");
-  const draft = await getOrCreateDraft(contestId, admin.id);
-  const preparation = asMetadata(draft.preparation);
-  const allowed = Array.isArray(preparation.candidateIds)
-    ? preparation.candidateIds
-    : (
-        await prisma.contestCompetition.findMany({
-          where: { slateId: contestId }
-        })
-      ).map((row) => row.competitionId);
-  if (competitionIds.some((id) => !allowed.includes(id)))
-    throw new Error("Choose only suggested competitions for this contest.");
-  const competitions = await prisma.competition.findMany({
-    where: { id: { in: competitionIds } }
-  });
-  if (competitions.length !== 3)
-    throw new Error("Selected competitions are no longer available.");
+  const featuredIds = new Set(
+    generated.markets.map((market) => market.competitionId)
+  );
+  const featured = competitions.filter(({ competition }) =>
+    featuredIds.has(competition.id)
+  );
   const startsAt = new Date(
     Math.min(
-      ...competitions.map((competition) => competition.startDate.getTime())
+      ...featured.map(({ competition }) =>
+        parseWCADate(competition.start_date)!.getTime()
+      )
     )
   );
   const endsAt = new Date(
     Math.max(
-      ...competitions.map((competition) => competition.endDate.getTime())
+      ...featured.map(({ competition }) =>
+        (parseWCADate(competition.end_date) ?? startsAt).getTime()
+      )
     )
   );
   const lockAt = new Date(startsAt.getTime() - 3600000);
-  if (lockAt <= new Date())
-    redirect(`/admin?contest=${contestId}&wca=deadline-passed`);
-  const marketsByCompetition = new Map<string, RecommendedMarket[]>();
-  try {
-    for (const competition of competitions) {
-      if (!competition.wcaCompetitionId)
-        throw new Error("A WCA competition ID is required.");
-      const wcif = await fetchWCAPublicWCIF(competition.wcaCompetitionId);
-      marketsByCompetition.set(
-        competition.id,
-        await buildRecommendedMarkets({
-          competitors: getMarketEligibleCompetitors(wcif),
-          competitionName: competition.name,
-          eventNames: getWCIFEventNames(wcif),
-          lockAt
-        })
-      );
-    }
-  } catch {
-    redirect(`/admin?contest=${contestId}&wca=unavailable`);
-  }
-  await prisma.$transaction(async (tx) => {
-    await claimDraft(tx, draft);
-    await tx.market.deleteMany({ where: { slateId: contestId } });
-    await tx.contestCompetition.deleteMany({ where: { slateId: contestId } });
-    await tx.contestSlate.update({
-      where: { id: contestId },
-      data: {
-        startsAt,
-        endsAt,
-        lockAt,
-        title: `WCA Contest - ${formatContestDate(startsAt)}`,
-        competitions: {
-          create: competitionIds.map((competitionId) => ({ competitionId }))
-        },
-        adminActions: {
-          create: {
-            actionType: "SLATE_UPDATE",
-            adminUserId: admin.id,
-            metadata: { operation: "GENERATE_MARKETS", competitionIds }
-          }
-        }
+  await prisma.$transaction(
+    async (tx) => {
+      await claimDraft(tx, draft);
+      await tx.market.deleteMany({ where: { slateId: draft.id } });
+      await tx.contestCompetition.deleteMany({ where: { slateId: draft.id } });
+      const competitionIds = new Map<string, string>();
+      for (const recommendation of featured) {
+        const competition = await upsertWCACompetitionFromRecommendation(
+          tx,
+          recommendation
+        );
+        competitionIds.set(recommendation.competition.id, competition.id);
+        await tx.contestCompetition.create({
+          data: { slateId: draft.id, competitionId: competition.id }
+        });
       }
-    });
-    for (const competition of competitions) {
-      for (const market of marketsByCompetition.get(competition.id) ?? []) {
-        await tx.market.create({
+      const recommendationMetadata: Record<string, Prisma.InputJsonValue> = {};
+      const eventNames = new Map(
+        featured.flatMap(({ wcif }) => [...getWCIFEventNames(wcif).entries()])
+      );
+      for (const market of generated.markets) {
+        const eventName =
+          eventNames.get(market.eventId) ?? getEventName(market.eventId);
+        const question = `Who places higher in ${eventName} at ${market.competitionName}?`;
+        const created = await tx.market.create({
           data: {
             category: MarketCategory.HEAD_TO_HEAD,
             closeTime: lockAt,
-            competitionId: competition.id,
+            competitionId: competitionIds.get(market.competitionId)!,
             createdByUserId: admin.id,
             description:
-              "Head-to-head forecast based on accepted WCA registrations and WCA Odds probabilities.",
+              "Head-to-head forecast recommended for highly ranked competitors and close WCA Odds probabilities.",
             eventId: market.eventId,
-            eventName: market.eventName,
+            eventName,
             lockAt,
-            options: { create: market.options },
-            question: market.question,
-            resolutionRules: market.resolutionRules,
+            question,
+            options: {
+              create: [
+                {
+                  competitorWcaId: market.left.id,
+                  label: market.left.name,
+                  displayOrder: 0,
+                  probability: market.probability,
+                  sideKey: "YES"
+                },
+                {
+                  competitorWcaId: market.right.id,
+                  label: market.right.name,
+                  displayOrder: 1,
+                  probability: 100 - market.probability,
+                  sideKey: "NO"
+                }
+              ]
+            },
+            resolutionRules: `Whoever places higher in the specified official WCA event wins. Probability source: WCA Odds simulation, ${WCA_ODDS_DEFAULT_LOOKBACK_DAYS}-day history, ${WCA_ODDS_DEFAULT_HALF_LIFE_DAYS}-day half-life.`,
             resolutionSource: "Official WCA competition results",
             settlementRuleVersion: "v1",
-            slateId: contestId,
-            slug: withTimestampSuffix(slugify(market.question)),
+            slateId: draft.id,
+            slug: withTimestampSuffix(slugify(question)),
             status: MarketStatus.DRAFT
-          }
+          },
+          select: { id: true }
         });
+        recommendationMetadata[created.id] = {
+          score: market.score,
+          ranks: {
+            [market.left.id]: market.left.worldRank,
+            [market.right.id]: market.right.worldRank
+          }
+        };
       }
-    }
-  });
+      await tx.contestSlate.update({
+        where: { id: draft.id },
+        data: {
+          startsAt,
+          endsAt,
+          lockAt,
+          title: `WCA Contest - ${formatContestDate(startsAt)}`,
+          preparation: {
+            windowStart: start.toISOString(),
+            windowEnd: end.toISOString(),
+            generationMethod: "engagement-v1",
+            recommendations: recommendationMetadata,
+            simulated: generated.simulated,
+            unavailable: generated.unavailable,
+            unavailableRegistrations: competitions.filter(
+              (competition) => !competition.wcif
+            ).length
+          },
+          adminActions: {
+            create: {
+              actionType: "SLATE_UPDATE",
+              adminUserId: admin.id,
+              metadata: {
+                operation: "GENERATE_ENGAGING_MARKETS",
+                simulated: generated.simulated,
+                unavailable: generated.unavailable,
+                marketCount: generated.markets.length
+              }
+            }
+          }
+        }
+      });
+    },
+    { timeout: 30_000 }
+  );
   revalidateV1Paths();
-  redirect(`/admin?contest=${contestId}&wca=markets-generated`);
+  redirect(`/admin?contest=${draft.id}&wca=markets-generated`);
 }
 
 export async function updateSlateDiversityConfig(formData: FormData) {
@@ -409,7 +423,7 @@ export async function publishSelectedV1Markets(formData: FormData) {
         where: { id: contestId },
         include: {
           markets: { include: { options: true } },
-          competitions: true
+          competitions: { include: { competition: true } }
         }
       });
       const selected = contest.markets.filter((market) =>
@@ -419,11 +433,26 @@ export async function publishSelectedV1Markets(formData: FormData) {
         where: PUBLIC_CONTEST_WHERE,
         orderBy: CURRENT_CONTEST_ORDER
       });
+      const selectedCompetitionIds = [
+        ...new Set(selected.map((market) => market.competitionId))
+      ];
+      if (!selectedCompetitionIds.length) {
+        error = "Include at least 10 generated markets before publishing.";
+        return;
+      }
+      const timing = getSelectedContestTiming(
+        contest.competitions
+          .filter((row) => selectedCompetitionIds.includes(row.competitionId))
+          .map(({ competition }) => ({
+            startDate: competition.scheduledStartAt ?? competition.startDate,
+            endDate: competition.endDate
+          }))
+      );
       const now = new Date();
       error = getContestPublishError({
         status: contest.status,
-        lockAt: contest.lockAt,
-        startsAt: contest.startsAt,
+        lockAt: timing.lockAt,
+        startsAt: timing.startsAt,
         marketCount: contest.markets.length,
         selectedCount: selected.length,
         requiredPicks: contest.maxPicks,
@@ -462,7 +491,12 @@ export async function publishSelectedV1Markets(formData: FormData) {
         );
       await tx.market.updateMany({
         where: { id: { in: marketIds }, status: "DRAFT" },
-        data: { publishedAt: now, status: "OPEN" }
+        data: {
+          publishedAt: now,
+          status: "OPEN",
+          lockAt: timing.lockAt,
+          closeTime: timing.lockAt
+        }
       });
       await tx.market.updateMany({
         where: {
@@ -476,6 +510,7 @@ export async function publishSelectedV1Markets(formData: FormData) {
         where: { id: contestId },
         data: {
           status: "OPEN",
+          ...timing,
           publishedAt: now,
           adminActions: {
             create: {
@@ -487,6 +522,12 @@ export async function publishSelectedV1Markets(formData: FormData) {
               }
             }
           }
+        }
+      });
+      await tx.contestCompetition.deleteMany({
+        where: {
+          slateId: contestId,
+          competitionId: { notIn: selectedCompetitionIds }
         }
       });
       await tx.adminAction.createMany({
@@ -672,21 +713,6 @@ type WCARecommendation = {
   wcif: WCIFPublicPayload | null;
 };
 
-type RecommendedMarket = {
-  eventId: string;
-  eventName: string;
-  lockAt: Date;
-  options: {
-    competitorWcaId: string;
-    displayOrder: number;
-    label: string;
-    probability: number;
-    sideKey: string;
-  }[];
-  question: string;
-  resolutionRules: string;
-};
-
 async function fetchAllWCACompetitions({
   end,
   start
@@ -706,11 +732,13 @@ async function fetchAllWCACompetitions({
     competitions.push(...pageCompetitions);
 
     if (pageCompetitions.length < WCA_COMPETITION_PAGE_SIZE) {
-      break;
+      return competitions;
     }
   }
 
-  return competitions;
+  throw new Error(
+    "Competition pagination exceeded its safety limit; refusing to generate from incomplete data."
+  );
 }
 
 async function buildWCARecommendations(competitions: WCACompetitionPayload[]) {
@@ -884,127 +912,6 @@ async function upsertWCACompetitionFromRecommendation(
   });
 }
 
-async function buildRecommendedMarkets({
-  competitors,
-  competitionName,
-  eventNames,
-  lockAt
-}: {
-  competitors: AcceptedWCIFCompetitor[];
-  competitionName: string;
-  eventNames: Map<string, string>;
-  lockAt: Date;
-}): Promise<RecommendedMarket[]> {
-  const markets: RecommendedMarket[] = [];
-  const eventIds = getRecommendedEventIds(competitors);
-  const modelEndDate = new Date();
-  const modelStartDate = new Date(
-    modelEndDate.getTime() -
-      WCA_ODDS_DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000
-  );
-
-  for (const eventId of eventIds) {
-    const rankedCompetitors = competitors
-      .map((competitor) => ({
-        competitor,
-        personalBest: getAveragePersonalBest(competitor, eventId)
-      }))
-      .filter(
-        (
-          entry
-        ): entry is {
-          competitor: AcceptedWCIFCompetitor;
-          personalBest: number;
-        } =>
-          entry.personalBest !== null &&
-          entry.competitor.registration.eventIds?.includes(eventId) === true
-      )
-      .sort((left, right) => left.personalBest - right.personalBest)
-      .slice(0, 16);
-
-    for (let index = 0; index < rankedCompetitors.length - 1; index += 1) {
-      const left = rankedCompetitors[index];
-      const right = rankedCompetitors[index + 1];
-      await sleep(WCA_ODDS_REQUEST_SPACING_MS);
-
-      const modelProbability = await getHeadToHeadProbability({
-        eventId,
-        leftCompetitorWcaId: left.competitor.wcaId,
-        modelEndDate,
-        modelStartDate,
-        rightCompetitorWcaId: right.competitor.wcaId
-      });
-
-      if (!modelProbability || !isTightMarketProbability(modelProbability)) {
-        continue;
-      }
-
-      const probability = modelProbability;
-      const probabilitySourceLabel = `WCA Odds simulation, ${WCA_ODDS_DEFAULT_LOOKBACK_DAYS}-day history, ${WCA_ODDS_DEFAULT_HALF_LIFE_DAYS}-day half-life`;
-      const resolutionRules = `Whoever places higher in the specified official WCA event wins. Probability source: ${probabilitySourceLabel}.`;
-      const eventName = eventNames.get(eventId) ?? getEventName(eventId);
-
-      markets.push({
-        eventId,
-        eventName,
-        lockAt,
-        options: [
-          {
-            competitorWcaId: left.competitor.wcaId,
-            displayOrder: 0,
-            label: left.competitor.name,
-            probability,
-            sideKey: "YES"
-          },
-          {
-            competitorWcaId: right.competitor.wcaId,
-            displayOrder: 1,
-            label: right.competitor.name,
-            probability: 100 - probability,
-            sideKey: "NO"
-          }
-        ],
-        question: `Who places higher in ${eventName} at ${competitionName}?`,
-        resolutionRules
-      });
-
-      if (markets.length >= 10) {
-        return markets;
-      }
-    }
-  }
-
-  return markets;
-}
-
-function getRecommendedEventIds(competitors: AcceptedWCIFCompetitor[]) {
-  const eventCounts = new Map<string, number>();
-
-  for (const competitor of competitors) {
-    for (const eventId of competitor.registration.eventIds ?? []) {
-      eventCounts.set(eventId, (eventCounts.get(eventId) ?? 0) + 1);
-    }
-  }
-
-  return [...eventCounts.entries()]
-    .filter(([eventId]) =>
-      ["222", "333", "333oh", "444", "555"].includes(eventId)
-    )
-    .sort((left, right) => right[1] - left[1])
-    .map(([eventId]) => eventId);
-}
-
-function getAveragePersonalBest(
-  competitor: AcceptedWCIFCompetitor,
-  eventId: string
-) {
-  const personalBest = competitor.personalBests?.find(
-    (best) => best.eventId === eventId && best.type === "average"
-  );
-
-  return personalBest?.best ?? null;
-}
-
 async function getHeadToHeadProbability({
   eventId,
   leftCompetitorWcaId,
@@ -1035,14 +942,6 @@ async function getHeadToHeadProbability({
   }
 
   return null;
-}
-
-function isTightMarketProbability(probability: number) {
-  return (
-    Number.isFinite(probability) &&
-    probability >= MARKET_PROBABILITY_MIN &&
-    probability <= MARKET_PROBABILITY_MAX
-  );
 }
 
 function getEventName(eventId: string) {

@@ -181,7 +181,7 @@ Controls and surfaces use modest radii. Standard cards and rows use `8px`; contr
 ### Admin
 
 - **Contest states:** Date range leads the page. Draft uses red with "Not public"; Active uses green and distinguishes selections open/locked; Complete uses a neutral treatment and final results.
-- **Draft preparation:** Choose three suggested competitions and generate markets. All generated markets start included; admins exclude unwanted markets, review the actual included count, and publish the group. Select-all and deselect-all controls support quick changes. No fixed market target is displayed. Completed competition selection collapses into an editable summary.
+- **Draft preparation:** Generate recommended markets across the contest window; all start included. Default to a quality-ranked list, with a secondary By competition view. Competitor names, event-specific world ranks, probabilities, competition, and a short recommendation reason lead each row. Admins deselect, review, and publish the group. No fixed competition or market count is displayed.
 - **Monitoring:** Active contests show complete entries, settled-market progress, pick status, and featured competition progress. Complete contests show the final leaderboard and expandable settlement evidence.
 - **Continuity:** Prepare next contest opens a private draft. Publication makes that contest current after the previous pick deadline; previous contests stay accessible through expandable history with competition-level progress.
 

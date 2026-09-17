@@ -1,10 +1,11 @@
 # CubeCast V1 Implementation Plan
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
 
 ## Admin Contest Workflow
 
-- Separate competition suggestions, three-competition selection, market generation, and review/publication of a variable-sized release with all generated markets preselected.
+- Generate market-first recommendations across upcoming competitions using top-100 event-specific average world ranks, WCA Odds probabilities, engagement ordering, and configurable diversity caps. Review/publish a variable-sized release with all recommendations preselected.
+- Derive featured competitions and contest timing from included markets; remove fixed three-competition selection.
 - Show Draft, Active, and Complete views with timeframe-first headers.
 - Publish the contest and selected markets atomically, preserve fixed probabilities, and retire unselected candidates.
 - Select the latest published contest consistently across player views; prevent overlapping selection windows.

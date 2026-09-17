@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Prisma, UserRole } from "@prisma/client";
 import { auth } from "@/auth";
-import { AdminCompetitionSelector } from "@/components/admin-competition-selector";
 import { AdminMarketPublisher } from "@/components/admin-market-publisher";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { maintainContestLockState } from "@/lib/contest-maintenance";
@@ -113,25 +112,6 @@ export default async function AdminPage({
   const isComplete = contest?.status === "FINALIZED";
   const now = new Date();
   const preparation = asMetadata(contest?.preparation);
-  const candidateIds = Array.isArray(preparation.candidateIds)
-    ? preparation.candidateIds.filter(
-        (id): id is string => typeof id === "string"
-      )
-    : [];
-  const candidates = isDraft
-    ? await prisma.competition.findMany({
-        where: {
-          id: {
-            in: candidateIds.length
-              ? candidateIds
-              : contest.competitions.map((row) => row.competitionId)
-          }
-        }
-      })
-    : [];
-  candidates.sort(
-    (a, b) => candidateIds.indexOf(a.id) - candidateIds.indexOf(b.id)
-  );
   const publicMarkets =
     contest?.markets.filter((market) => market.publishedAt !== null) ?? [];
   const pendingMarkets = publicMarkets.filter(
@@ -155,13 +135,21 @@ export default async function AdminPage({
     windowStart && windowEnd
       ? `${formatWindowDate(windowStart)} – ${formatWindowDate(windowEnd)}`
       : "Upcoming contest";
-  const preview = (competition: (typeof candidates)[number]) => ({
+  const preview = (
+    competition: NonNullable<
+      typeof contest
+    >["competitions"][number]["competition"]
+  ) => ({
     id: competition.id,
     name: competition.name,
     location: `${competition.location} · ${competition.country}`,
     startDate: formatWindowDate(competition.startDate),
     endDate: formatWindowDate(competition.endDate),
     wcaCompetitionId: competition.wcaCompetitionId,
+    scheduledStartAt: (
+      competition.scheduledStartAt ?? competition.startDate
+    ).toISOString(),
+    scheduledEndAt: competition.endDate.toISOString(),
     ...getCompetitionPreview(competition.sourceMetadata)
   });
   const hasMarkets = Boolean(contest?.markets.length);
@@ -240,100 +228,106 @@ export default async function AdminPage({
       )}
       {params.wca === "no-recommendations" && (
         <p className="form-error" role="alert">
-          Fewer than three eligible upcoming competitions were found in this
-          window.
+          No qualifying top-100 matchups with close WCA Odds probabilities were
+          found in this window. Your saved draft is unchanged.
         </p>
       )}
       {params.wca === "deadline-passed" && (
         <p className="form-error" role="alert">
-          The selected competitions&apos; pick deadline has passed. Choose
-          upcoming competitions.
+          The selected competitions&apos; pick deadline has passed. Refresh
+          recommendations for upcoming matchups.
         </p>
       )}
 
       {!contest && (
         <form action={generateWeeklyRecommendedContest}>
           <PendingSubmitButton pendingLabel="Finding competitions...">
-            Generate competitions
+            Generate recommended markets
           </PendingSubmitButton>
         </form>
       )}
 
       {contest && isDraft && (
-        <>
-          <section className="admin-draft-step">
-            <div className="section-heading">
-              <h2>Choose competitions</h2>
-              {
-                <form action={generateWeeklyRecommendedContest}>
-                  <input name="contestId" type="hidden" value={contest.id} />
-                  <PendingSubmitButton
-                    className={
-                      candidates.length ? "secondary-button" : undefined
-                    }
-                    pendingLabel="Finding competitions..."
-                  >
-                    {candidates.length
-                      ? "Regenerate competitions"
-                      : "Generate competitions"}
-                  </PendingSubmitButton>
-                </form>
-              }
-            </div>
-            {candidates.length > 0 && (
-              <details className="admin-step-details" open={!hasMarkets}>
-                <summary>
-                  {hasMarkets
-                    ? `${contest.competitions.length} competitions selected · Edit selection`
-                    : "Select three featured competitions"}
-                </summary>
-                <AdminCompetitionSelector
-                  key={contest.updatedAt.toISOString()}
-                  contestId={contest.id}
-                  competitions={candidates.map(preview)}
-                  selectedIds={contest.competitions.map(
-                    (row) => row.competitionId
-                  )}
-                  hasMarkets={hasMarkets}
-                />
-              </details>
-            )}
-          </section>
+        <section>
+          <div className="section-heading">
+            <h2>Recommended markets</h2>
+            <form action={generateWeeklyRecommendedContest}>
+              <input name="contestId" type="hidden" value={contest.id} />
+              <PendingSubmitButton
+                className={hasMarkets ? "secondary-button" : undefined}
+                pendingLabel="Finding matchups and calculating odds..."
+              >
+                {hasMarkets
+                  ? "Refresh recommendations"
+                  : "Generate recommended markets"}
+              </PendingSubmitButton>
+            </form>
+          </div>
+          {hasMarkets && preparation.generationMethod !== "engagement-v1" && (
+            <p>
+              These markets were generated using the previous competition-first
+              approach. Refresh recommendations to find highly ranked, close
+              matchups across the window.
+            </p>
+          )}
+          {hasMarkets && Number(preparation.unavailableRegistrations) > 0 && (
+            <p className="form-error">
+              Some competition registrations could not be loaded. These
+              recommendations may be incomplete.
+            </p>
+          )}
+          {hasMarkets && Number(preparation.unavailable) > 0 && (
+            <p>
+              Some WCA Odds simulations were unavailable. Only markets with
+              successful WCA Odds probabilities are included.
+            </p>
+          )}
+          {hasMarkets && contest.markets.length < contest.maxPicks && (
+            <p className="form-error">
+              Only {contest.markets.length} qualifying markets are available. At
+              least {contest.maxPicks} are needed to publish a playable contest.
+            </p>
+          )}
           {hasMarkets && (
-            <section>
-              <h2>Choose markets</h2>
-              {contest.markets.length < contest.maxPicks && (
-                <p className="form-error">
-                  Only {contest.markets.length} markets are available.
-                  Regenerate markets or choose different competitions to reach
-                  {contest.maxPicks}.
-                </p>
+            <AdminMarketPublisher
+              key={contest.updatedAt.toISOString()}
+              contestId={contest.id}
+              requiredPicks={contest.maxPicks}
+              lockLabel={contest.lockAt.toLocaleString()}
+              windowLabel={windowLabel}
+              competitions={contest.competitions.map(({ competition }) =>
+                preview(competition)
               )}
-              <AdminMarketPublisher
-                key={contest.updatedAt.toISOString()}
-                contestId={contest.id}
-                requiredPicks={contest.maxPicks}
-                lockLabel={contest.lockAt.toLocaleString()}
-                windowLabel={windowLabel}
-                competitions={contest.competitions.map(({ competition }) =>
-                  preview(competition)
-                )}
-                markets={contest.markets.map((market) => ({
+              markets={contest.markets.map((market) => {
+                const recommendation = asMetadata(
+                  asMetadata(preparation.recommendations)[market.id]
+                );
+                const ranks = asMetadata(recommendation.ranks);
+                return {
                   competitionName: market.competition.name,
                   eventName: market.eventName ?? market.eventId ?? "Event",
                   id: market.id,
                   question: market.question,
                   status: market.status,
+                  recommendationScore:
+                    typeof recommendation.score === "number"
+                      ? recommendation.score
+                      : null,
                   options: market.options.map((option) => ({
                     id: option.id,
                     label: option.label,
-                    probability: option.probability
+                    probability: option.probability,
+                    worldRanking:
+                      option.competitorWcaId &&
+                      typeof ranks[option.competitorWcaId] === "number"
+                        ? (ranks[option.competitorWcaId] as number)
+                        : null
                   }))
-                }))}
-              />
-            </section>
+                };
+              })}
+            />
           )}
-        </>
+        </section>
       )}
 
       {contest && !isDraft && (

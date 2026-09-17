@@ -1,6 +1,16 @@
 # CubeCast Project Status
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
+
+## Market-First Engagement Recommendations
+
+- Removed competition selection and fixed three-competition publication requirements.
+- Search upcoming global competitions in the window; shortlist accepted, event-registered competitors with average world ranks up to 100.
+- Simulate up to 60 promising matchups using WCA Odds only, qualify probabilities in 35%-65%, rank by competitor relevance (70%) and probability closeness (30%), and recommend up to 30 with diversity caps.
+- Recommendations are preselected and quality-ranked; optional competition grouping remains available.
+- World ranks and recommendation reasons appear on admin market rows. Unavailable registrations or probabilities are disclosed; no fallback odds or weak padding are added.
+- Publishing derives featured competitions, start/end dates, and the one-hour-before-earliest-start lock from included markets. Excluding an entire competition is supported.
+- Existing drafts remain intact until successful refresh; existing active contests remain immutable. No schema migration is required.
 
 ## Prisma Development Startup
 
@@ -11,8 +21,8 @@ Last updated: 2026-09-16
 ## Contest Preparation and Transition Workflow
 
 - Admin header leads with the contest date range and Draft/Active/Complete status.
-- Competition generation suggests up to nine global competitions ranked by accepted count, independently of market generation. Admin chooses three, then generates markets.
-- All generated markets are preselected for release. Admins deselect unwanted markets and publish a variable-sized group atomically with the contest. Publication requires at least 10 markets and representation from all three featured competitions. Excluded candidates are cancelled and omitted from scoring/finalization counts.
+- Draft recommendations prioritize highly ranked, closely matched competitors across the global contest window; admins no longer choose competitions first.
+- All recommended markets are preselected for release. Admins exclude unwanted markets and publish a variable-sized group atomically with the contest. Publication requires at least 10 markets. Featured competitions are derived from the included markets. Excluded candidates are cancelled and omitted from scoring/finalization counts.
 - Active contests show entry and settlement progress. Complete contests show final results and immutable evidence.
 - Prepare-next creates/reuses an upcoming draft without replacing the public contest. Publication switches the public current contest, but is blocked until the previous picks lock and for overlapping competition windows.
 - Historical contests remain available for settlement, leaderboard review, and previous user entries. Automatic result monitoring continues for unsettled older contests.

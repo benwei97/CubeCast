@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 
 import { publishSelectedV1Markets } from "@/app/admin/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { getSelectedContestTiming } from "@/lib/contest-workflow";
 
 type AdminMarketOption = {
   id: string;
   label: string;
   probability: number;
+  worldRanking?: number | null;
 };
 
 export type AdminPublishMarket = {
@@ -18,12 +20,15 @@ export type AdminPublishMarket = {
   options: AdminMarketOption[];
   question: string;
   status: string;
+  recommendationScore?: number | null;
 };
 
 export type CompetitionPreview = {
   name: string;
   location: string;
   startDate: string;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
   endDate: string;
   wcaCompetitionId: string | null;
   acceptedCompetitors: number | null;
@@ -53,13 +58,22 @@ export function AdminMarketPublisher({
   requiredPicks: number;
 }) {
   const draftMarkets = useMemo(
-    () => markets.filter((market) => market.status === "DRAFT"),
+    () =>
+      markets
+        .filter((market) => market.status === "DRAFT")
+        .sort(
+          (a, b) =>
+            (b.recommendationScore ?? -1) - (a.recommendationScore ?? -1)
+        ),
     [markets]
   );
   const [selectedMarketIds, setSelectedMarketIds] = useState<string[]>(() =>
     draftMarkets.map((market) => market.id)
   );
   const [isReviewing, setIsReviewing] = useState(false);
+  const [view, setView] = useState<"recommended" | "competition">(
+    "recommended"
+  );
 
   const selectedMarkets = useMemo(
     () =>
@@ -79,9 +93,29 @@ export function AdminMarketPublisher({
     () => groupMarketsByCompetition(selectedMarkets),
     [selectedMarkets]
   );
-  const isComplete =
-    selectedMarketIds.length >= requiredPicks &&
-    selectedGroupedMarkets.length === 3;
+  const isComplete = selectedMarketIds.length >= requiredPicks;
+  const selectedCompetitions = competitions.filter((competition) =>
+    selectedMarkets.some(
+      (market) => market.competitionName === competition.name
+    )
+  );
+  const timing =
+    selectedCompetitions.length &&
+    selectedCompetitions.every(
+      (competition) =>
+        competition.scheduledStartAt && competition.scheduledEndAt
+    )
+      ? getSelectedContestTiming(
+          selectedCompetitions.map((competition) => ({
+            startDate: new Date(competition.scheduledStartAt!),
+            endDate: new Date(competition.scheduledEndAt!)
+          }))
+        )
+      : null;
+  const reviewWindowLabel = timing
+    ? `${timing.startsAt.toLocaleDateString()} – ${timing.endsAt.toLocaleDateString()}`
+    : windowLabel;
+  const reviewLockLabel = timing ? timing.lockAt.toLocaleString() : lockLabel;
 
   function toggleMarket(marketId: string) {
     setIsReviewing(false);
@@ -125,9 +159,7 @@ export function AdminMarketPublisher({
               ? "Ready to publish"
               : selectedMarketIds.length < requiredPicks
                 ? `Include at least ${requiredPicks} markets`
-                : selectedGroupedMarkets.length < 3
-                  ? "Include markets from all three competitions"
-                  : `${draftMarkets.length - selectedMarketIds.length} excluded`}
+                : `${draftMarkets.length - selectedMarketIds.length} excluded`}
           </span>
         </div>
         <div className="admin-publish-toolbar-actions">
@@ -172,7 +204,7 @@ export function AdminMarketPublisher({
             <span>{selectedMarketIds.length.toLocaleString()} selected</span>
           </div>
           <p>
-            {windowLabel} · Picks lock {lockLabel}
+            {reviewWindowLabel} · Picks lock {reviewLockLabel}
           </p>
           <div className="admin-publish-review-list">
             {selectedGroupedMarkets.map((group) => (
@@ -212,73 +244,90 @@ export function AdminMarketPublisher({
       )}
 
       {!isReviewing && (
-        <div className="admin-market-groups">
-          {competitions
-            .filter(
-              (competition) =>
-                !groupedMarkets.some(
-                  (group) => group.competitionName === competition.name
-                )
-            )
-            .map((competition) => (
-              <section className="admin-market-group" key={competition.name}>
-                <CompetitionHeading competition={competition} />
-                <p className="empty-state">
-                  No draft markets available for this competition.
-                </p>
-              </section>
-            ))}
-          {groupedMarkets.map((group) => {
-            const competition = competitions.find(
-              (item) => item.name === group.competitionName
-            );
-            return (
-              <section
-                className="admin-market-group"
-                key={group.competitionName}
-              >
-                {competition && (
-                  <CompetitionHeading competition={competition} />
-                )}
-                <div className="admin-market-group-heading">
-                  <strong>
-                    {competition ? "Markets" : group.competitionName}
-                  </strong>
-                  <span>
-                    {
-                      group.markets.filter((market) =>
-                        selectedMarketIds.includes(market.id)
-                      ).length
-                    }{" "}
-                    / {group.markets.length} selected
-                  </span>
-                </div>
-                <div className="admin-market-selection-list">
-                  {group.markets.map((market) => {
-                    const isSelected = selectedMarketIds.includes(market.id);
-
-                    return (
-                      <button
-                        className={`admin-market-select-row${
-                          isSelected ? " is-selected" : ""
-                        }`}
-                        aria-pressed={isSelected}
-                        key={market.id}
-                        onClick={() => toggleMarket(market.id)}
-                        type="button"
-                      >
-                        <span className="admin-market-select-control">
-                          {isSelected ? "Selected" : "Select"}
-                        </span>
-                        <MarketSummary market={market} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+        <>
+          <div
+            className="admin-market-view-tabs"
+            role="tablist"
+            aria-label="Market organization"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "recommended"}
+              aria-controls="admin-market-list"
+              onClick={() => setView("recommended")}
+            >
+              Recommended
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "competition"}
+              aria-controls="admin-market-list"
+              onClick={() => setView("competition")}
+            >
+              By competition
+            </button>
+          </div>
+          <div
+            id="admin-market-list"
+            className="admin-market-groups"
+            role="tabpanel"
+            aria-label={
+              view === "recommended" ? "Recommended" : "By competition"
+            }
+          >
+            {view === "recommended" ? (
+              <div className="admin-market-selection-list">
+                {draftMarkets.map((market) => (
+                  <MarketSelectionRow
+                    key={market.id}
+                    market={market}
+                    selected={selectedMarketIds.includes(market.id)}
+                    onToggle={toggleMarket}
+                  />
+                ))}
+              </div>
+            ) : (
+              groupedMarkets.map((group) => {
+                const competition = competitions.find(
+                  (item) => item.name === group.competitionName
+                );
+                return (
+                  <section
+                    className="admin-market-group"
+                    key={group.competitionName}
+                  >
+                    {competition && (
+                      <CompetitionHeading competition={competition} />
+                    )}
+                    <div className="admin-market-group-heading">
+                      <strong>Markets</strong>
+                      <span>
+                        {
+                          group.markets.filter((market) =>
+                            selectedMarketIds.includes(market.id)
+                          ).length
+                        }{" "}
+                        / {group.markets.length} included
+                      </span>
+                    </div>
+                    <div className="admin-market-selection-list">
+                      {group.markets.map((market) => (
+                        <MarketSelectionRow
+                          key={market.id}
+                          market={market}
+                          selected={selectedMarketIds.includes(market.id)}
+                          onToggle={toggleMarket}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -335,17 +384,54 @@ export function CompetitionHeading({
   );
 }
 
+function MarketSelectionRow({
+  market,
+  selected,
+  onToggle
+}: {
+  market: AdminPublishMarket;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <button
+      className={`admin-market-select-row${selected ? " is-selected" : ""}`}
+      aria-pressed={selected}
+      onClick={() => onToggle(market.id)}
+      type="button"
+    >
+      <span className="admin-market-select-control">
+        {selected ? "Included" : "Excluded"}
+      </span>
+      <MarketSummary market={market} />
+    </button>
+  );
+}
+
 function MarketSummary({ market }: { market: AdminPublishMarket }) {
   return (
     <span className="admin-market-summary">
-      <span>
-        {market.eventName} · {market.question}
-      </span>
+      <span>{market.options.map((option) => option.label).join(" vs ")}</span>
       <strong>
         {market.options
-          .map((option) => `${option.label} ${option.probability}%`)
+          .map(
+            (option) =>
+              `${option.label}${option.worldRanking ? ` (World #${option.worldRanking})` : ""} ${option.probability}%`
+          )
           .join(" / ")}
       </strong>
+      <small>
+        {market.eventName} · {market.competitionName}
+      </small>
+      {market.options.every((option) => option.worldRanking) && (
+        <small>
+          {market.options.every((option) => option.worldRanking! <= 25)
+            ? "Two top-25 competitors"
+            : "Two top-100 competitors"}{" "}
+          ·{" "}
+          {market.options.map((option) => `${option.probability}%`).join(" / ")}
+        </small>
+      )}
     </span>
   );
 }
