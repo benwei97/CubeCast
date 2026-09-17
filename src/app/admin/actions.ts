@@ -16,6 +16,7 @@ import { maintainContestLockState } from "@/lib/contest-maintenance";
 import { prisma } from "@/lib/prisma";
 import {
   createEngagingCandidates,
+  ENGAGING_MARKET_CONFIG,
   generateEngagingRecommendations
 } from "@/lib/engaging-markets";
 import {
@@ -183,10 +184,11 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
     typeof preparation.windowStart === "string"
       ? new Date(preparation.windowStart)
       : draft.startsAt;
-  const end =
+  const savedEnd =
     typeof preparation.windowEnd === "string"
       ? new Date(preparation.windowEnd)
       : new Date(start.getTime() + 7 * 86400000);
+  const end = new Date(savedEnd.getTime() + (formData.get("expandWindow") === "true" ? 7 * 86400000 : 0));
   const now = new Date();
   let competitions: WCARecommendation[];
   let generated: Awaited<ReturnType<typeof generateEngagingRecommendations>>;
@@ -208,7 +210,8 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
         id: competition.id,
         name: competition.name,
         persons: wcif?.persons ?? []
-      }))
+      })),
+      ENGAGING_MARKET_CONFIG.rankTiers.at(-1)!
     );
     const modelEndDate = new Date();
     const modelStartDate = new Date(
@@ -338,9 +341,18 @@ export async function generateWeeklyRecommendedContest(formData: FormData) {
             recommendations: recommendationMetadata,
             simulated: generated.simulated,
             unavailable: generated.unavailable,
+            outsideProbabilityRange: generated.outsideProbabilityRange,
+            candidateCount: generated.candidateCount,
+            rankTier: generated.rankTier,
+            budgetExhausted: generated.budgetExhausted,
             unavailableRegistrations: competitions.filter(
               (competition) => !competition.wcif
-            ).length
+            ).length,
+            registrationFailures: competitions.filter((competition) => !competition.wcif).map(({ competition, registrationError }) => ({
+              id: competition.id,
+              name: competition.name,
+              error: registrationError ?? "Registration data unavailable"
+            }))
           },
           adminActions: {
             create: {
@@ -711,6 +723,7 @@ type WCARecommendation = {
   competitorCount: number;
   marketEligibleCompetitors: AcceptedWCIFCompetitor[];
   wcif: WCIFPublicPayload | null;
+  registrationError?: string;
 };
 
 async function fetchAllWCACompetitions({
@@ -749,7 +762,7 @@ async function buildWCARecommendations(competitions: WCACompetitionPayload[]) {
   )) {
     await sleep(WCA_RECOMMENDATION_REQUEST_SPACING_MS);
 
-    const wcif = await fetchWCIFSafely(competition.id);
+    const { wcif, registrationError } = await fetchWCIFSafely(competition.id);
     const acceptedCompetitors = getAcceptedCompetitors(wcif);
     const marketEligibleCompetitors = getMarketEligibleCompetitors(wcif);
     const competitorCount =
@@ -760,7 +773,8 @@ async function buildWCARecommendations(competitions: WCACompetitionPayload[]) {
       competition,
       competitorCount,
       marketEligibleCompetitors,
-      wcif
+      wcif,
+      registrationError
     });
   }
 
@@ -769,9 +783,10 @@ async function buildWCARecommendations(competitions: WCACompetitionPayload[]) {
 
 async function fetchWCIFSafely(wcaCompetitionId: string) {
   try {
-    return await fetchWCAPublicWCIF(wcaCompetitionId);
-  } catch {
-    return null;
+    return { wcif: await fetchWCAPublicWCIF(wcaCompetitionId) };
+  } catch (error) {
+    console.warn(`Registration fetch failed for ${wcaCompetitionId}`, error);
+    return { wcif: null, registrationError: error instanceof Error ? error.message : "Registration request failed" };
   }
 }
 

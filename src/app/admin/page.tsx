@@ -228,7 +228,7 @@ export default async function AdminPage({
       )}
       {params.wca === "no-recommendations" && (
         <p className="form-error" role="alert">
-          No qualifying top-100 matchups with close WCA Odds probabilities were
+          No qualifying matchups with close WCA Odds probabilities were
           found in this window. Your saved draft is unchanged.
         </p>
       )}
@@ -271,10 +271,23 @@ export default async function AdminPage({
             </p>
           )}
           {hasMarkets && Number(preparation.unavailableRegistrations) > 0 && (
-            <p className="form-error">
+            <div>
+              <p className="form-error">
               Some competition registrations could not be loaded. These
               recommendations may be incomplete.
-            </p>
+              </p>
+              {Array.isArray(preparation.registrationFailures) && (
+                <details>
+                  <summary>View unavailable competitions</summary>
+                  <ul>
+                    {preparation.registrationFailures.map((failure, index) => {
+                      const row = asMetadata(failure);
+                      return <li key={index}>{String(row.name ?? row.id)}: {String(row.error)}</li>;
+                    })}
+                  </ul>
+                </details>
+              )}
+            </div>
           )}
           {hasMarkets && Number(preparation.unavailable) > 0 && (
             <p>
@@ -282,11 +295,28 @@ export default async function AdminPage({
               successful WCA Odds probabilities are included.
             </p>
           )}
-          {hasMarkets && contest.markets.length < contest.maxPicks && (
-            <p className="form-error">
-              Only {contest.markets.length} qualifying markets are available. At
-              least {contest.maxPicks} are needed to publish a playable contest.
+          {hasMarkets && Number(preparation.rankTier) > 100 && (
+            <p>
+              Top-100 matchups are prioritized. The search expanded to top-
+              {Number(preparation.rankTier)} competitors to find more close markets.
             </p>
+          )}
+          {(hasMarkets || params.wca === "no-recommendations") && contest.markets.length < contest.maxPicks && (
+            <div>
+              <p className="form-error">
+                Only {contest.markets.length} qualifying markets are available. At
+                least {contest.maxPicks} are needed to publish a playable contest.
+                {" "}Try a wider contest window; probabilities are never substituted
+                to fill the list.
+              </p>
+              <form action={generateWeeklyRecommendedContest}>
+                <input name="contestId" type="hidden" value={contest.id} />
+                <input name="expandWindow" type="hidden" value="true" />
+                <PendingSubmitButton className="secondary-button" pendingLabel="Searching a wider window...">
+                  Expand window by 7 days
+                </PendingSubmitButton>
+              </form>
+            </div>
           )}
           {hasMarkets && (
             <AdminMarketPublisher

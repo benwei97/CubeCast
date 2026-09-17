@@ -28,7 +28,7 @@ The product is differentiated by combining official WCA results, recognizable sp
 
 ## Operating Context
 
-The admin workspace shows the contest timeframe first and uses Draft (red), Active (green), and Complete states. Draft preparation generates market-first recommendations across upcoming global WCA competitions: both registered competitors must have event-specific average world ranks in the top 100. WCA Odds probabilities must be between 35% and 65%; final recommendation quality combines competitor relevance and closeness to 50/50, with diversity caps.
+The admin workspace shows the contest timeframe first and uses Draft (red), Active (green), and Complete states. Draft preparation generates market-first recommendations across upcoming global WCA competitions: top-100 event-specific average world ranks are preferred, with top-250 and top-500 tiers searched when needed to target 20 recommendations. WCA Odds probabilities must be between 35% and 65%; final recommendation quality combines competitor relevance and closeness to 50/50, with diversity caps. Publication requires at least 10 markets. If data is scarce, admins can explicitly extend the discovery window by seven days; the app never fabricates odds to fill a contest.
 
 All recommended markets start included in a quality-ranked list; admins exclude unwanted markets, review, and publish. Competition grouping is optional. Featured competitions and the global prediction deadline are derived from the included markets at publication, with no fixed competition count. At least 10 markets are needed for a playable contest. Users still choose exactly 10 picks. Weak or unavailable candidates are not used to fill quotas.
 

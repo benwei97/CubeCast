@@ -1,6 +1,12 @@
 # Local MVP Walkthrough
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
+
+## Recommendation Recovery
+
+On a Draft contest in /admin, click Refresh recommendations. Top-100 pairs are searched first; top-250 and top-500 pairs are added if needed, using WCA Odds only. The search targets 20 diverse markets, with a 120-simulation ceiling. Temporary registration failures retry and unavailable competitions can be inspected through View unavailable competitions.
+
+If fewer than 10 markets qualify, publication remains blocked. Expand window by 7 days explicitly searches a larger date range; the header updates after successful generation. No contest is published automatically, and no fallback probabilities are used.
 
 CubeCast is a free WCA prediction contest game.
 

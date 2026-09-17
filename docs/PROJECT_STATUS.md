@@ -5,8 +5,9 @@ Last updated: 2026-09-17
 ## Market-First Engagement Recommendations
 
 - Removed competition selection and fixed three-competition publication requirements.
-- Search upcoming global competitions in the window; shortlist accepted, event-registered competitors with average world ranks up to 100.
-- Simulate up to 60 promising matchups using WCA Odds only, qualify probabilities in 35%-65%, rank by competitor relevance (70%) and probability closeness (30%), and recommend up to 30 with diversity caps.
+- Search upcoming global competitions in the window; prioritize top-100 accepted, event-registered competitors, expanding to top-250 and top-500 pairs when needed.
+- Simulate up to 120 distinct matchups using WCA Odds only, qualify probabilities in 35%-65%, target 20 and recommend up to 30 with diversity caps applied after simulation. Ranking tiers precede relevance/closeness scores.
+- Retry temporary WCA roster failures, retain failed competition names/reasons, and offer explicit seven-day discovery-window expansion when fewer than 10 markets qualify. Real-data availability cannot be guaranteed.
 - Recommendations are preselected and quality-ranked; optional competition grouping remains available.
 - World ranks and recommendation reasons appear on admin market rows. Unavailable registrations or probabilities are disclosed; no fallback odds or weak padding are added.
 - Publishing derives featured competitions, start/end dates, and the one-hour-before-earliest-start lock from included markets. Excluding an entire competition is supported.

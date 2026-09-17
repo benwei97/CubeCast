@@ -107,16 +107,29 @@ export function getWCACompetitionUrl(wcaCompetitionId: string) {
 }
 
 async function fetchWCAJson<T>(path: string, attempt = 0, fresh = false): Promise<T> {
-  const response = await fetch(`${WCA_BASE_URL}${path}`, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "CubeCast MVP"
-    },
-    ...(fresh ? { cache: "no-store" as const } : { next: { revalidate: 60 * 30 } }),
-    signal: AbortSignal.timeout(20_000)
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${WCA_BASE_URL}${path}`, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "CubeCast MVP"
+      },
+      ...(fresh || attempt > 0
+        ? { cache: "no-store" as const }
+        : { next: { revalidate: 60 * 30 } }),
+      signal: AbortSignal.timeout(20_000)
+    });
+  } catch (error) {
+    if (fresh || attempt >= WCA_MAX_RETRIES) throw error;
+    await sleep(WCA_RETRY_BASE_DELAY_MS * (attempt + 1));
+    return fetchWCAJson<T>(path, attempt + 1, fresh);
+  }
 
-  if (response.status === 429 && !fresh && attempt < WCA_MAX_RETRIES) {
+  if (
+    (response.status === 429 || response.status >= 500) &&
+    !fresh &&
+    attempt < WCA_MAX_RETRIES
+  ) {
     await sleep(getRetryDelayMs(response, attempt));
 
     return fetchWCAJson<T>(path, attempt + 1, fresh);
@@ -131,10 +144,14 @@ async function fetchWCAJson<T>(path: string, attempt = 0, fresh = false): Promis
 
 function getRetryDelayMs(response: Response, attempt: number) {
   const retryAfter = response.headers.get("retry-after");
-  const retryAfterSeconds = retryAfter ? Number.parseInt(retryAfter, 10) : null;
+  const retryAfterSeconds = retryAfter ? Number(retryAfter) : null;
 
   if (retryAfterSeconds && Number.isFinite(retryAfterSeconds)) {
     return retryAfterSeconds * 1000;
+  }
+  if (retryAfter && !Number.isFinite(retryAfterSeconds)) {
+    const delay = Date.parse(retryAfter) - Date.now();
+    if (Number.isFinite(delay) && delay > 0) return delay;
   }
 
   return WCA_RETRY_BASE_DELAY_MS * (attempt + 1);

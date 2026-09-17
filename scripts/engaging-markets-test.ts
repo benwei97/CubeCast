@@ -7,6 +7,7 @@ import {
 } from "../src/lib/engaging-markets";
 import { getSelectedContestTiming } from "../src/lib/contest-workflow";
 import type { WCIFPublicPayload } from "../src/lib/wca";
+import { fetchWCAPublicWCIF, fetchWCACompetitionResults } from "../src/lib/wca";
 
 function person(
   id: string,
@@ -52,6 +53,39 @@ async function main() {
     }
   ]);
   assert.equal(candidates.length, 2);
+  const broader = createEngagingCandidates(
+    [{ id: "Broader", name: "Broader", persons: [person("Rank100", 100), person("Rank250", 250), person("Rank500", 500), person("Rank501", 501)] }],
+    500
+  );
+  assert.equal(broader.length, 3);
+  const expandedField = createEngagingCandidates(
+    Array.from({ length: 24 }, (_, index) => ({
+      id: `Expanded${index}`,
+      name: `Expanded${index}`,
+      persons: [person(`Left${index}`, index < 4 ? 10 : 200, index % 2 ? "333" : "222"), person(`Right${index}`, index < 4 ? 20 : 220, index % 2 ? "333" : "222")]
+    })), 500
+  );
+  const visited = new Set<string>();
+  const expanded = await generateEngagingRecommendations(expandedField, async (candidate) => {
+    assert.ok(!visited.has(candidate.competitionId), "Do not simulate a pair twice");
+    visited.add(candidate.competitionId);
+    return candidate.left.worldRank < 100 ? 80 : 50;
+  });
+  assert.equal(expanded.markets.length, 20);
+  assert.equal(expanded.rankTier, 250);
+  assert.equal(expanded.outsideProbabilityRange, 4);
+  assert.equal(expanded.unavailable, 0);
+  let checked = 0;
+  const lateQualifiers = await generateEngagingRecommendations(
+    Array.from({ length: 80 }, (_, index) => ({
+      ...candidates[0],
+      left: { ...candidates[0].left, id: `LateLeft${index}` },
+      right: { ...candidates[0].right, id: `LateRight${index}` }
+    })),
+    async () => ++checked <= 40 ? 80 : 50
+  );
+  assert.equal(lateQualifiers.markets.length, 12, "Continue checking after initial one-sided odds; cap only qualified markets");
+  assert.equal(lateQualifiers.simulated, 80);
   assert.equal(candidates[0].competitionId, "Small");
   assert.ok(getMatchupRelevance(10, 15) > getMatchupRelevance(1, 100));
   const ranked = await generateEngagingRecommendations(
@@ -65,6 +99,7 @@ async function main() {
     async () => 70
   );
   assert.equal(extreme.markets.length, 0);
+  assert.equal(extreme.outsideProbabilityRange, 2);
   const missing = await generateEngagingRecommendations(
     candidates,
     async () => {
@@ -113,6 +148,9 @@ async function main() {
     return 50;
   });
   assert.ok(requests <= ENGAGING_MARKET_CONFIG.simulationBudget);
+  const exhausted = await generateEngagingRecommendations(field, async () => 80);
+  assert.equal(exhausted.simulated, ENGAGING_MARKET_CONFIG.simulationBudget);
+  assert.equal(exhausted.budgetExhausted, true);
   assert.ok(diverse.markets.length >= 10);
   assert.ok(
     diverse.markets.length <= ENGAGING_MARKET_CONFIG.recommendationLimit
@@ -146,6 +184,36 @@ async function main() {
   ]);
   assert.equal(timing.lockAt.toISOString(), "2026-10-02T23:00:00.000Z");
   assert.throws(() => getSelectedContestTiming([]));
+  const originalFetch = globalThis.fetch;
+  try {
+    for (const status of [429, 503]) {
+      let calls = 0;
+      globalThis.fetch = async (_input, options) => {
+        calls++;
+        if (calls === 1) return new Response("", { status, headers: { "retry-after": "0.001" } });
+        assert.equal(options?.cache, "no-store", "Retries bypass cached errors");
+        return Response.json({ persons: [] });
+      };
+      assert.deepEqual(await fetchWCAPublicWCIF("RetryFixture"), { persons: [] });
+      assert.equal(calls, 2);
+    }
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls++;
+      return new Response("", { status: 404 });
+    };
+    await assert.rejects(fetchWCAPublicWCIF("MissingFixture"), /404/);
+    assert.equal(calls, 1, "Permanent failures do not retry");
+    calls = 0;
+    globalThis.fetch = async () => {
+      calls++;
+      return new Response("", { status: 429 });
+    };
+    await assert.rejects(fetchWCACompetitionResults("FreshFixture"), /429/);
+    assert.equal(calls, 1, "Settlement reads retain fail-fast behavior");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
   console.log("Engaging market tests passed.");
 }
 

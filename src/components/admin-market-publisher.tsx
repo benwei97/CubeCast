@@ -63,6 +63,7 @@ export function AdminMarketPublisher({
         .filter((market) => market.status === "DRAFT")
         .sort(
           (a, b) =>
+            getRankTier(a) - getRankTier(b) ||
             (b.recommendationScore ?? -1) - (a.recommendationScore ?? -1)
         ),
     [markets]
@@ -427,13 +428,18 @@ function MarketSummary({ market }: { market: AdminPublishMarket }) {
         <small>
           {market.options.every((option) => option.worldRanking! <= 25)
             ? "Two top-25 competitors"
-            : "Two top-100 competitors"}{" "}
+            : `Two top-${getRankTier(market)} competitors`}{" "}
           ·{" "}
           {market.options.map((option) => `${option.probability}%`).join(" / ")}
         </small>
       )}
     </span>
   );
+}
+
+function getRankTier(market: AdminPublishMarket) {
+  const weakestRank = Math.max(...market.options.map((option) => option.worldRanking ?? Infinity));
+  return [100, 250, 500].find((rank) => weakestRank <= rank) ?? Infinity;
 }
 
 function groupMarketsByCompetition(markets: AdminPublishMarket[]) {

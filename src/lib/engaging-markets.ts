@@ -2,8 +2,11 @@ import type { WCIFPublicPayload } from "@/lib/wca";
 
 export const ENGAGING_MARKET_CONFIG = {
   maxWorldRank: 100,
+  rankTiers: [100, 250, 500],
   competitorsPerEvent: 16,
-  simulationBudget: 60,
+  simulationBudget: 120,
+  simulationsPerTier: 40,
+  minimumRecommendations: 20,
   recommendationLimit: 30,
   minProbability: 35,
   maxProbability: 65,
@@ -38,7 +41,8 @@ export type EngagingRecommendation = EngagingMatchup & {
 
 function rankedCompetitor(
   person: Person,
-  eventId: string
+  eventId: string,
+  maxWorldRank: number
 ): RankedCompetitor | null {
   if (
     !person.wcaId ||
@@ -58,7 +62,7 @@ function rankedCompetitor(
     !rank ||
     !Number.isInteger(rank) ||
     rank < 1 ||
-    rank > ENGAGING_MARKET_CONFIG.maxWorldRank
+    rank > maxWorldRank
   )
     return null;
   return {
@@ -77,7 +81,7 @@ export function getMatchupRelevance(leftRank: number, rightRank: number) {
     0,
     1 -
       (0.6 * weaker + 0.4 * mean) /
-        Math.log10(ENGAGING_MARKET_CONFIG.maxWorldRank)
+        Math.log10(ENGAGING_MARKET_CONFIG.rankTiers.at(-1)!)
   );
 }
 
@@ -86,7 +90,8 @@ export function createEngagingCandidates(
     id: string;
     name: string;
     persons: Person[];
-  }[]
+  }[],
+  maxWorldRank = ENGAGING_MARKET_CONFIG.maxWorldRank
 ) {
   const candidates: EngagingMatchup[] = [];
   for (const competition of competitions) {
@@ -95,7 +100,7 @@ export function createEngagingCandidates(
         ...new Map(
           competition.persons
             .map((person) => {
-              const ranked = rankedCompetitor(person, eventId);
+              const ranked = rankedCompetitor(person, eventId, maxWorldRank);
               return [ranked?.id, ranked] as const;
             })
             .filter(
@@ -174,14 +179,43 @@ export async function generateEngagingRecommendations(
   simulate: (candidate: EngagingMatchup) => Promise<number | null>
 ) {
   const config = ENGAGING_MARKET_CONFIG;
-  const shortlist = diverseSelection(candidates, config.simulationBudget, {
-    competitor: 8,
-    competition: 12,
-    event: 30
-  });
   const qualified: EngagingRecommendation[] = [];
   let unavailable = 0;
-  for (const candidate of shortlist) {
+  let simulated = 0;
+  let outsideProbabilityRange = 0;
+  let rankTier = config.rankTiers[0];
+  const visited = new Set<string>();
+  const tierFor = (candidate: EngagingMatchup) =>
+    config.rankTiers.find(
+      (rank) => Math.max(candidate.left.worldRank, candidate.right.worldRank) <= rank
+    ) ?? Infinity;
+  const select = () => diverseSelection(
+    [...qualified].sort((a, b) => tierFor(a) - tierFor(b) || b.score - a.score || matchupKey(a).localeCompare(matchupKey(b))),
+    config.recommendationLimit,
+    { competitor: config.maxPerCompetitor, competition: config.maxPerCompetition, event: config.maxPerEvent }
+  );
+  // Interleave fields so one large competition cannot consume the whole search.
+  const interleave = (pool: EngagingMatchup[]) => {
+    const groups = new Map<string, EngagingMatchup[]>();
+    for (const candidate of pool) {
+      const key = `${candidate.competitionId}:${candidate.eventId}`;
+      const group = groups.get(key) ?? [];
+      group.push(candidate);
+      groups.set(key, group);
+    }
+    const result: EngagingMatchup[] = [];
+    while ([...groups.values()].some((group) => group.length)) {
+      for (const group of groups.values()) {
+        const candidate = group.shift();
+        if (candidate) result.push(candidate);
+      }
+    }
+    return result;
+  };
+  const evaluate = async (candidate: EngagingMatchup) => {
+    visited.add(matchupKey(candidate));
+    simulated++;
+    rankTier = Math.max(rankTier, tierFor(candidate));
     let probability: number | null;
     try {
       probability = await simulate(candidate);
@@ -190,13 +224,15 @@ export async function generateEngagingRecommendations(
     }
     if (probability === null || !Number.isFinite(probability)) {
       unavailable++;
-      continue;
+      return;
     }
     if (
       probability < config.minProbability ||
       probability > config.maxProbability
-    )
-      continue;
+    ) {
+      outsideProbabilityRange++;
+      return;
+    }
     const closeness = 1 - Math.abs(probability - 50) / 15;
     qualified.push({
       ...candidate,
@@ -205,17 +241,32 @@ export async function generateEngagingRecommendations(
         candidate.relevance * config.relevanceWeight +
         closeness * config.closenessWeight
     });
+  };
+  for (const tier of config.rankTiers) {
+    const pool = interleave(candidates.filter((candidate) => tierFor(candidate) === tier));
+    for (const candidate of pool.slice(0, config.simulationsPerTier)) {
+      if (visited.has(matchupKey(candidate))) continue;
+      await evaluate(candidate);
+    }
+    if (select().length >= config.minimumRecommendations) break;
   }
-  qualified.sort(
-    (a, b) => b.score - a.score || matchupKey(a).localeCompare(matchupKey(b))
-  );
+  // Spare budget checks untested pairs rather than discarding them before odds exist.
+  if (select().length < config.minimumRecommendations) {
+    for (const candidate of interleave(candidates.filter((candidate) =>
+      tierFor(candidate) !== Infinity && !visited.has(matchupKey(candidate))
+    ))) {
+      if (simulated >= config.simulationBudget) break;
+      await evaluate(candidate);
+      if (select().length >= config.minimumRecommendations) break;
+    }
+  }
   return {
-    markets: diverseSelection(qualified, config.recommendationLimit, {
-      competitor: config.maxPerCompetitor,
-      competition: config.maxPerCompetition,
-      event: config.maxPerEvent
-    }),
-    simulated: shortlist.length,
-    unavailable
+    markets: select(),
+    simulated,
+    unavailable,
+    outsideProbabilityRange,
+    candidateCount: new Set(candidates.map(matchupKey)).size,
+    rankTier,
+    budgetExhausted: simulated >= config.simulationBudget
   };
 }
