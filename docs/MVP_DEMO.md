@@ -4,6 +4,8 @@ Last updated: 2026-09-17
 
 ## Market and Competition Navigation
 
+Compare a competitor's Recent results against their WCA person page for the same event. Readable round labels replace codes such as d/c. Expect newest competitions first, Finals before earlier rounds within each competition, and competition-ID order for ties on start date. Third Round is the product label for WCA's legacy Semi Final. DNF/DNS and missing averages remain visible; the table shows the first eight matching rows.
+
 For lock handling, leave pick review open across the contest deadline and submit: it should show an inline locked message, not a runtime overlay, and save no pick. After refresh, locked market outcomes and review controls are disabled. Do not move a real published contest's deadline to bypass this check; only published OPEN contests before their global deadline accept picks.
 
 1. In `/admin`, open a generated market using its event label, or open its competition using the competition name. Draft pages show an admin-only preview; they are not public.

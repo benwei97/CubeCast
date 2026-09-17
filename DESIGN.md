@@ -205,6 +205,7 @@ Lead with a self-hosted Cubing event icon and canonical readable name (2x2x2 Cub
 - Use compact comparison tables and unframed sections rather than decorative dashboards or speculative charts. Tables can scroll within their own wrapper on narrow screens.
 - Draft inclusion changes persist without resetting the selected admin grouping. Preview controls never imply individual publication.
 - Do not prefetch market research pages from every feed row: load research on navigation, through the shared WCA queue/cache. Research failures must not replace or alter published odds.
+- Recent result rounds use readable First Round, Second Round, Third Round, and Final labels, including cutoff equivalents. Keep WCA's person-page competition/round ordering; never expose raw round codes or omit rounds simply because they have no average.
 
 ## Do's and Don'ts
 

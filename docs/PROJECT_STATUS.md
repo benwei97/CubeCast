@@ -2,6 +2,13 @@
 
 Last updated: 2026-09-17
 
+## WCA Recent Result Ordering
+
+- Recent results use First Round, Second Round, Third Round, and Final for regular/cutoff IDs; legacy qualification and B-final IDs also have readable labels. Third Round is the requested product wording for WCA's legacy Semi Final label.
+- Match WCA person-page ordering: competition start date descending, competition ID ascending for equal dates, then official numeric round rank descending. Do not sort round IDs alphabetically or by average performance.
+- Preserve DNF/DNS and rounds with no average (display a dash) so recent rows are not silently omitted. Still show the eight most recent rows for the market's event.
+- Added deterministic label, cutoff ordering, same-date grouping, absent competition, event filtering, row limit, and input immutability tests. Source: https://github.com/thewca/worldcubeassociation.org/blob/main/app/controllers/persons_controller.rb and https://github.com/thewca/worldcubeassociation.org/blob/main/lib/static_data/round_types.json.
+
 ## Production Market Presentation
 
 - Removed duplicate historical comparison and technical model/cache commentary from market pages. The two outcomes and large probabilities lead, followed by competitor PB averages/world ranks from WCA person records.

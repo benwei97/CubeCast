@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import { getWCAEventName } from "../src/lib/wca-events";
 import { formatWCAResult, visibleMarkets } from "../src/lib/market-visibility";
+import { getHistoryRoundLabel, getRecentWCAResults } from "../src/lib/wca-person-history";
 import {
   createEngagingCandidates,
   generateEngagingRecommendations,
@@ -32,6 +33,31 @@ function person(
 }
 
 async function main() {
+  for (const [ids, label] of [["1d", "First Round"], ["2e", "Second Round"], ["3g", "Third Round"], ["fc", "Final"]]) {
+    for (const id of ids) assert.equal(getHistoryRoundLabel(id), label);
+  }
+  assert.equal(getHistoryRoundLabel("h"), "Qualification Round");
+  assert.equal(getHistoryRoundLabel("b"), "B Final");
+  assert.equal(getHistoryRoundLabel("unknown"), "Unknown Round");
+  const historyCompetitions = new Map([
+    ["A", { id: "A", name: "A", start_date: "2026-09-12" }],
+    ["B", { id: "B", name: "B", start_date: "2026-09-12" }],
+    ["Old", { id: "Old", name: "Old", start_date: "2026-09-05" }]
+  ]);
+  const history = [
+    ["B", "f", 150], ["A", "d", 160], ["Old", "f", 170],
+    ["A", "c", 155], ["A", "e", -1], ["A", "g", 0],
+    ["B", "1", 165], ["Missing", "f", 150]
+  ].map(([competition_id, round_type_id, average]) => ({
+    competition_id: String(competition_id), round_type_id: String(round_type_id),
+    average: Number(average), event_id: "222", best: 100
+  }));
+  const originalHistory = [...history];
+  assert.deepEqual(getRecentWCAResults(history, historyCompetitions, "222").map((row) => `${row.competition_id}:${row.round_type_id}`),
+    ["A:c", "A:g", "A:e", "A:d", "B:f", "B:1", "Old:f"]);
+  assert.deepEqual(history, originalHistory);
+  assert.equal(getRecentWCAResults(history, historyCompetitions, "333").length, 0);
+  assert.equal(getRecentWCAResults(history, historyCompetitions, "222", 2).length, 2);
   assert.deepEqual(visibleMarkets(true), {});
   assert.deepEqual(visibleMarkets(false), {
     publishedAt: { not: null },
